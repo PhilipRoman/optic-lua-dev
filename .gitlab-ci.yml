@@ -1,0 +1,10 @@
+stages:
+  - build
+
+build:
+  stage: build
+  image: openjdk:10.0
+  script:
+    - java -version
+    - chmod +x gradlew
+    - ./gradlew build
