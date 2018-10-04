@@ -3,8 +3,8 @@ stages:
 
 build:
   stage: build
-  image: openjdk:10.0
+  image: gradle:jdk10-slim
   script:
     - java -version
-    - chmod +x gradlew
-    - ./gradlew build
+    # - chmod +x gradlew
+    - gradle build
