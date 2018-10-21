@@ -19,7 +19,7 @@ public class Flattener {
 		Objects.requireNonNull(tree);
 		return tree.getChildren().stream()
 				.map(Tree.class::cast)
-				.map(this::flattenStatement)
+				.map(t -> flattenStatement(t).prependComment("line " + t.getLine()))
 				.flatMap(statement -> statement.steps().stream())
 				.collect(toList());
 	}

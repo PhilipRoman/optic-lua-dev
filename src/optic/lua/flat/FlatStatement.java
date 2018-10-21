@@ -28,4 +28,11 @@ class FlatStatement {
 	static FlatStatement create() {
 		return new FlatStatement(List.of());
 	}
+
+	FlatStatement prependComment(String comment) {
+		List<Step> list = new ArrayList<>(steps.size() + 1);
+		list.add(StepFactory.comment(comment));
+		list.addAll(steps);
+		return new FlatStatement(list);
+	}
 }

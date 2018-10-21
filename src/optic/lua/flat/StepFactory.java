@@ -40,4 +40,8 @@ class StepFactory {
 	public static Step call(Register name, List<Register> args) {
 		return new Call(StepType.CALL, name, args);
 	}
+
+	public static Step comment(String text) {
+		return new Comment(text);
+	}
 }
