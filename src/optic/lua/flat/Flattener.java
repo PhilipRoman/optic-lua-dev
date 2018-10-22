@@ -12,8 +12,13 @@ import static java.lang.Double.parseDouble;
 import static java.util.stream.Collectors.*;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
-public class Flattener {
+public class Flattener implements TreeScheduler {
 	private static final Logger log = LoggerFactory.getLogger(Flattener.class);
+
+	@Override
+	public List<Step> schedule(CommonTree tree) {
+		return flatten(tree);
+	}
 
 	public List<Step> flatten(CommonTree tree) {
 		Objects.requireNonNull(tree);
@@ -36,25 +41,7 @@ public class Flattener {
 				return createAssignment((CommonTree) t, true);
 			}
 			case VAR: {
-				// function call
-				var lookupFunction = flattenExpression(t.getChild(0));
-				Register function = lookupFunction.result();
-				var call = TreeTypes.expect(CALL, t.getChild(1));
-				var args = ((CommonTree) call).getChildren();
-				List<FlatExpression> argExpressions = args.stream()
-						.map(Tree.class::cast)
-						.map(this::flattenExpression)
-						.collect(toList());
-				List<Register> argRegisters = argExpressions.stream()
-						.map(FlatExpression::result)
-						.collect(toList());
-				List<Step> evaluateArgs = argExpressions.stream()
-						.flatMap(expr -> expr.steps().stream())
-						.collect(toList());
-				return FlatStatement.create()
-						.and(lookupFunction.steps())
-						.and(evaluateArgs)
-						.and(StepFactory.call(function, argRegisters));
+				return createFunctionCall(t, false);
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
@@ -94,7 +81,7 @@ public class Flattener {
 			case Number: {
 				var register = new Register();
 				double value = parseDouble(t.getText());
-				return FlatExpression.create(
+				return FlatExpression.createExpression(
 						List.of(StepFactory.constNumber(register, value)),
 						register
 				);
@@ -102,7 +89,7 @@ public class Flattener {
 			case String: {
 				var register = new Register();
 				String value = (t.getText());
-				return FlatExpression.create(
+				return FlatExpression.createExpression(
 						List.of(StepFactory.constString(register, value)),
 						register
 				);
@@ -110,10 +97,13 @@ public class Flattener {
 			case Name: {
 				var register = new Register();
 				String name = t.getText();
-				return FlatExpression.create(
+				return FlatExpression.createExpression(
 						List.of(StepFactory.dereference(register, name)),
 						register
 				);
+			}
+			case VAR: {
+				return (FlatExpression) createFunctionCall(t, true);
 			}
 		}
 		throw new RuntimeException("Unknown expression: " + t);
@@ -138,11 +128,42 @@ public class Flattener {
 		List<Step> declareLocals = names.stream()
 				.map(StepFactory::declareLocal)
 				.collect(toList());
-		var result = FlatStatement.create();
+		var result = FlatStatement.emptyStatement();
 		if (local) {
 			result = result.and(declareLocals);
 		}
 		return result.and(evaluateExpressions)
 				.and(StepFactory.assign(names, registers));
+	}
+
+	@NotNull
+	private FlatStatement createFunctionCall(Tree t, boolean expression) {
+		var lookupFunction = flattenExpression(t.getChild(0));
+		Register function = lookupFunction.result();
+		var call = TreeTypes.expect(CALL, t.getChild(1));
+		var args = ((CommonTree) call).getChildren();
+		List<FlatExpression> argExpressions = args.stream()
+				.map(Tree.class::cast)
+				.map(this::flattenExpression)
+				.collect(toList());
+		List<Register> argRegisters = argExpressions.stream()
+				.map(FlatExpression::result)
+				.collect(toList());
+		List<Step> evaluateArgs = argExpressions.stream()
+				.flatMap(expr -> expr.steps().stream())
+				.collect(toList());
+		if (expression) {
+			Register register = Register.multiValued();
+			return FlatStatement.emptyStatement()
+					.and(lookupFunction.steps())
+					.and(evaluateArgs)
+					.and(StepFactory.call(function, argRegisters, register))
+					.putResultIn(register);
+		} else {
+			return FlatStatement.emptyStatement()
+					.and(lookupFunction.steps())
+					.and(evaluateArgs)
+					.and(StepFactory.call(function, argRegisters));
+		}
 	}
 }

@@ -37,11 +37,15 @@ class StepFactory {
 		return new ForRangeLoop(StepType.FOR, varName, from, to, block);
 	}
 
-	public static Step call(Register name, List<Register> args) {
-		return new Call(StepType.CALL, name, args);
+	public static Step call(Register function, List<Register> args) {
+		return new Call(StepType.CALL, function, args);
 	}
 
 	public static Step comment(String text) {
 		return new Comment(text);
+	}
+
+	public static Step call(Register function, List<Register> registers, Register output) {
+		return new Call(StepType.CALL, function, registers, output);
 	}
 }

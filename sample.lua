@@ -5,4 +5,5 @@ for i = 1, N do
         sum = sum + i * j
     end
 end
-print(sum)
+foo = print(sum)
+print(N)

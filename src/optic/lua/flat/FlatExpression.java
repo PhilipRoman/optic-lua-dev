@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 final class FlatExpression extends FlatStatement {
 	private final Register result;
 
-	private FlatExpression(List<Step> steps, Register result) {
+	FlatExpression(List<Step> steps, Register result) {
 		super(steps);
 		assert !steps.isEmpty();
 		this.result = result;
@@ -28,11 +28,7 @@ final class FlatExpression extends FlatStatement {
 		return and(List.of(step));
 	}
 
-	FlatExpression putResultIn(Register register) {
-		return new FlatExpression(steps, register);
-	}
-
-	static FlatExpression create(List<Step> steps, Register result) {
+	static FlatExpression createExpression(List<Step> steps, Register result) {
 		requireNonNull(steps);
 		requireNonNull(result);
 		return new FlatExpression(List.copyOf(steps), result);

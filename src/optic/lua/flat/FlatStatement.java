@@ -3,6 +3,7 @@ package optic.lua.flat;
 import java.util.*;
 
 class FlatStatement {
+	private static final FlatStatement EMPTY_STATEMENT = new FlatStatement(List.of());
 	final List<Step> steps;
 
 	FlatStatement(List<Step> steps) {
@@ -25,8 +26,8 @@ class FlatStatement {
 		return and(List.of(step));
 	}
 
-	static FlatStatement create() {
-		return new FlatStatement(List.of());
+	static FlatStatement emptyStatement() {
+		return EMPTY_STATEMENT;
 	}
 
 	FlatStatement prependComment(String comment) {
@@ -34,5 +35,9 @@ class FlatStatement {
 		list.add(StepFactory.comment(comment));
 		list.addAll(steps);
 		return new FlatStatement(list);
+	}
+
+	FlatExpression putResultIn(Register register) {
+		return new FlatExpression(steps, register);
 	}
 }

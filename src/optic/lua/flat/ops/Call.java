@@ -7,11 +7,17 @@ import java.util.List;
 public class Call implements Step {
 	private final StepType type;
 	private final Register function;
+	private final Register output;
 	private final List<Register> args;
 
 	public Call(StepType type, Register function, List<Register> args) {
-		this.type = type;
+		this(type, function, args, Register.unused());
+	}
+
+	public Call(StepType call, Register function, List<Register> args, Register output) {
+		type = call;
 		this.function = function;
+		this.output = output;
 		this.args = args;
 	}
 
@@ -22,6 +28,9 @@ public class Call implements Step {
 
 	@Override
 	public String toString() {
-		return typeName() + " " + function + "(" + args + ")";
+		boolean resultUnused = output.equals(Register.unused());
+		return resultUnused
+				? String.format("%s %s(%s)", typeName(), function, args)
+				: String.format("%s %s = %s(%s)", typeName(), output, function, args);
 	}
 }
