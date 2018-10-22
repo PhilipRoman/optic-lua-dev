@@ -26,7 +26,7 @@ class FlatStatement {
 		return and(List.of(step));
 	}
 
-	static FlatStatement emptyStatement() {
+	static FlatStatement start() {
 		return EMPTY_STATEMENT;
 	}
 
@@ -37,7 +37,7 @@ class FlatStatement {
 		return new FlatStatement(list);
 	}
 
-	FlatExpression putResultIn(Register register) {
+	FlatExpression resultWillBeIn(Register register) {
 		return new FlatExpression(steps, register);
 	}
 }

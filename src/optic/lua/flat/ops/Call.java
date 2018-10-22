@@ -1,6 +1,7 @@
 package optic.lua.flat.ops;
 
 import optic.lua.flat.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class Call implements Step {
 		this.args = args;
 	}
 
+	@NotNull
 	@Override
 	public StepType getType() {
 		return type;

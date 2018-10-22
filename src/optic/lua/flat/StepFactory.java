@@ -48,4 +48,23 @@ class StepFactory {
 	public static Step call(Register function, List<Register> registers, Register output) {
 		return new Call(StepType.CALL, function, registers, output);
 	}
+
+	public static Step doBlock(List<Step> steps) {
+		return new Block(StepType.BLOCK, steps);
+	}
+
+	public static Step functionLiteral(List<Step> body, Register assignTo, ParameterList params) {
+		return new FunctionLiteral(StepType.FUNCTION, body, assignTo, params);
+	}
+
+	public static Step returnFromFunction(List<Register> registers) {
+		return new Return(StepType.RETURN, registers);
+	}
+
+	public static Step getVarargs(Register to) {
+		if(!to.isVararg()) {
+			throw new IllegalArgumentException(to + " is not a vararg register!");
+		}
+		return new GetVarargs(StepType.VARARGS, to);
+	}
 }

@@ -8,7 +8,7 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
-import static java.lang.Double.parseDouble;
+import static java.lang.Double.*;
 import static java.util.stream.Collectors.*;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
@@ -22,11 +22,25 @@ public class Flattener implements TreeScheduler {
 
 	public List<Step> flatten(CommonTree tree) {
 		Objects.requireNonNull(tree);
-		return tree.getChildren().stream()
+		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
+		return statements.stream()
 				.map(Tree.class::cast)
-				.map(t -> flattenStatement(t).prependComment("line " + t.getLine()))
+				.map(this::tryFlatten)
 				.flatMap(statement -> statement.steps().stream())
 				.collect(toList());
+	}
+
+	private FlatStatement tryFlatten(Tree tree) {
+		try {
+			return flattenStatement(tree).prependComment("line " + tree.getLine());
+		} catch (RuntimeException e) {
+			String msg = java.lang.String.format(
+					"Error at line %d while flattening %s",
+					tree.getLine(),
+					tree.toString());
+			log.error(msg, e);
+			return FlatStatement.start().prependComment("Error: " + e);
+		}
 	}
 
 	@NotNull
@@ -53,6 +67,32 @@ public class Flattener implements TreeScheduler {
 						.and(to.steps())
 						.and(StepFactory.forRange(varName, from.result(), to.result(), body));
 			}
+			case Do: {
+				CommonTree block = (CommonTree) t;
+				return FlatStatement.start()
+						.and(StepFactory.doBlock(flatten(block)));
+			}
+			case CHUNK: {
+				CommonTree block = (CommonTree) t;
+				return FlatStatement.start()
+						.and(flatten(block));
+			}
+			case Return: {
+				List<FlatExpression> values = ((CommonTree) t).getChildren().stream()
+						.map(Tree.class::cast)
+						.map(this::flattenExpression)
+						.collect(toList());
+				List<Step> steps = values.stream()
+						.map(FlatExpression::steps)
+						.flatMap(List::stream)
+						.collect(toList());
+				List<Register> registers = values.stream()
+						.map(FlatExpression::result)
+						.collect(toList());
+				return FlatStatement.start()
+						.and(steps)
+						.and(StepFactory.returnFromFunction(registers));
+			}
 		}
 		throw new RuntimeException("Unknown statement: " + t);
 	}
@@ -67,7 +107,7 @@ public class Flattener implements TreeScheduler {
 			var step = StepFactory.binaryOperator(a.result(), b.result(), op, register);
 			return a.and(b.steps())
 					.and(step)
-					.putResultIn(register);
+					.resultWillBeIn(register);
 		}
 		if (Operators.isUnary(t)) {
 			var register = new Register();
@@ -75,7 +115,7 @@ public class Flattener implements TreeScheduler {
 			FlatExpression param = flattenExpression(t.getChild(0));
 			return param
 					.and(StepFactory.unaryOperator(param.result(), op, register))
-					.putResultIn(register);
+					.resultWillBeIn(register);
 		}
 		switch (t.getType()) {
 			case Number: {
@@ -105,8 +145,24 @@ public class Flattener implements TreeScheduler {
 			case VAR: {
 				return (FlatExpression) createFunctionCall(t, true);
 			}
+			case FUNCTION: {
+				return createFunctionLiteral(t);
+			}
+			case TABLE: {
+				return createTableLiteral(t);
+			}
+			case DotDotDot: {
+				var reg = Register.multiValued();
+				return FlatExpression.start()
+						.and(StepFactory.getVarargs(reg))
+						.resultWillBeIn(reg);
+			}
 		}
 		throw new RuntimeException("Unknown expression: " + t);
+	}
+
+	private FlatExpression createTableLiteral(Tree tree) {
+		return FlatStatement.start().resultWillBeIn(new Register());
 	}
 
 	private FlatStatement createAssignment(CommonTree t, boolean local) {
@@ -128,7 +184,7 @@ public class Flattener implements TreeScheduler {
 		List<Step> declareLocals = names.stream()
 				.map(StepFactory::declareLocal)
 				.collect(toList());
-		var result = FlatStatement.emptyStatement();
+		var result = FlatStatement.start();
 		if (local) {
 			result = result.and(declareLocals);
 		}
@@ -142,6 +198,7 @@ public class Flattener implements TreeScheduler {
 		Register function = lookupFunction.result();
 		var call = TreeTypes.expect(CALL, t.getChild(1));
 		var args = ((CommonTree) call).getChildren();
+		args = Objects.requireNonNullElse(args, List.of());
 		List<FlatExpression> argExpressions = args.stream()
 				.map(Tree.class::cast)
 				.map(this::flattenExpression)
@@ -154,16 +211,27 @@ public class Flattener implements TreeScheduler {
 				.collect(toList());
 		if (expression) {
 			Register register = Register.multiValued();
-			return FlatStatement.emptyStatement()
+			return FlatStatement.start()
 					.and(lookupFunction.steps())
 					.and(evaluateArgs)
 					.and(StepFactory.call(function, argRegisters, register))
-					.putResultIn(register);
+					.resultWillBeIn(register);
 		} else {
-			return FlatStatement.emptyStatement()
+			return FlatStatement.start()
 					.and(lookupFunction.steps())
 					.and(evaluateArgs)
 					.and(StepFactory.call(function, argRegisters));
 		}
+	}
+
+	private FlatExpression createFunctionLiteral(Tree t) {
+		TreeTypes.expect(FUNCTION, t);
+		Tree chunk = TreeTypes.expect(CHUNK, t.getChild(1));
+		List<Step> body = flattenStatement(chunk).steps();
+		Tree paramList = TreeTypes.expect(PARAM_LIST, t.getChild(0));
+		var params = ParameterList.parse(((CommonTree) paramList));
+		Register out = new Register();
+		Step makeFunc = StepFactory.functionLiteral(body, out, params);
+		return FlatExpression.createExpression(List.of(makeFunc), out);
 	}
 }

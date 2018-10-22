@@ -21,7 +21,7 @@ public class Main {
 	}
 
 	private static void print(Step step, int depth) {
-		String indent = Stream.generate(() -> "  ")
+		String indent = "    " + Stream.generate(() -> "|   ")
 				.limit(depth)
 				.collect(Collectors.joining());
 		System.err.println(indent + step);

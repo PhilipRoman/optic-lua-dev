@@ -24,6 +24,21 @@ public final class TreeTypes {
 	}
 
 	@NotNull
+	@Contract("_,_,null -> fail; _,_,_ -> param3")
+	public static Tree expectEither(int type1, int type2, Tree tree) {
+		checkNull(tree);
+		if (tree.getType() != type1 && tree.getType() != type2) {
+			var msg = format("%s is of type %d, not %d or %d",
+					tree.toString(),
+					tree.getType(),
+					type1,
+					type2);
+			throw new AssertionError(msg);
+		}
+		return tree;
+	}
+
+	@NotNull
 	@Contract("_,null,_ -> fail; _,_,_ -> param2")
 	public static Tree expectChild(int type, Tree tree, int childIndex) {
 		checkNull(tree);
