@@ -100,7 +100,7 @@ public class Flattener implements TreeScheduler {
 	private FlatExpression flattenExpression(Tree t) {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
-			var register = new Register();
+			var register = Register.create();
 			var a = flattenExpression(t.getChild(0));
 			var b = flattenExpression(t.getChild(1));
 			String op = t.getText();
@@ -110,7 +110,7 @@ public class Flattener implements TreeScheduler {
 					.resultWillBeIn(register);
 		}
 		if (Operators.isUnary(t)) {
-			var register = new Register();
+			var register = Register.create();
 			String op = Operators.getUnarySymbol(t);
 			FlatExpression param = flattenExpression(t.getChild(0));
 			return param
@@ -119,7 +119,7 @@ public class Flattener implements TreeScheduler {
 		}
 		switch (t.getType()) {
 			case Number: {
-				var register = new Register();
+				var register = Register.create();
 				double value = parseDouble(t.getText());
 				return FlatExpression.createExpression(
 						List.of(StepFactory.constNumber(register, value)),
@@ -127,7 +127,7 @@ public class Flattener implements TreeScheduler {
 				);
 			}
 			case String: {
-				var register = new Register();
+				var register = Register.create();
 				String value = (t.getText());
 				return FlatExpression.createExpression(
 						List.of(StepFactory.constString(register, value)),
@@ -135,7 +135,7 @@ public class Flattener implements TreeScheduler {
 				);
 			}
 			case Name: {
-				var register = new Register();
+				var register = Register.create();
 				String name = t.getText();
 				return FlatExpression.createExpression(
 						List.of(StepFactory.dereference(register, name)),
@@ -152,7 +152,7 @@ public class Flattener implements TreeScheduler {
 				return createTableLiteral(t);
 			}
 			case DotDotDot: {
-				var reg = Register.multiValued();
+				var reg = Register.createVararg();
 				return FlatExpression.start()
 						.and(StepFactory.getVarargs(reg))
 						.resultWillBeIn(reg);
@@ -162,7 +162,7 @@ public class Flattener implements TreeScheduler {
 	}
 
 	private FlatExpression createTableLiteral(Tree tree) {
-		return FlatStatement.start().resultWillBeIn(new Register());
+		return FlatStatement.start().resultWillBeIn(Register.create());
 	}
 
 	private FlatStatement createAssignment(CommonTree t, boolean local) {
@@ -210,7 +210,7 @@ public class Flattener implements TreeScheduler {
 				.flatMap(expr -> expr.steps().stream())
 				.collect(toList());
 		if (expression) {
-			Register register = Register.multiValued();
+			Register register = Register.createVararg();
 			return FlatStatement.start()
 					.and(lookupFunction.steps())
 					.and(evaluateArgs)
@@ -230,7 +230,7 @@ public class Flattener implements TreeScheduler {
 		List<Step> body = flattenStatement(chunk).steps();
 		Tree paramList = TreeTypes.expect(PARAM_LIST, t.getChild(0));
 		var params = ParameterList.parse(((CommonTree) paramList));
-		Register out = new Register();
+		Register out = Register.create();
 		Step makeFunc = StepFactory.functionLiteral(body, out, params);
 		return FlatExpression.createExpression(List.of(makeFunc), out);
 	}

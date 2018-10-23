@@ -1,5 +1,7 @@
 package optic.lua.flat;
 
+import org.jetbrains.annotations.*;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Integer.toHexString;
@@ -10,7 +12,7 @@ public class Register {
 	private final String name;
 	private final boolean isVararg;
 
-	Register() {
+	private Register() {
 		this(false);
 	}
 
@@ -23,14 +25,23 @@ public class Register {
 		this.isVararg = isVararg;
 	}
 
-	static Register multiValued() {
+	@NotNull
+	@Contract(" -> new")
+	static Register createVararg() {
 		return new Register(true);
+	}
+
+	@NotNull
+	@Contract(" -> new")
+	static Register create() {
+		return new Register(false);
 	}
 
 	private static String randomSuffix() {
 		return toHexString(counter.getAndIncrement()).toUpperCase();
 	}
 
+	@NotNull
 	public static Register unused() {
 		return UNUSED_REGISTER;
 	}
