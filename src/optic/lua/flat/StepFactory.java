@@ -2,7 +2,7 @@ package optic.lua.flat;
 
 import optic.lua.flat.ops.*;
 
-import java.util.List;
+import java.util.*;
 
 class StepFactory {
 	static Step assign(List<String> names, List<Register> values) {
@@ -66,5 +66,9 @@ class StepFactory {
 			throw new IllegalArgumentException(to + " is not a vararg register!");
 		}
 		return new GetVarargs(StepType.VARARGS, to);
+	}
+
+	public static Step createTable(Map<Register, Register> table, Register result) {
+		return new MakeTable(StepType.TABLE, table, result);
 	}
 }

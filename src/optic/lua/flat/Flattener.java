@@ -8,8 +8,10 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
-import static java.lang.Double.*;
-import static java.util.stream.Collectors.*;
+import static java.lang.Double.parseDouble;
+import static java.util.stream.Collectors.toList;
+import static nl.bigo.luaparser.Lua52Walker.Number;
+import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
 public class Flattener implements TreeScheduler {
@@ -162,7 +164,35 @@ public class Flattener implements TreeScheduler {
 	}
 
 	private FlatExpression createTableLiteral(Tree tree) {
-		return FlatStatement.start().resultWillBeIn(Register.create());
+		TreeTypes.expect(TABLE, tree);
+		int index = 1;
+		List<Step> steps = new ArrayList<>(tree.getChildCount() * 3);
+		Map<Register, Register> table = new HashMap<>();
+		for (Object obj : ((CommonTree) tree).getChildren()) {
+			var child = TreeTypes.expect(FIELD, (CommonTree) obj);
+			boolean hasKey = child.getChildCount() == 2;
+			if (!hasKey && child.getChildCount() != 1) throw new AssertionError();
+			if(hasKey) {
+				var key = flattenExpression(child.getChild(0));
+				steps.addAll(key.steps());
+				var value = flattenExpression(child.getChild(1));
+				steps.addAll(value.steps());
+				table.put(key.result(), value.result());
+			} else {
+				int key = index++;
+				Register keyRegister = Register.create();
+				steps.add(StepFactory.constNumber(keyRegister, key));
+				var value = flattenExpression(child.getChild(0));
+				steps.addAll(value.steps());
+				table.put(keyRegister, value.result());
+			}
+		}
+		Register result = Register.create();
+		var makeTable = StepFactory.createTable(table, result);
+		return FlatStatement.start()
+				.and(steps)
+				.and(makeTable)
+				.resultWillBeIn(result);
 	}
 
 	private FlatStatement createAssignment(CommonTree t, boolean local) {

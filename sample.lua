@@ -12,7 +12,10 @@ oneTwoThree = function(x, y, z, ...)
 end
 
 function createTable(...)
-    return {...}
+    return {
+        foo = "bar",
+        ...
+    }
 end
 
 print(oneTwoThree())
