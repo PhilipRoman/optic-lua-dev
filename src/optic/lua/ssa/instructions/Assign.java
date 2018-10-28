@@ -1,10 +1,10 @@
-package optic.lua.flat.ops;
+package optic.lua.ssa.instructions;
 
-import optic.lua.flat.*;
+import optic.lua.ssa.*;
 
 import java.util.*;
 
-import static optic.lua.flat.StepType.*;
+import static optic.lua.ssa.StepType.*;
 
 public class Assign implements Step {
 	private static final Set<StepType> validTypes = EnumSet.of(ASSIGN, ASSIGN_LOCAL);

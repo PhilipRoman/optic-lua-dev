@@ -1,7 +1,7 @@
 package optic.lua;
 
 import nl.bigo.luaparser.*;
-import optic.lua.flat.*;
+import optic.lua.ssa.*;
 import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 import org.slf4j.*;

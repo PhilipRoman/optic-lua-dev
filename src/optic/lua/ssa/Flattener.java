@@ -1,4 +1,4 @@
-package optic.lua.flat;
+package optic.lua.ssa;
 
 import optic.lua.util.*;
 import org.antlr.runtime.tree.*;
@@ -14,11 +14,11 @@ import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
-public class Flattener implements TreeScheduler {
+public class Flattener implements SSATranslator {
 	private static final Logger log = LoggerFactory.getLogger(Flattener.class);
 
 	@Override
-	public List<Step> schedule(CommonTree tree) {
+	public List<Step> translate(CommonTree tree) {
 		return flatten(tree);
 	}
 
@@ -32,7 +32,7 @@ public class Flattener implements TreeScheduler {
 				.collect(toList());
 	}
 
-	private FlatStatement tryFlatten(Tree tree) {
+	private FlatVoid tryFlatten(Tree tree) {
 		try {
 			return flattenStatement(tree).prependComment("line " + tree.getLine());
 		} catch (RuntimeException e) {
@@ -41,12 +41,12 @@ public class Flattener implements TreeScheduler {
 					tree.getLine(),
 					tree.toString());
 			log.error(msg, e);
-			return FlatStatement.start().prependComment("Error: " + e);
+			return FlatVoid.start().prependComment("Error: " + e);
 		}
 	}
 
 	@NotNull
-	private FlatStatement flattenStatement(Tree t) {
+	private FlatVoid flattenStatement(Tree t) {
 		Objects.requireNonNull(t);
 		switch (t.getType()) {
 			// watch for fall-through behaviour!
@@ -61,8 +61,8 @@ public class Flattener implements TreeScheduler {
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
-				FlatExpression from = flattenExpression(t.getChild(1));
-				FlatExpression to = flattenExpression(t.getChild(2));
+				FlatValue from = flattenExpression(t.getChild(1));
+				FlatValue to = flattenExpression(t.getChild(2));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
 				List<Step> body = flatten(block);
 				return from
@@ -71,27 +71,27 @@ public class Flattener implements TreeScheduler {
 			}
 			case Do: {
 				CommonTree block = (CommonTree) t;
-				return FlatStatement.start()
+				return FlatVoid.start()
 						.and(StepFactory.doBlock(flatten(block)));
 			}
 			case CHUNK: {
 				CommonTree block = (CommonTree) t;
-				return FlatStatement.start()
+				return FlatVoid.start()
 						.and(flatten(block));
 			}
 			case Return: {
-				List<FlatExpression> values = ((CommonTree) t).getChildren().stream()
+				List<FlatValue> values = ((CommonTree) t).getChildren().stream()
 						.map(Tree.class::cast)
 						.map(this::flattenExpression)
 						.collect(toList());
 				List<Step> steps = values.stream()
-						.map(FlatExpression::steps)
+						.map(FlatValue::steps)
 						.flatMap(List::stream)
 						.collect(toList());
 				List<Register> registers = values.stream()
-						.map(FlatExpression::result)
+						.map(FlatValue::result)
 						.collect(toList());
-				return FlatStatement.start()
+				return FlatVoid.start()
 						.and(steps)
 						.and(StepFactory.returnFromFunction(registers));
 			}
@@ -99,7 +99,7 @@ public class Flattener implements TreeScheduler {
 		throw new RuntimeException("Unknown statement: " + t);
 	}
 
-	private FlatExpression flattenExpression(Tree t) {
+	private FlatValue flattenExpression(Tree t) {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			var register = Register.create();
@@ -114,7 +114,7 @@ public class Flattener implements TreeScheduler {
 		if (Operators.isUnary(t)) {
 			var register = Register.create();
 			String op = Operators.getUnarySymbol(t);
-			FlatExpression param = flattenExpression(t.getChild(0));
+			FlatValue param = flattenExpression(t.getChild(0));
 			return param
 					.and(StepFactory.unaryOperator(param.result(), op, register))
 					.resultWillBeIn(register);
@@ -123,7 +123,7 @@ public class Flattener implements TreeScheduler {
 			case Number: {
 				var register = Register.create();
 				double value = parseDouble(t.getText());
-				return FlatExpression.createExpression(
+				return FlatValue.createExpression(
 						List.of(StepFactory.constNumber(register, value)),
 						register
 				);
@@ -131,7 +131,7 @@ public class Flattener implements TreeScheduler {
 			case String: {
 				var register = Register.create();
 				String value = (t.getText());
-				return FlatExpression.createExpression(
+				return FlatValue.createExpression(
 						List.of(StepFactory.constString(register, value)),
 						register
 				);
@@ -139,13 +139,13 @@ public class Flattener implements TreeScheduler {
 			case Name: {
 				var register = Register.create();
 				String name = t.getText();
-				return FlatExpression.createExpression(
+				return FlatValue.createExpression(
 						List.of(StepFactory.dereference(register, name)),
 						register
 				);
 			}
 			case VAR: {
-				return (FlatExpression) createFunctionCall(t, true);
+				return (FlatValue) createFunctionCall(t, true);
 			}
 			case FUNCTION: {
 				return createFunctionLiteral(t);
@@ -155,7 +155,7 @@ public class Flattener implements TreeScheduler {
 			}
 			case DotDotDot: {
 				var reg = Register.createVararg();
-				return FlatExpression.start()
+				return FlatValue.start()
 						.and(StepFactory.getVarargs(reg))
 						.resultWillBeIn(reg);
 			}
@@ -163,7 +163,7 @@ public class Flattener implements TreeScheduler {
 		throw new RuntimeException("Unknown expression: " + t);
 	}
 
-	private FlatExpression createTableLiteral(Tree tree) {
+	private FlatValue createTableLiteral(Tree tree) {
 		TreeTypes.expect(TABLE, tree);
 		int index = 1;
 		List<Step> steps = new ArrayList<>(tree.getChildCount() * 3);
@@ -189,19 +189,19 @@ public class Flattener implements TreeScheduler {
 		}
 		Register result = Register.create();
 		var makeTable = StepFactory.createTable(table, result);
-		return FlatStatement.start()
+		return FlatVoid.start()
 				.and(steps)
 				.and(makeTable)
 				.resultWillBeIn(result);
 	}
 
-	private FlatStatement createAssignment(CommonTree t, boolean local) {
+	private FlatVoid createAssignment(CommonTree t, boolean local) {
 		var nameList = TreeTypes.expect(local ? NAME_LIST : VAR_LIST, t.getChild(0));
 		List<String> names = ((CommonTree) nameList).getChildren().stream()
 				.map(Object::toString)
 				.collect(toList());
 		var valueList = TreeTypes.expect(EXPR_LIST, t.getChild(1));
-		List<FlatExpression> expressions = ((CommonTree) valueList).getChildren().stream()
+		List<FlatValue> expressions = ((CommonTree) valueList).getChildren().stream()
 				.map(Tree.class::cast)
 				.map(this::flattenExpression)
 				.collect(toList());
@@ -209,12 +209,12 @@ public class Flattener implements TreeScheduler {
 				.flatMap(e -> e.steps().stream())
 				.collect(toList());
 		List<Register> registers = expressions.stream()
-				.map(FlatExpression::result)
+				.map(FlatValue::result)
 				.collect(toList());
 		List<Step> declareLocals = names.stream()
 				.map(StepFactory::declareLocal)
 				.collect(toList());
-		var result = FlatStatement.start();
+		var result = FlatVoid.start();
 		if (local) {
 			result = result.and(declareLocals);
 		}
@@ -223,38 +223,38 @@ public class Flattener implements TreeScheduler {
 	}
 
 	@NotNull
-	private FlatStatement createFunctionCall(Tree t, boolean expression) {
+	private FlatVoid createFunctionCall(Tree t, boolean expression) {
 		var lookupFunction = flattenExpression(t.getChild(0));
 		Register function = lookupFunction.result();
 		var call = TreeTypes.expect(CALL, t.getChild(1));
 		var args = ((CommonTree) call).getChildren();
 		args = Objects.requireNonNullElse(args, List.of());
-		List<FlatExpression> argExpressions = args.stream()
+		List<FlatValue> argExpressions = args.stream()
 				.map(Tree.class::cast)
 				.map(this::flattenExpression)
 				.collect(toList());
 		List<Register> argRegisters = argExpressions.stream()
-				.map(FlatExpression::result)
+				.map(FlatValue::result)
 				.collect(toList());
 		List<Step> evaluateArgs = argExpressions.stream()
 				.flatMap(expr -> expr.steps().stream())
 				.collect(toList());
 		if (expression) {
 			Register register = Register.createVararg();
-			return FlatStatement.start()
+			return FlatVoid.start()
 					.and(lookupFunction.steps())
 					.and(evaluateArgs)
 					.and(StepFactory.call(function, argRegisters, register))
 					.resultWillBeIn(register);
 		} else {
-			return FlatStatement.start()
+			return FlatVoid.start()
 					.and(lookupFunction.steps())
 					.and(evaluateArgs)
 					.and(StepFactory.call(function, argRegisters));
 		}
 	}
 
-	private FlatExpression createFunctionLiteral(Tree t) {
+	private FlatValue createFunctionLiteral(Tree t) {
 		TreeTypes.expect(FUNCTION, t);
 		Tree chunk = TreeTypes.expect(CHUNK, t.getChild(1));
 		List<Step> body = flattenStatement(chunk).steps();
@@ -262,6 +262,6 @@ public class Flattener implements TreeScheduler {
 		var params = ParameterList.parse(((CommonTree) paramList));
 		Register out = Register.create();
 		Step makeFunc = StepFactory.functionLiteral(body, out, params);
-		return FlatExpression.createExpression(List.of(makeFunc), out);
+		return FlatValue.createExpression(List.of(makeFunc), out);
 	}
 }

@@ -1,13 +1,13 @@
-package optic.lua.flat;
+package optic.lua.ssa;
 
 import java.util.*;
 
 import static java.util.Objects.requireNonNull;
 
-final class FlatExpression extends FlatStatement {
+final class FlatValue extends FlatVoid {
 	private final Register result;
 
-	FlatExpression(List<Step> steps, Register result) {
+	FlatValue(List<Step> steps, Register result) {
 		super(steps);
 		assert !steps.isEmpty();
 		this.result = result;
@@ -17,20 +17,20 @@ final class FlatExpression extends FlatStatement {
 		return result;
 	}
 
-	FlatExpression and(List<Step> added) {
+	FlatValue and(List<Step> added) {
 		List<Step> list = new ArrayList<>(steps.size() + added.size());
 		list.addAll(steps);
 		list.addAll(added);
-		return new FlatExpression(list, result);
+		return new FlatValue(list, result);
 	}
 
-	FlatExpression and(Step step) {
+	FlatValue and(Step step) {
 		return and(List.of(step));
 	}
 
-	static FlatExpression createExpression(List<Step> steps, Register result) {
+	static FlatValue createExpression(List<Step> steps, Register result) {
 		requireNonNull(steps);
 		requireNonNull(result);
-		return new FlatExpression(List.copyOf(steps), result);
+		return new FlatValue(List.copyOf(steps), result);
 	}
 }

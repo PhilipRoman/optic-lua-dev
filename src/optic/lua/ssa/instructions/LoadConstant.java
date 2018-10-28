@@ -1,7 +1,7 @@
-package optic.lua.flat.ops;
+package optic.lua.ssa.instructions;
 
 
-import optic.lua.flat.*;
+import optic.lua.ssa.*;
 
 import java.util.*;
 

@@ -1,4 +1,4 @@
-package optic.lua.flat;
+package optic.lua.ssa;
 
 import nl.bigo.luaparser.Lua52Walker;
 import optic.lua.util.TreeTypes;

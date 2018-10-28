@@ -1,6 +1,6 @@
-package optic.lua.flat.ops;
+package optic.lua.ssa.instructions;
 
-import optic.lua.flat.*;
+import optic.lua.ssa.*;
 
 public class Dereference implements Step {
 	private final StepType type;
