@@ -1,6 +1,7 @@
 package optic.lua.ssa.instructions;
 
 import optic.lua.ssa.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -19,6 +20,7 @@ public class Assign implements Step {
 		this.sources = sources;
 	}
 
+	@NotNull
 	@Override
 	public StepType getType() {
 		return type;

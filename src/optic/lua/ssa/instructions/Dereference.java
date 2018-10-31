@@ -1,6 +1,7 @@
 package optic.lua.ssa.instructions;
 
 import optic.lua.ssa.*;
+import org.jetbrains.annotations.NotNull;
 
 public class Dereference implements Step {
 	private final StepType type;
@@ -13,6 +14,7 @@ public class Dereference implements Step {
 		this.name = name;
 	}
 
+	@NotNull
 	@Override
 	public StepType getType() {
 		return type;

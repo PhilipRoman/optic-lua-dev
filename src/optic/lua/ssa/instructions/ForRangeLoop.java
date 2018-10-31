@@ -1,6 +1,7 @@
 package optic.lua.ssa.instructions;
 
 import optic.lua.ssa.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.stream.*;
@@ -20,6 +21,7 @@ public class ForRangeLoop implements Step {
 		this.block = List.copyOf(block);
 	}
 
+	@NotNull
 	@Override
 	public StepType getType() {
 		return type;
@@ -30,6 +32,7 @@ public class ForRangeLoop implements Step {
 		return typeName() + " " + varName + " = " + from + ", " + to;
 	}
 
+	@NotNull
 	@Override
 	public Stream<Step> children() {
 		return block.stream();

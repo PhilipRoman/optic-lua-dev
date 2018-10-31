@@ -2,6 +2,7 @@ package optic.lua.ssa.instructions;
 
 
 import optic.lua.ssa.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -22,6 +23,7 @@ public class LoadConstant implements Step {
 		this.constant = constant;
 	}
 
+	@NotNull
 	@Override
 	public StepType getType() {
 		return type;

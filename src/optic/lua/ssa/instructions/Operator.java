@@ -1,6 +1,7 @@
 package optic.lua.ssa.instructions;
 
 import optic.lua.ssa.*;
+import org.jetbrains.annotations.NotNull;
 
 public class Operator implements Step {
 	private final StepType type;
@@ -23,6 +24,7 @@ public class Operator implements Step {
 		this.symbol = symbol;
 	}
 
+	@NotNull
 	@Override
 	public StepType getType() {
 		return type;

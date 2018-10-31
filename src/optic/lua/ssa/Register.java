@@ -12,10 +12,6 @@ public class Register {
 	private final String name;
 	private final boolean isVararg;
 
-	private Register() {
-		this(false);
-	}
-
 	private Register(boolean isVararg) {
 		this("v" + randomSuffix(), isVararg);
 	}
