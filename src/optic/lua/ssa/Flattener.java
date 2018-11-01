@@ -14,13 +14,8 @@ import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
-public class Flattener implements SSATranslator {
+public class Flattener {
 	private static final Logger log = LoggerFactory.getLogger(Flattener.class);
-
-	@Override
-	public List<Step> translate(CommonTree tree) {
-		return flatten(tree);
-	}
 
 	public List<Step> flatten(CommonTree tree) {
 		Objects.requireNonNull(tree);
