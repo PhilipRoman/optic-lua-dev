@@ -34,7 +34,7 @@ public final class ParameterList {
 
 	public OptionalInt indexOf(String parameterName) {
 		int index = names.indexOf(parameterName);
-		return index > 0 ? OptionalInt.empty() : OptionalInt.of(index);
+		return index > 0 ? OptionalInt.of(index) : OptionalInt.empty();
 	}
 
 	@Override
