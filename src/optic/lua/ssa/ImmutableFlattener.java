@@ -14,15 +14,21 @@ import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
-public class Flattener {
-	private static final Logger log = LoggerFactory.getLogger(Flattener.class);
+/**
+ * Functional implementation of a SSA translator. For large inputs (5000 lines of code)
+ * peak performance is 15% - 30% lower than {@link MutableFlattener}, unless parallel
+ * streams are used, in which case performance is roughly equal.
+ */
+public class ImmutableFlattener {
+	private static final Logger log = LoggerFactory.getLogger(ImmutableFlattener.class);
 
-	public List<Step> flatten(CommonTree tree) {
+	public static List<Step> flatten(CommonTree tree) {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
+		var f = new ImmutableFlattener();
 		return statements.stream()
 				.map(Tree.class::cast)
-				.map(this::tryFlatten)
+				.map(f::tryFlatten)
 				.flatMap(statement -> statement.steps().stream())
 				.collect(toList());
 	}
@@ -167,7 +173,7 @@ public class Flattener {
 			var child = TreeTypes.expect(FIELD, (CommonTree) obj);
 			boolean hasKey = child.getChildCount() == 2;
 			if (!hasKey && child.getChildCount() != 1) throw new AssertionError();
-			if(hasKey) {
+			if (hasKey) {
 				var key = flattenExpression(child.getChild(0));
 				steps.addAll(key.steps());
 				var value = flattenExpression(child.getChild(1));

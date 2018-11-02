@@ -19,7 +19,7 @@ public class Main {
 		var parser = new Lua52Parser(new CommonTokenStream(lexer));
 		CommonTree ast = parser.parse().getTree();
 		log.info("Flattening {}", codeSource);
-		SSATranslator ssa = new Flattener()::flatten;
+		SSATranslator ssa = MutableFlattener::flatten;
 		List<Step> steps = ssa.translate(ast);
 		steps.forEach(s -> print(s, 0));
 	}
