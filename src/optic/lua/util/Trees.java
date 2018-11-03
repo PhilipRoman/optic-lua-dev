@@ -1,12 +1,14 @@
 package optic.lua.util;
 
-import org.antlr.runtime.tree.Tree;
+import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 import static java.lang.String.format;
 
-public final class TreeTypes {
-	private TreeTypes() {
+public final class Trees {
+	private Trees() {
 	}
 
 	@NotNull
@@ -68,5 +70,12 @@ public final class TreeTypes {
 			throw new AssertionError();
 		}
 		return tree;
+	}
+
+	@NotNull
+	@Contract("null -> fail; !null -> _")
+	public static List<?> childrenOf(Tree t) {
+		checkNull(t);
+		return Objects.requireNonNullElse(((CommonTree) t).getChildren(), List.of());
 	}
 }

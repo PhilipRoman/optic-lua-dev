@@ -67,7 +67,12 @@ public class MutableFlattener {
 				return;
 			}
 			case VAR: {
-				createFunctionCall(t, false);
+				if (t.getChild(1).getType() == CALL) {
+					createFunctionCall(t, false);
+				} else {
+					log.warn("Not implemented yet - {}", t.toStringTree());
+					steps.add(StepFactory.comment("Not implemented yet - " + t.toStringTree()));
+				}
 				return;
 			}
 			case For: {
@@ -91,12 +96,24 @@ public class MutableFlattener {
 			}
 			case Return: {
 				List<Register> registers = new ArrayList<>(t.getChildCount());
-				for (Object o : ((CommonTree) t).getChildren()) {
+				for (Object o : Trees.childrenOf(t)) {
 					Tree tree = (Tree) o;
 					Register register = flattenExpression(tree);
 					registers.add(register);
 				}
 				steps.add(StepFactory.returnFromFunction(registers));
+				return;
+			}
+			case If: {
+				Register condition = flattenExpression(t.getChild(0).getChild(0));
+				List<Step> then = flatten((CommonTree) t.getChild(0).getChild(1));
+				steps.add(StepFactory.ifThen(condition, then));
+				if(t.getChildCount() > 1) {
+					var children = Trees.childrenOf(t);
+					var remaining = children.subList(1, children.size());
+					log.warn("not implemented yet - {}", remaining);
+					steps.add(StepFactory.comment("not implemented yet - " + remaining));
+				}
 				return;
 			}
 		}
@@ -140,7 +157,16 @@ public class MutableFlattener {
 				return register;
 			}
 			case VAR: {
-				return createFunctionCall(t, true);
+				if (t.getChild(1).getType() == CALL) {
+					return createFunctionCall(t, true);
+				} else {
+					Trees.expectChild(INDEX, t, 1);
+					var table = flattenExpression(t.getChild(0));
+					var key = flattenExpression(t.getChild(1).getChild(0));
+					var out = Register.create();
+					steps.add(StepFactory.tableIndex(table, key, out));
+					return out;
+				}
 			}
 			case FUNCTION: {
 				return createFunctionLiteral(t);
@@ -153,16 +179,24 @@ public class MutableFlattener {
 				steps.add(StepFactory.getVarargs(reg));
 				return reg;
 			}
+			case CONDITION: {
+				return flattenExpression(t.getChild(0));
+			}
+			case Nil: {
+				Register nil = Register.create();
+				steps.add(StepFactory.constNil(nil));
+				return nil;
+			}
 		}
 		throw new RuntimeException("Unknown expression: " + t);
 	}
 
 	private Register createTableLiteral(Tree tree) {
-		TreeTypes.expect(TABLE, tree);
+		Trees.expect(TABLE, tree);
 		int index = 1;
 		Map<Register, Register> table = new HashMap<>();
-		for (Object obj : ((CommonTree) tree).getChildren()) {
-			var child = TreeTypes.expect(FIELD, (CommonTree) obj);
+		for (Object obj : Trees.childrenOf(tree)) {
+			var child = Trees.expect(FIELD, (CommonTree) obj);
 			boolean hasKey = child.getChildCount() == 2;
 			if (!hasKey && child.getChildCount() != 1) throw new AssertionError();
 			if (hasKey) {
@@ -184,15 +218,15 @@ public class MutableFlattener {
 
 	private void createAssignment(CommonTree t, boolean local) {
 		var nameList = t.getChild(0);
-		TreeTypes.expect(local ? NAME_LIST : VAR_LIST, nameList);
-		var valueList = TreeTypes.expect(EXPR_LIST, t.getChild(1));
+		Trees.expect(local ? NAME_LIST : VAR_LIST, nameList);
+		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
 		List<Register> registers = new ArrayList<>();
-		for (Object o : ((CommonTree) valueList).getChildren()) {
+		for (Object o : Trees.childrenOf(valueList)) {
 			Tree tree = (Tree) o;
 			Register register = flattenExpression(tree);
 			registers.add(register);
 		}
-		List<?> names = ((CommonTree) nameList).getChildren();
+		List<?> names = Trees.childrenOf(nameList);
 		if (local) {
 			// if the assignment starts with local, no need to worry about table assignments
 			// this code is illegal: "local a, tb[k] = 4, 2"
@@ -202,12 +236,12 @@ public class MutableFlattener {
 			}
 		}
 		List<LValue> targets = new ArrayList<>(names.size());
-		for(var name : names) {
-			if(name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
+		for (var name : names) {
+			if (name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
 				// table assignment
 				var assignment = ((CommonTree) name);
 				var table = flattenExpression(assignment.getChild(0));
-				TreeTypes.expectChild(INDEX, assignment, 1);
+				Trees.expectChild(INDEX, assignment, 1);
 				var key = flattenExpression(assignment.getChild(1).getChild(0));
 				targets.add(LValue.tableKey(table, key));
 			} else {
@@ -223,9 +257,8 @@ public class MutableFlattener {
 	private Register createFunctionCall(Tree t, boolean expression) {
 		Objects.requireNonNull(t);
 		var function = flattenExpression(t.getChild(0));
-		var call = TreeTypes.expect(CALL, t.getChild(1));
-		var args = ((CommonTree) call).getChildren();
-		if (args == null) args = List.of();
+		var call = Trees.expect(CALL, t.getChild(1));
+		var args = Trees.childrenOf(call);
 		List<Register> arguments = new ArrayList<>();
 		for (Object tree : args) {
 			Register arg = flattenExpression((Tree) tree);
@@ -242,10 +275,10 @@ public class MutableFlattener {
 	}
 
 	private Register createFunctionLiteral(Tree t) {
-		TreeTypes.expect(FUNCTION, t);
-		Tree chunk = TreeTypes.expectChild(CHUNK, t, 1);
+		Trees.expect(FUNCTION, t);
+		Tree chunk = Trees.expectChild(CHUNK, t, 1);
 		List<Step> body = flatten((CommonTree) chunk);
-		Tree paramList = TreeTypes.expectChild(PARAM_LIST, t, 0);
+		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
 		Register out = Register.create();
 		steps.add(StepFactory.functionLiteral(body, out, params));

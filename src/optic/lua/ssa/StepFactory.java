@@ -71,4 +71,16 @@ class StepFactory {
 	static Step createTable(Map<Register, Register> table, Register result) {
 		return new MakeTable(StepType.TABLE, table, result);
 	}
+
+	static Step constNil(Register register) {
+		return new LoadConstant(StepType.NIL, register, null);
+	}
+
+	static Step tableIndex(Register table, Register key, Register out) {
+		return new TableIndex(StepType.INDEX, table, key, out);
+	}
+
+	static Step ifThen(Register condition, List<Step> body) {
+		return new Branch(StepType.BRANCH, condition, body);
+	}
 }

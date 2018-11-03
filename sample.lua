@@ -8,8 +8,17 @@ end
 print(sum)
 
 oneTwoThree = function(x, y, z, ...)
+    if x == 1 and y ~= 1 or x >= 3 then
+        local a = {print, foo = print}
+        a.foo("Hello!")
+    elseif foo then
+        print(x)
+    else
+        print(y)
+    end
     return 1, 2, 3, ...
 end
+
 
 function createTable(...)
     local t = {

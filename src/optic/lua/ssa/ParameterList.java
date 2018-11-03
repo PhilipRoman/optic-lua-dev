@@ -1,7 +1,7 @@
 package optic.lua.ssa;
 
 import nl.bigo.luaparser.Lua52Walker;
-import optic.lua.util.TreeTypes;
+import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
 
 import java.util.*;
@@ -20,12 +20,12 @@ public final class ParameterList {
 	}
 
 	public static ParameterList parse(CommonTree tree) {
-		TreeTypes.expect(Lua52Walker.PARAM_LIST, tree);
+		Trees.expect(Lua52Walker.PARAM_LIST, tree);
 		var names = Optional.ofNullable(tree.getChildren())
 				.orElse(Collections.emptyList())
 				.stream()
 				.map(Tree.class::cast)
-				.peek(x -> TreeTypes.expectEither(DotDotDot, Name, x))
+				.peek(x -> Trees.expectEither(DotDotDot, Name, x))
 				.map(Object::toString)
 				.collect(Collectors.toList());
 		return new ParameterList(names);

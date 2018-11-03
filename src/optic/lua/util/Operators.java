@@ -21,7 +21,13 @@ public final class Operators {
 				Lua52Walker.BitLShift,
 				Lua52Walker.BitRShift,
 				Lua52Walker.DotDot,
-				Lua52Walker.Dot
+				Lua52Walker.Dot,
+				Lua52Walker.Eq,
+				Lua52Walker.GTEq,
+				Lua52Walker.LTEq,
+				Lua52Walker.NEq,
+				Lua52Walker.Or,
+				Lua52Walker.And
 		).forEach(binaryOperators::set);
 		List.of(
 				Lua52Walker.BIT_NOT,
