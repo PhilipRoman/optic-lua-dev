@@ -6,6 +6,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Integer.toHexString;
 
+/**
+ * Register is the basic unit of SSA form. Each assignment targets a new, unique register.
+ * Some registers have <em>vararg capabilities</em>, which means that they may store a list
+ * of values rather than a single value. There also exists the <em>unused register</em> which
+ * can be used if the value of an expression is not needed (like when calling <code>print("hello")</code>).
+ */
 public class Register {
 	private static final AtomicInteger counter = new AtomicInteger();
 	private static final Register UNUSED_REGISTER = new Register("_", true);

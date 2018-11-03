@@ -1,5 +1,11 @@
 package optic.lua.ssa;
 
+/**
+ * Represents a location which may be assigned a value.
+ * Can be either a variable (represented by a string) or
+ * a table assignment in form of <code>table[key]</code>
+ * represented as two {@link Register registers}: table and key.
+ */
 public final class LValue {
 	private final boolean isTable;
 	private final Register table;

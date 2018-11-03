@@ -9,6 +9,9 @@ import java.util.stream.*;
 
 import static nl.bigo.luaparser.Lua52Walker.*;
 
+/**
+ * Represents a possibly empty list of named parameters, optionally followed by a vararg (...)
+ */
 public final class ParameterList {
 	private final List<String> names;
 
