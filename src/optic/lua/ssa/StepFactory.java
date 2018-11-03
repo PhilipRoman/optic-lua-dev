@@ -5,7 +5,7 @@ import optic.lua.ssa.instructions.*;
 import java.util.*;
 
 class StepFactory {
-	static Step assign(List<String> names, List<Register> values) {
+	static Step assign(List<LValue> names, List<Register> values) {
 		return new Assign(StepType.ASSIGN, names, values);
 	}
 

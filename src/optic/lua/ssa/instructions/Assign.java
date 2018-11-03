@@ -11,9 +11,9 @@ public class Assign implements Step {
 	private static final Set<StepType> validTypes = EnumSet.of(ASSIGN, ASSIGN_LOCAL);
 	private final StepType type;
 	private final List<Register> sources;
-	private final List<String> targets;
+	private final List<LValue> targets;
 
-	public Assign(StepType type, List<String> targets, List<Register> sources) {
+	public Assign(StepType type, List<LValue> targets, List<Register> sources) {
 		assert validTypes.contains(type);
 		this.type = type;
 		this.targets = targets;

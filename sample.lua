@@ -12,10 +12,13 @@ oneTwoThree = function(x, y, z, ...)
 end
 
 function createTable(...)
-    return {
+    local t = {
         foo = "bar",
         ...
     }
+    t[4] = 0
+    foo, t.foo = "baz", "baz"
+    return t
 end
 
 print(oneTwoThree())

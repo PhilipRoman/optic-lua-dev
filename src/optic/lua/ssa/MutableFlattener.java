@@ -9,13 +9,12 @@ import java.lang.String;
 import java.util.*;
 
 import static java.lang.Double.parseDouble;
-import static java.util.stream.Collectors.toList;
 import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
 /**
- * Mutable implementation of SSA translator. Good startup performance (can be 4x faster on first iteration).
+ * Mutable implementation of SSA translator. Good startup performance.
  * Need to investigate parallelism capabilities.
  */
 public class MutableFlattener {
@@ -30,7 +29,7 @@ public class MutableFlattener {
 	public static List<Step> flatten(CommonTree tree) {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
-		int expectedSize = statements.size() * 4;
+		int expectedSize = statements.size() * 4 + 10;
 		var f = new MutableFlattener(new ArrayList<>(expectedSize));
 		for (var stat : statements) {
 			f.tryFlatten((Tree) stat);
@@ -186,9 +185,6 @@ public class MutableFlattener {
 	private void createAssignment(CommonTree t, boolean local) {
 		var nameList = t.getChild(0);
 		TreeTypes.expect(local ? NAME_LIST : VAR_LIST, nameList);
-		List<String> names = ((CommonTree) nameList).getChildren().stream()
-				.map(Object::toString)
-				.collect(toList());
 		var valueList = TreeTypes.expect(EXPR_LIST, t.getChild(1));
 		List<Register> registers = new ArrayList<>();
 		for (Object o : ((CommonTree) valueList).getChildren()) {
@@ -196,13 +192,30 @@ public class MutableFlattener {
 			Register register = flattenExpression(tree);
 			registers.add(register);
 		}
+		List<?> names = ((CommonTree) nameList).getChildren();
 		if (local) {
+			// if the assignment starts with local, no need to worry about table assignments
+			// this code is illegal: "local a, tb[k] = 4, 2"
 			for (var name : names) {
-				Step step = StepFactory.declareLocal(name);
+				Step step = StepFactory.declareLocal(name.toString());
 				steps.add(step);
 			}
 		}
-		steps.add(StepFactory.assign(names, registers));
+		List<LValue> targets = new ArrayList<>(names.size());
+		for(var name : names) {
+			if(name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
+				// table assignment
+				var assignment = ((CommonTree) name);
+				var table = flattenExpression(assignment.getChild(0));
+				TreeTypes.expectChild(INDEX, assignment, 1);
+				var key = flattenExpression(assignment.getChild(1).getChild(0));
+				targets.add(LValue.tableKey(table, key));
+			} else {
+				// variable assignment;
+				targets.add(LValue.variable(name.toString()));
+			}
+		}
+		steps.add(StepFactory.assign(targets, registers));
 	}
 
 	@Nullable
