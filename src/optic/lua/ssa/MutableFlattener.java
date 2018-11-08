@@ -1,5 +1,6 @@
 package optic.lua.ssa;
 
+import optic.lua.messages.*;
 import optic.lua.util.*;
 import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
@@ -20,41 +21,37 @@ import static nl.bigo.luaparser.Lua52Walker.*;
 public class MutableFlattener {
 	private static final Logger log = LoggerFactory.getLogger(MutableFlattener.class);
 	private final List<Step> steps;
+	private final MessageReporter reporter;
 
-	private MutableFlattener(List<Step> steps) {
+	private MutableFlattener(List<Step> steps, MessageReporter reporter) {
 		Objects.requireNonNull(steps);
+		Objects.requireNonNull(reporter);
+		this.reporter = reporter;
 		this.steps = steps;
 	}
 
-	public static List<Step> flatten(CommonTree tree) {
+	public static List<Step> flatten(CommonTree tree, MessageReporter reporter) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
-		var f = new MutableFlattener(new ArrayList<>(expectedSize));
+		var f = new MutableFlattener(new ArrayList<>(expectedSize), reporter);
 		for (var stat : statements) {
-			f.tryFlatten((Tree) stat);
+			f.steps.add(StepFactory.comment("line " + ((Tree) stat).getLine()));
+			try {
+				f.flattenStatement((Tree) stat);
+			} catch (RuntimeException e) {
+				f.emit(Level.ERROR, "Unhandled exception", ((Tree) stat), e);
+				throw new CompilationFailure();
+			}
 		}
-		int actualSize = f.steps.size();
-		log.debug("Expected size: {}, actual size: {}", expectedSize, actualSize);
 		return f.steps;
 	}
 
-	private void tryFlatten(Tree tree) {
-		try {
-			steps.add(StepFactory.comment("line " + tree.getLine()));
-			flattenStatement(tree);
-		} catch (RuntimeException e) {
-			String msg = java.lang.String.format(
-					"Error at line %d while flattening %s",
-					tree.getLine(),
-					tree.toString());
-			log.error(msg, e);
-			log.error("Flattener state: {}", steps);
-			steps.add(StepFactory.comment("Error: " + e));
-		}
+	private List<Step> flattenChunk(CommonTree tree) throws CompilationFailure {
+		return flatten(tree, reporter);
 	}
 
-	private void flattenStatement(Tree t) {
+	private void flattenStatement(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		switch (t.getType()) {
 			// watch for fall-through behaviour!
@@ -70,8 +67,9 @@ public class MutableFlattener {
 				if (t.getChild(1).getType() == CALL) {
 					createFunctionCall(t, false);
 				} else {
-					log.warn("Not implemented yet - {}", t.toStringTree());
-					steps.add(StepFactory.comment("Not implemented yet - " + t.toStringTree()));
+					var msg = "Not implemented yet: " + t.toStringTree();
+					steps.add(StepFactory.comment(msg));
+					emit(Level.WARNING, msg, t);
 				}
 				return;
 			}
@@ -80,18 +78,18 @@ public class MutableFlattener {
 				Register from = flattenExpression(t.getChild(1));
 				Register to = flattenExpression(t.getChild(2));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				List<Step> body = flatten(block);
+				List<Step> body = flattenChunk(block);
 				steps.add(StepFactory.forRange(varName, from, to, body));
 				return;
 			}
 			case Do: {
 				CommonTree block = (CommonTree) t;
-				steps.add(StepFactory.doBlock(flatten(block)));
+				steps.add(StepFactory.doBlock(flattenChunk(block)));
 				return;
 			}
 			case CHUNK: {
 				CommonTree block = (CommonTree) t;
-				steps.addAll(flatten(block));
+				steps.addAll(flattenChunk(block));
 				return;
 			}
 			case Return: {
@@ -106,21 +104,24 @@ public class MutableFlattener {
 			}
 			case If: {
 				Register condition = flattenExpression(t.getChild(0).getChild(0));
-				List<Step> then = flatten((CommonTree) t.getChild(0).getChild(1));
+				List<Step> then = flattenChunk((CommonTree) t.getChild(0).getChild(1));
 				steps.add(StepFactory.ifThen(condition, then));
-				if(t.getChildCount() > 1) {
+				if (t.getChildCount() > 1) {
 					var children = Trees.childrenOf(t);
 					var remaining = children.subList(1, children.size());
-					log.warn("not implemented yet - {}", remaining);
-					steps.add(StepFactory.comment("not implemented yet - " + remaining));
+					var msg = "Not implemented yet: " + remaining;
+					steps.add(StepFactory.comment(msg));
+					emit(Level.WARNING, msg, t);
+					return;
 				}
 				return;
 			}
 		}
-		throw new RuntimeException("Unknown statement: " + t);
+		emit(Level.ERROR, "Unknown statement: " + t.toStringTree(), t);
+		throw new CompilationFailure();
 	}
 
-	private Register flattenExpression(Tree t) {
+	private Register flattenExpression(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			var register = Register.create();
@@ -188,17 +189,20 @@ public class MutableFlattener {
 				return nil;
 			}
 		}
-		throw new RuntimeException("Unknown expression: " + t);
+		emit(Level.ERROR, "Unknown expression: " + t, t);
+		throw new CompilationFailure();
 	}
 
-	private Register createTableLiteral(Tree tree) {
+	private Register createTableLiteral(Tree tree) throws CompilationFailure {
 		Trees.expect(TABLE, tree);
 		int index = 1;
 		Map<Register, Register> table = new HashMap<>();
 		for (Object obj : Trees.childrenOf(tree)) {
 			var child = Trees.expect(FIELD, (CommonTree) obj);
 			boolean hasKey = child.getChildCount() == 2;
-			if (!hasKey && child.getChildCount() != 1) throw new AssertionError();
+			if (!hasKey && child.getChildCount() != 1) {
+				emit(Level.ERROR, "Expected 1 or 2 children in " + tree.toStringTree(), tree);
+			}
 			if (hasKey) {
 				var key = flattenExpression(child.getChild(0));
 				var value = flattenExpression(child.getChild(1));
@@ -216,7 +220,7 @@ public class MutableFlattener {
 		return result;
 	}
 
-	private void createAssignment(CommonTree t, boolean local) {
+	private void createAssignment(CommonTree t, boolean local) throws CompilationFailure {
 		var nameList = t.getChild(0);
 		Trees.expect(local ? NAME_LIST : VAR_LIST, nameList);
 		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
@@ -254,7 +258,7 @@ public class MutableFlattener {
 
 	@Nullable
 	@Contract("_, true -> !null; _, false -> null")
-	private Register createFunctionCall(Tree t, boolean expression) {
+	private Register createFunctionCall(Tree t, boolean expression) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		var function = flattenExpression(t.getChild(0));
 		var call = Trees.expect(CALL, t.getChild(1));
@@ -274,14 +278,27 @@ public class MutableFlattener {
 		}
 	}
 
-	private Register createFunctionLiteral(Tree t) {
+	private Register createFunctionLiteral(Tree t) throws CompilationFailure {
 		Trees.expect(FUNCTION, t);
 		Tree chunk = Trees.expectChild(CHUNK, t, 1);
-		List<Step> body = flatten((CommonTree) chunk);
+		List<Step> body = flattenChunk((CommonTree) chunk);
 		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
 		Register out = Register.create();
 		steps.add(StepFactory.functionLiteral(body, out, params));
 		return out;
+	}
+
+	private void emit(Level level, String msg, Tree location) {
+		emit(level, msg, location, null);
+	}
+
+	private void emit(Level level, String msg, Tree location, Throwable cause) {
+		var warning = Message.create(msg);
+		warning.setLine(location.getLine());
+		warning.setColumn(location.getCharPositionInLine());
+		warning.setLevel(level);
+		warning.setCause(cause);
+		reporter.report(warning);
 	}
 }

@@ -15,6 +15,32 @@ class MessageImpl implements Message, MessageBuilder {
 	private Phase phase = null;
 	private Throwable cause = null;
 
+	static MessageImpl copyOf(Message src) {
+		if (src instanceof MessageImpl) {
+			var m = (MessageImpl) src;
+			return new MessageImpl(
+					m.line, m.column, m.message, m.source, m.level, m.phase, m.cause
+			);
+		} else
+			return new MessageImpl(
+					src.line().orElse(-1), src.column().orElse(-1),
+					src.message(),
+					src.source().orElse(null),
+					src.level(), src.phase(),
+					src.cause().orElse(null)
+			);
+	}
+
+	private MessageImpl(int line, int column, @NotNull String message, CodeSource source, Level level, Phase phase, Throwable cause) {
+		this.line = line;
+		this.column = column;
+		this.message = message;
+		this.source = source;
+		this.level = level;
+		this.phase = phase;
+		this.cause = cause;
+	}
+
 	MessageImpl(@NotNull String message) {
 		Objects.requireNonNull(message);
 		this.message = message;
@@ -63,45 +89,31 @@ class MessageImpl implements Message, MessageBuilder {
 
 	@Override
 	public void setSource(CodeSource source) {
-		checkInit(this.phase, "source");
 		this.source = source;
 	}
 
 	@Override
 	public void setLevel(Level level) {
-		checkInit(this.level, "level");
 		this.level = level;
 	}
 
 	@Override
 	public void setPhase(Phase phase) {
-		checkInit(this.phase, "phase");
 		this.phase = phase;
 	}
 
 	@Override
 	public void setLine(int line) {
-		checkInitInt(this.line, "line");
 		this.line = line;
 	}
 
 	@Override
 	public void setColumn(int column) {
-		checkInitInt(this.column, "column");
 		this.column = column;
 	}
 
 	@Override
 	public void setCause(Throwable cause) {
-		checkInit(this.cause, "cause");
 		this.cause = cause;
-	}
-
-	private static void checkInit(Object field, String name) {
-		if (field != null) throw new IllegalStateException(name + " is already initialized");
-	}
-
-	private static void checkInitInt(int field, String name) {
-		if (field >= 0) throw new IllegalStateException(name + " is already initialized");
 	}
 }
