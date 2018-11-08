@@ -6,39 +6,39 @@ import java.util.*;
 
 class StepFactory {
 	static Step assign(List<LValue> names, List<Register> values) {
-		return new Assign(StepType.ASSIGN, names, values);
+		return new Assign(names, values);
 	}
 
 	static Step declareLocal(String name) {
-		return new Declare(StepType.DECLARE, name);
+		return new Declare(name);
 	}
 
 	static Step constNumber(Register register, double num) {
-		return new LoadConstant(StepType.NUMBER, register, num);
+		return new LoadConstant(register, num);
 	}
 
 	static Step constString(Register register, String string) {
-		return new LoadConstant(StepType.STRING, register, string);
+		return new LoadConstant(register, string);
 	}
 
 	static Step binaryOperator(Register a, Register b, String op, Register register) {
-		return new Operator(StepType.BINARY_OP, a, b, register, op);
+		return new Operator(a, b, register, op);
 	}
 
 	static Step unaryOperator(Register param, String op, Register register) {
-		return new Operator(StepType.UNARY_OP, param, register, op);
+		return new Operator(param, register, op);
 	}
 
 	static Step dereference(Register register, String name) {
-		return new Dereference(StepType.LOOKUP, register, name);
+		return new Dereference(register, name);
 	}
 
 	static Step forRange(String varName, Register from, Register to, List<Step> block) {
-		return new ForRangeLoop(StepType.FOR, varName, from, to, block);
+		return new ForRangeLoop(varName, from, to, block);
 	}
 
 	static Step call(Register function, List<Register> args) {
-		return new Call(StepType.CALL, function, args);
+		return new Call(function, args);
 	}
 
 	static Step comment(String text) {
@@ -46,41 +46,41 @@ class StepFactory {
 	}
 
 	static Step call(Register function, List<Register> registers, Register output) {
-		return new Call(StepType.CALL, function, registers, output);
+		return new Call(function, registers, output);
 	}
 
 	static Step doBlock(List<Step> steps) {
-		return new Block(StepType.BLOCK, steps);
+		return new Block(steps);
 	}
 
 	static Step functionLiteral(List<Step> body, Register assignTo, ParameterList params) {
-		return new FunctionLiteral(StepType.FUNCTION, body, assignTo, params);
+		return new FunctionLiteral(body, assignTo, params);
 	}
 
 	static Step returnFromFunction(List<Register> registers) {
-		return new Return(StepType.RETURN, registers);
+		return new Return(registers);
 	}
 
 	static Step getVarargs(Register to) {
 		if(!to.isVararg()) {
 			throw new IllegalArgumentException(to + " is not a vararg register!");
 		}
-		return new GetVarargs(StepType.VARARGS, to);
+		return new GetVarargs(to);
 	}
 
 	static Step createTable(Map<Register, Register> table, Register result) {
-		return new MakeTable(StepType.TABLE, table, result);
+		return new MakeTable(table, result);
 	}
 
 	static Step constNil(Register register) {
-		return new LoadConstant(StepType.NIL, register, null);
+		return new LoadConstant(register, null);
 	}
 
 	static Step tableIndex(Register table, Register key, Register out) {
-		return new TableIndex(StepType.INDEX, table, key, out);
+		return new TableIndex(table, key, out);
 	}
 
 	static Step ifThen(Register condition, List<Step> body) {
-		return new Branch(StepType.BRANCH, condition, body);
+		return new Branch(condition, body);
 	}
 }

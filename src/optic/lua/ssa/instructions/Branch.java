@@ -6,26 +6,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class Branch implements Step {
-	private final StepType type;
+public final class Branch implements Step {
 	private final Register condition;
 	private final List<Step> body;
 
-	public Branch(StepType type, Register condition, List<Step> body) {
-		this.type = type;
+	public Branch(Register condition, List<Step> body) {
 		this.condition = condition;
 		this.body = body;
 	}
 
-	@NotNull
-	@Override
-	public StepType getType() {
-		return type;
-	}
-
 	@Override
 	public String toString() {
-		return typeName() + " if " + condition;
+		return "if " + condition;
 	}
 
 	@Override

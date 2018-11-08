@@ -1,27 +1,18 @@
 package optic.lua.ssa.instructions;
 
 import optic.lua.ssa.*;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class Return implements Step {
-	private final StepType type;
+public final class Return implements Step {
 	private final List<Register> registers;
 
-	public Return(StepType type, List<Register> registers) {
-		this.type = type;
+	public Return(List<Register> registers) {
 		this.registers = registers;
-	}
-
-	@NotNull
-	@Override
-	public StepType getType() {
-		return type;
 	}
 
 	@Override
 	public String toString() {
-		return typeName() + " " + registers;
+		return "return " + registers;
 	}
 }

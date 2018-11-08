@@ -2,31 +2,19 @@ package optic.lua.ssa.instructions;
 
 
 import optic.lua.ssa.*;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-public class LoadConstant implements Step {
-	private final StepType type;
+public final class LoadConstant implements Step {
 	private final Object constant;
 	private final Register target;
-	private static final Map<StepType, Class<?>> classMap = new EnumMap<>(Map.of(
-			StepType.NUMBER, Double.class,
-			StepType.STRING, String.class,
-			StepType.BOOL, Boolean.class
-	));
+	private static final Set<Class<?>> allowedTypes = Set.of(String.class, Double.class, Boolean.class);
 
-	public LoadConstant(StepType type, Register target, Object constant) {
+	public LoadConstant(@NotNull Register target, @Nullable Object constant) {
 		this.target = target;
-		assert classMap.get(type).isInstance(constant);
-		this.type = type;
+		assert constant == null || allowedTypes.contains(constant.getClass());
 		this.constant = constant;
-	}
-
-	@NotNull
-	@Override
-	public StepType getType() {
-		return type;
 	}
 
 	public Object getConstant() {
@@ -35,7 +23,7 @@ public class LoadConstant implements Step {
 
 	@Override
 	public String toString() {
-		return typeName() + " " + target + " = " + constant;
+		return "constant " + target + " = " + constant;
 	}
 
 	public Register getTarget() {

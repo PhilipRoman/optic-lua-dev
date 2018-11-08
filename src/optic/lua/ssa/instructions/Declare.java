@@ -1,26 +1,16 @@
 package optic.lua.ssa.instructions;
 
 import optic.lua.ssa.*;
-import org.jetbrains.annotations.NotNull;
 
-public class Declare implements Step {
-	private final StepType type;
+public final class Declare implements Step {
 	private final String name;
 
-	public Declare(StepType type, String name) {
-		assert type == StepType.DECLARE;
-		this.type = type;
+	public Declare(String name) {
 		this.name = name;
-	}
-
-	@NotNull
-	@Override
-	public StepType getType() {
-		return type;
 	}
 
 	@Override
 	public String toString() {
-		return typeName() + " " + name;
+		return "local " + name;
 	}
 }

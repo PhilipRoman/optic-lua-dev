@@ -6,18 +6,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class Block implements Step {
+public final class Block implements Step {
 	private final List<Step> steps;
-	private final StepType type;
 
-	public Block(StepType type, List<Step> steps) {
-		this.type = Objects.requireNonNull(type);
+	public Block(List<Step> steps) {
 		this.steps = List.copyOf(steps);
-	}
-
-	@Override
-	public @NotNull StepType getType() {
-		return type;
 	}
 
 	@Override
@@ -27,6 +20,6 @@ public class Block implements Step {
 
 	@Override
 	public String toString() {
-		return typeName();
+		return "do";
 	}
 }
