@@ -6,7 +6,7 @@ import optic.lua.messages.*;
 import optic.lua.ssa.*;
 import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import java.util.List;
 
@@ -25,9 +25,10 @@ public class Pipeline<Result> {
 
 	public Result run() throws CompilationFailure {
 		long startTime = System.nanoTime();
+		CharStream charStream = source.charStream(reporter.withPhase(Phase.READING));
 		@NotNull final CommonTree ast;
 		try {
-			var lexer = new Lua52Lexer(source.charStream());
+			var lexer = new Lua52Lexer(charStream);
 			var parser = new Lua52Parser(new CommonTokenStream(lexer));
 			ast = parser.parse().getTree();
 		} catch (RecognitionException e) {
@@ -35,18 +36,8 @@ public class Pipeline<Result> {
 			reporter.report(msg);
 			throw new CompilationFailure();
 		}
-		@NotNull final List<Step> steps;
-		try {
-			steps = ssa.translate(ast, reporter.withPhase(Phase.FLATTENING));
-		} catch (CompilationFailure e) {
-			throw new CompilationFailure();
-		}
-		final Result result;
-		try {
-			result = output.output(steps, reporter.withPhase(Phase.CODEGEN));
-		} catch (CompilationFailure e) {
-			throw new CompilationFailure();
-		}
+		List<Step> steps = ssa.translate(ast, reporter.withPhase(Phase.FLATTENING));
+		Result result = output.output(steps, reporter.withPhase(Phase.CODEGEN));
 		long endTime = System.nanoTime();
 		reporter.report(durationInfo(endTime - startTime));
 		return result;
