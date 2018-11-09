@@ -64,7 +64,7 @@ public class Pipeline<Result> {
 	}
 
 	private Message durationInfo(long nanos) {
-		var error = Message.create("Pipeline took " + nanos / 1000_000_000f + " seconds");
+		var error = Message.create("Pipeline took " + (nanos / (int)1e6) + " ms");
 		error.setLevel(Level.INFO);
 		error.setPhase(Phase.CODEGEN);
 		error.setSource(source);
