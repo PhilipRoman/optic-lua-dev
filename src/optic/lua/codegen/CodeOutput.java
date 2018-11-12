@@ -12,6 +12,6 @@ import java.util.List;
  * value, use {@link Void} as the type parameter.
  */
 @FunctionalInterface
-public interface CodeOutput<T> {
-	T output(List<Step> steps, MessageReporter reporter) throws CompilationFailure;
+public interface CodeOutput {
+	void output(List<Step> steps, MessageReporter reporter) throws CompilationFailure;
 }

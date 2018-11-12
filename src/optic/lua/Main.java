@@ -6,7 +6,7 @@ import optic.lua.ssa.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
-import java.io.PrintStream;
+import java.io.*;
 import java.util.List;
 import java.util.stream.*;
 
@@ -15,7 +15,7 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		var codeSource = CodeSource.ofFile("sample.lua");
-		var pipeline = new Pipeline<>(
+		var pipeline = new Pipeline(
 				codeSource,
 				MutableFlattener::flatten,
 				new LogMessageReporter(log, new SimpleMessageFormat()),
@@ -88,7 +88,7 @@ public class Main {
 		}
 	}
 
-	private static class PrintingCodeOutput implements CodeOutput<Void> {
+	private static class PrintingCodeOutput implements CodeOutput {
 		private final PrintStream out;
 
 		private PrintingCodeOutput(PrintStream out) {
@@ -96,9 +96,8 @@ public class Main {
 		}
 
 		@Override
-		public Void output(List<Step> steps, MessageReporter reporter) {
+		public void output(List<Step> steps, MessageReporter reporter) {
 			steps.forEach(step -> print(step, 0));
-			return null;
 		}
 
 		private void print(Step step, int depth) {

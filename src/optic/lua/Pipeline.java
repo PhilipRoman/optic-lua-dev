@@ -10,22 +10,22 @@ import org.jetbrains.annotations.*;
 
 import java.util.List;
 
-public class Pipeline<Result> {
+public final class Pipeline {
 	private final CodeSource source;
 	private final SSATranslator ssa;
 	private final MessageReporter reporter;
-	private final CodeOutput<Result> output;
+	private final CodeOutput output;
 
-	public Pipeline(CodeSource source, SSATranslator ssa, MessageReporter reporter, CodeOutput<Result> output) {
+	public Pipeline(CodeSource source, SSATranslator ssa, MessageReporter reporter, CodeOutput output) {
 		this.source = source;
 		this.ssa = ssa;
 		this.reporter = reporter.withSource(source);
 		this.output = output;
 	}
 
-	public Result run() throws CompilationFailure {
+	public void run() throws CompilationFailure {
 		long startTime = System.nanoTime();
-		CharStream charStream = source.charStream(reporter.withPhase(Phase.READING));
+		CharStream charStream = source.newCharStream(reporter.withPhase(Phase.READING));
 		@NotNull final CommonTree ast;
 		try {
 			var lexer = new Lua52Lexer(charStream);
@@ -37,10 +37,9 @@ public class Pipeline<Result> {
 			throw new CompilationFailure();
 		}
 		List<Step> steps = ssa.translate(ast, reporter.withPhase(Phase.FLATTENING));
-		Result result = output.output(steps, reporter.withPhase(Phase.CODEGEN));
+		output.output(steps, reporter.withPhase(Phase.CODEGEN));
 		long endTime = System.nanoTime();
 		reporter.report(durationInfo(endTime - startTime));
-		return result;
 	}
 
 	private Message parsingError(RecognitionException e) {

@@ -5,6 +5,7 @@ import org.antlr.runtime.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.Objects;
 
 public interface CodeSource {
 	/**
@@ -14,7 +15,7 @@ public interface CodeSource {
 	 * for purposes such as error reporting, benchmarking, etc.
 	 */
 	@NotNull
-	CharStream charStream(MessageReporter reporter) throws CompilationFailure;
+	CharStream newCharStream(MessageReporter reporter) throws CompilationFailure;
 
 	/**
 	 * @return a human-friendly, short name which identifies this source. The name
@@ -48,18 +49,19 @@ public interface CodeSource {
 
 		@NotNull
 		@Override
-		public CharStream charStream(MessageReporter reporter) throws CompilationFailure {
+		public CharStream newCharStream(MessageReporter reporter) throws CompilationFailure {
+			final CharStream stream;
 			try {
-				return streamSupplier.get();
+				stream = streamSupplier.get();
 			} catch (Exception e) {
 				var msg = Message.create("Could not obtain character stream");
-				msg.setSource(this);
-				msg.setPhase(Phase.READING);
 				msg.setCause(e);
 				msg.setLevel(Level.ERROR);
 				reporter.report(msg);
 				throw new CompilationFailure();
 			}
+			Objects.requireNonNull(stream);
+			return stream;
 		}
 
 		@NotNull
