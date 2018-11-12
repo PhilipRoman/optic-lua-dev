@@ -6,6 +6,6 @@ import org.antlr.runtime.tree.CommonTree;
 import java.util.List;
 
 @FunctionalInterface
-public interface SSATranslator {
-	List<Step> translate(CommonTree tree, MessageReporter reporter) throws CompilationFailure;
+public interface SyntaxTreeFlattener {
+	List<Step> flatten(CommonTree tree, MessageReporter reporter) throws CompilationFailure;
 }
