@@ -6,7 +6,7 @@ import optic.lua.ssa.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
-import java.io.*;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.stream.*;
 
