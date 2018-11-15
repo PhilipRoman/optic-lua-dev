@@ -1,7 +1,7 @@
-package optic.lua.ssa.instructions
+package optic.lua.asm.instructions
 
-import optic.lua.ssa.Register
-import optic.lua.ssa.Step
+import optic.lua.asm.Register
+import optic.lua.asm.Step
 
 class TableIndex(val table: Register, val key: Register, val out: Register) : Step {
     override fun toString(): String {

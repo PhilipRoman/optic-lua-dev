@@ -1,7 +1,7 @@
 package optic.lua.codegen;
 
 import optic.lua.messages.*;
-import optic.lua.ssa.Step;
+import optic.lua.asm.Step;
 
 import java.util.List;
 

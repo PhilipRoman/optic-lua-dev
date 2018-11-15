@@ -1,3 +1,3 @@
 # optic-lua
 
-Optimizing Lua-to-Java10 transpiler
+Optimizing Lua-to-Java transpiler

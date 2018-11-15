@@ -1,4 +1,4 @@
-package optic.lua.ssa;
+package optic.lua.asm;
 
 import org.jetbrains.annotations.NotNull;
 

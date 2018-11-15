@@ -1,4 +1,4 @@
-package optic.lua.ssa;
+package optic.lua.asm;
 
 /**
  * Represents a location which may be assigned a value.

@@ -1,6 +1,6 @@
-package optic.lua.ssa;
+package optic.lua.asm;
 
-import optic.lua.ssa.instructions.*;
+import optic.lua.asm.instructions.*;
 
 import java.util.*;
 

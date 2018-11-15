@@ -1,7 +1,7 @@
-package optic.lua.ssa.instructions
+package optic.lua.asm.instructions
 
-import optic.lua.ssa.Register
-import optic.lua.ssa.Step
+import optic.lua.asm.Register
+import optic.lua.asm.Step
 
 class Call(val function: Register, val args: List<Register>, val output: Register) : Step {
     override fun toString(): String {

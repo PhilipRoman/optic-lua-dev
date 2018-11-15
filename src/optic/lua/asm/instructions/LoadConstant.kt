@@ -1,8 +1,8 @@
-package optic.lua.ssa.instructions
+package optic.lua.asm.instructions
 
 
-import optic.lua.ssa.Register
-import optic.lua.ssa.Step
+import optic.lua.asm.Register
+import optic.lua.asm.Step
 
 class LoadConstant(val target: Register, val constant: Any?) : Step {
     init {

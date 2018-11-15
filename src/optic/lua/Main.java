@@ -2,7 +2,7 @@ package optic.lua;
 
 import optic.lua.codegen.CodeOutput;
 import optic.lua.messages.*;
-import optic.lua.ssa.*;
+import optic.lua.asm.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
