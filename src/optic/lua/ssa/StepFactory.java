@@ -38,7 +38,7 @@ class StepFactory {
 	}
 
 	static Step call(Register function, List<Register> args) {
-		return new Call(function, args);
+		return new Call(function, args, Register.unused());
 	}
 
 	static Step comment(String text) {
