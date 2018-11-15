@@ -1,3 +1,3 @@
 # optic-lua
 
-Optimizing Lua-to-Java transpiler
+Extensible platform for optimizing Ahead-of-Time Lua compilers.
