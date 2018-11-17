@@ -11,13 +11,13 @@ import java.util.List;
 
 public final class Pipeline {
 	private final CodeSource source;
-	private final SyntaxTreeFlattener ssa;
+	private final SyntaxTreeFlattener flattener;
 	private final MessageReporter reporter;
 	private final CodeOutput output;
 
-	public Pipeline(CodeSource source, SyntaxTreeFlattener ssa, MessageReporter reporter, CodeOutput output) {
+	public Pipeline(CodeSource source, SyntaxTreeFlattener flattener, MessageReporter reporter, CodeOutput output) {
 		this.source = source;
-		this.ssa = ssa;
+		this.flattener = flattener;
 		this.reporter = reporter.withSource(source);
 		this.output = output;
 	}
@@ -26,7 +26,7 @@ public final class Pipeline {
 		long startTime = System.nanoTime();
 		CharStream charStream = source.newCharStream(reporter.withPhase(Phase.READING));
 		CommonTree ast = parse(charStream);
-		List<Step> steps = ssa.flatten(ast, reporter.withPhase(Phase.FLATTENING));
+		List<Step> steps = flattener.flatten(ast, reporter.withPhase(Phase.FLATTENING));
 		output.output(steps, reporter.withPhase(Phase.CODEGEN));
 		long endTime = System.nanoTime();
 		reporter.report(durationInfo(endTime - startTime));

@@ -15,7 +15,7 @@ import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
 /**
- * Mutable implementation of SSA translator. Good startup performance.
+ * Mutable implementation of tree flattener. Good startup performance.
  * Need to investigate parallelism capabilities.
  */
 public class MutableFlattener {
