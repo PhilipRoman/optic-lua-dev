@@ -9,7 +9,6 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
-import static java.lang.Double.parseDouble;
 import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
@@ -140,10 +139,7 @@ public class MutableFlattener {
 		}
 		switch (t.getType()) {
 			case Number: {
-				var register = RegisterFactory.create();
-				double value = parseDouble(t.getText());
-				steps.add(StepFactory.constNumber(register, value));
-				return register;
+				return constant(Double.parseDouble(t.getText()));
 			}
 			case String: {
 				var register = RegisterFactory.create();
@@ -184,9 +180,7 @@ public class MutableFlattener {
 				return flattenExpression(t.getChild(0));
 			}
 			case Nil: {
-				Register nil = RegisterFactory.create();
-				steps.add(StepFactory.constNil(nil));
-				return nil;
+				return nil();
 			}
 		}
 		emit(Level.ERROR, "Unknown expression: " + t, t);
@@ -195,41 +189,106 @@ public class MutableFlattener {
 
 	private Register createTableLiteral(Tree tree) throws CompilationFailure {
 		Trees.expect(TABLE, tree);
-		int index = 1;
+		int arrayFieldIndex = 1;
 		Map<Register, Register> table = new HashMap<>();
-		for (Object obj : Trees.childrenOf(tree)) {
-			var child = Trees.expect(FIELD, (CommonTree) obj);
-			boolean hasKey = child.getChildCount() == 2;
-			if (!hasKey && child.getChildCount() != 1) {
+		List<?> fields = Trees.childrenOf(tree);
+		int fieldCount = fields.size();
+		int fieldIndex = 0;
+		for (Object obj : fields) {
+			var field = Trees.expect(FIELD, (CommonTree) obj);
+			boolean hasKey = field.getChildCount() == 2;
+			if (field.getChildCount() == 1 || field.getChildCount() == 2) {
 				emit(Level.ERROR, "Expected 1 or 2 children in " + tree.toStringTree(), tree);
 			}
 			if (hasKey) {
-				var key = flattenExpression(child.getChild(0));
-				var value = flattenExpression(child.getChild(1));
+				var key = flattenExpression(field.getChild(0));
+				var value = flattenExpression(field.getChild(1));
 				table.put(key, value);
 			} else {
-				int key = index++;
-				Register keyRegister = RegisterFactory.create();
-				steps.add(StepFactory.constNumber(keyRegister, key));
-				var value = flattenExpression(child.getChild(0));
-				table.put(keyRegister, value);
+				var key = constant(arrayFieldIndex++);
+				var value = flattenExpression(field.getChild(0));
+				boolean isLastField = fieldIndex == fieldCount - 1;
+				table.put(key, isLastField ? discardRemaining(value) : value);
 			}
+			fieldIndex++;
 		}
 		Register result = RegisterFactory.create();
 		steps.add(StepFactory.createTable(table, result));
 		return result;
 	}
 
+	@Contract(mutates = "this")
+	private Register discardRemaining(Register vararg) {
+		if (!vararg.isVararg()) {
+			return vararg;
+		}
+		Register first = RegisterFactory.create();
+		steps.add(StepFactory.select(first, vararg, 0));
+		return first;
+	}
+
+	@Contract(mutates = "this")
+	private List<Register> normalizeValueList(List<Register> registers) {
+		var values = new ArrayList<Register>(registers.size());
+		int valueIndex = 0;
+		int valueCount = registers.size();
+		for (var register : registers) {
+			boolean isLastValue = valueIndex == valueCount - 1;
+			if (isLastValue) {
+				values.add(register);
+			} else {
+				values.add(discardRemaining(register));
+			}
+			valueIndex++;
+		}
+		return values;
+	}
+
+	@Contract(mutates = "this")
+	private List<Register> flattenAll(List<?> trees) throws CompilationFailure {
+		int size = trees.size();
+		var registers = new ArrayList<Register>(size);
+		for (Object tree : trees) {
+			registers.add(flattenExpression((Tree) tree));
+		}
+		return registers;
+	}
+
+	@Contract(mutates = "this")
+	private LValue createLValue(Object name) throws CompilationFailure {
+		if (name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
+			// table assignment
+			var assignment = ((CommonTree) name);
+			var table = flattenExpression(assignment.getChild(0));
+			Trees.expectChild(INDEX, assignment, 1);
+			var key = flattenExpression(assignment.getChild(1).getChild(0));
+			return LValue.tableKey(table, key);
+		} else {
+			// variable assignment;
+			return LValue.variable(name.toString());
+		}
+	}
+
+	@Contract(mutates = "this")
+	private Register nil() {
+		var nil = RegisterFactory.create();
+		steps.add(StepFactory.constNil(nil));
+		return nil;
+	}
+
+	@Contract(mutates = "this")
+	private Register constant(double d) {
+		var num = RegisterFactory.create();
+		steps.add(StepFactory.constNumber(num, d));
+		return num;
+	}
+
+	@Contract(mutates = "this")
 	private void createAssignment(CommonTree t, boolean local) throws CompilationFailure {
 		var nameList = t.getChild(0);
 		Trees.expect(local ? NAME_LIST : VAR_LIST, nameList);
 		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
-		List<Register> registers = new ArrayList<>();
-		for (Object o : Trees.childrenOf(valueList)) {
-			Tree tree = (Tree) o;
-			Register register = flattenExpression(tree);
-			registers.add(register);
-		}
+		List<Register> values = normalizeValueList(flattenAll(Trees.childrenOf(valueList)));
 		List<?> names = Trees.childrenOf(nameList);
 		if (local) {
 			// if the assignment starts with local, no need to worry about table assignments
@@ -239,35 +298,40 @@ public class MutableFlattener {
 				steps.add(step);
 			}
 		}
-		List<LValue> targets = new ArrayList<>(names.size());
+		List<LValue> variables = new ArrayList<>(names.size());
 		for (var name : names) {
-			if (name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
-				// table assignment
-				var assignment = ((CommonTree) name);
-				var table = flattenExpression(assignment.getChild(0));
-				Trees.expectChild(INDEX, assignment, 1);
-				var key = flattenExpression(assignment.getChild(1).getChild(0));
-				targets.add(LValue.tableKey(table, key));
+			variables.add(createLValue(name));
+		}
+		boolean endsWithVararg = !values.isEmpty() && values.get(values.size() - 1).isVararg();
+		Register vararg = endsWithVararg ? values.get(values.size() - 1) : null;
+		if (endsWithVararg) {
+			Objects.requireNonNull(vararg);
+		}
+		int nonVarargRegisters = values.size() - (endsWithVararg ? 1 : 0);
+		int overflow = 0;
+		for (int i = 0; i < variables.size(); i++) {
+			LValue variable = variables.get(i);
+			if (i < nonVarargRegisters) {
+				Register value = values.get(i);
+				steps.add(StepFactory.assign(variable, value));
+			} else if (vararg == null) {
+				steps.add(StepFactory.assign(variable, nil()));
 			} else {
-				// variable assignment;
-				targets.add(LValue.variable(name.toString()));
+				Register selected = RegisterFactory.create();
+				steps.add(StepFactory.select(selected, vararg, overflow));
+				steps.add(StepFactory.assign(variable, selected));
+				overflow++;
 			}
 		}
-		steps.add(StepFactory.assign(targets, registers));
 	}
 
 	@Nullable
-	@Contract("_, true -> !null; _, false -> null")
+	@Contract(value = "_, true -> !null; _, false -> null", mutates = "this")
 	private Register createFunctionCall(Tree t, boolean expression) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		var function = flattenExpression(t.getChild(0));
 		var call = Trees.expect(CALL, t.getChild(1));
-		var args = Trees.childrenOf(call);
-		List<Register> arguments = new ArrayList<>();
-		for (Object tree : args) {
-			Register arg = flattenExpression((Tree) tree);
-			arguments.add(arg);
-		}
+		List<Register> arguments = normalizeValueList(flattenAll(Trees.childrenOf(call)));
 		if (expression) {
 			Register register = RegisterFactory.createVararg();
 			steps.add(StepFactory.call(function, arguments, register));
@@ -278,6 +342,7 @@ public class MutableFlattener {
 		}
 	}
 
+	@Contract(mutates = "this")
 	private Register createFunctionLiteral(Tree t) throws CompilationFailure {
 		Trees.expect(FUNCTION, t);
 		Tree chunk = Trees.expectChild(CHUNK, t, 1);

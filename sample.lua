@@ -30,8 +30,8 @@ function createTable(...)
     return t
 end
 
-print(oneTwoThree())
+print(createTable(), oneTwoThree())
 do
     local foo = createTable()
-    local a, b, c = oneTwoThree()
+    local a, b, c = oneTwoThree(), 3
 end

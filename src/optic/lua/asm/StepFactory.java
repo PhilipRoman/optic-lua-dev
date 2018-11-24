@@ -5,8 +5,9 @@ import optic.lua.asm.instructions.*;
 import java.util.*;
 
 class StepFactory {
-	static Step assign(List<LValue> names, List<Register> values) {
-		return new Assign(names, values);
+	static Step assign(LValue name, Register value) {
+		checkVararg(false, value);
+		return new Assign(name, value);
 	}
 
 	static Step declareLocal(String name) {
@@ -62,9 +63,7 @@ class StepFactory {
 	}
 
 	static Step getVarargs(Register to) {
-		if(!to.isVararg()) {
-			throw new IllegalArgumentException(to + " is not a vararg register!");
-		}
+		checkVararg(true, to);
 		return new GetVarargs(to);
 	}
 
@@ -82,5 +81,17 @@ class StepFactory {
 
 	static Step ifThen(Register condition, List<Step> body) {
 		return new Branch(condition, body);
+	}
+
+	static Step select(Register out, Register varargs, int n) {
+		checkVararg(false, out);
+		return new Select(out, varargs, n);
+	}
+
+	private static void checkVararg(boolean expected, Register register) {
+		if (register.isVararg() != expected) {
+			var msg = register + " is " + (expected ? "not " : "") + "a vararg register!";
+			throw new IllegalArgumentException(msg);
+		}
 	}
 }
