@@ -98,7 +98,7 @@ public class MutableFlattener {
 					Register register = flattenExpression(tree);
 					registers.add(register);
 				}
-				steps.add(StepFactory.returnFromFunction(registers));
+				steps.add(StepFactory.returnFromFunction(normalizeValueList(registers)));
 				return;
 			}
 			case If: {

@@ -27,7 +27,7 @@ function createTable(...)
     }
     t[4] = t[3]
     foo, t.foo = "baz", "baz"
-    return t
+    return ..., t
 end
 
 print(createTable(), oneTwoThree())
