@@ -124,7 +124,7 @@ public class MutableFlattener {
 	private Register flattenExpression(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
-			var register = Register.create();
+			var register = RegisterFactory.create();
 			var a = flattenExpression(t.getChild(0));
 			var b = flattenExpression(t.getChild(1));
 			String op = t.getText();
@@ -132,7 +132,7 @@ public class MutableFlattener {
 			return register;
 		}
 		if (Operators.isUnary(t)) {
-			var register = Register.create();
+			var register = RegisterFactory.create();
 			String op = Operators.getUnarySymbol(t);
 			Register param = flattenExpression(t.getChild(0));
 			steps.add(StepFactory.unaryOperator(param, op, register));
@@ -140,19 +140,19 @@ public class MutableFlattener {
 		}
 		switch (t.getType()) {
 			case Number: {
-				var register = Register.create();
+				var register = RegisterFactory.create();
 				double value = parseDouble(t.getText());
 				steps.add(StepFactory.constNumber(register, value));
 				return register;
 			}
 			case String: {
-				var register = Register.create();
+				var register = RegisterFactory.create();
 				String value = (t.getText());
 				steps.add(StepFactory.constString(register, value));
 				return register;
 			}
 			case Name: {
-				var register = Register.create();
+				var register = RegisterFactory.create();
 				String name = t.getText();
 				steps.add(StepFactory.dereference(register, name));
 				return register;
@@ -164,7 +164,7 @@ public class MutableFlattener {
 					Trees.expectChild(INDEX, t, 1);
 					var table = flattenExpression(t.getChild(0));
 					var key = flattenExpression(t.getChild(1).getChild(0));
-					var out = Register.create();
+					var out = RegisterFactory.create();
 					steps.add(StepFactory.tableIndex(table, key, out));
 					return out;
 				}
@@ -176,7 +176,7 @@ public class MutableFlattener {
 				return createTableLiteral(t);
 			}
 			case DotDotDot: {
-				var reg = Register.createVararg();
+				var reg = RegisterFactory.createVararg();
 				steps.add(StepFactory.getVarargs(reg));
 				return reg;
 			}
@@ -184,7 +184,7 @@ public class MutableFlattener {
 				return flattenExpression(t.getChild(0));
 			}
 			case Nil: {
-				Register nil = Register.create();
+				Register nil = RegisterFactory.create();
 				steps.add(StepFactory.constNil(nil));
 				return nil;
 			}
@@ -209,13 +209,13 @@ public class MutableFlattener {
 				table.put(key, value);
 			} else {
 				int key = index++;
-				Register keyRegister = Register.create();
+				Register keyRegister = RegisterFactory.create();
 				steps.add(StepFactory.constNumber(keyRegister, key));
 				var value = flattenExpression(child.getChild(0));
 				table.put(keyRegister, value);
 			}
 		}
-		Register result = Register.create();
+		Register result = RegisterFactory.create();
 		steps.add(StepFactory.createTable(table, result));
 		return result;
 	}
@@ -269,7 +269,7 @@ public class MutableFlattener {
 			arguments.add(arg);
 		}
 		if (expression) {
-			Register register = Register.createVararg();
+			Register register = RegisterFactory.createVararg();
 			steps.add(StepFactory.call(function, arguments, register));
 			return register;
 		} else {
@@ -284,7 +284,7 @@ public class MutableFlattener {
 		List<Step> body = flattenChunk((CommonTree) chunk);
 		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
-		Register out = Register.create();
+		Register out = RegisterFactory.create();
 		steps.add(StepFactory.functionLiteral(body, out, params));
 		return out;
 	}
