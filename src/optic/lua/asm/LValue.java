@@ -6,34 +6,40 @@ package optic.lua.asm;
  * a table assignment in form of <code>table[key]</code>
  * represented as two {@link Register registers}: table and key.
  */
-public final class LValue {
-	private final boolean isTable;
-	private final Register table;
-	private final Register key;
-	private final String name;
-
-	private LValue(boolean isTable, Register table, Register key, String name) {
-		this.isTable = isTable;
-		this.table = table;
-		this.key = key;
-		this.name = name;
-		if (isTable) {
-			assert table != null && key != null && name == null;
-		} else {
-			assert table == null && key == null && name != null;
-		}
-	}
-
-	static LValue tableKey(Register table, Register key) {
-		return new LValue(true, table, key, null);
+public interface LValue {
+	static LValue tableField(Register table, Register key) {
+		return new TableField(table, key);
 	}
 
 	static LValue variable(String name) {
-		return new LValue(false, null, null, name);
+		return new Variable(name);
 	}
 
-	@Override
-	public String toString() {
-		return isTable ? String.format("%s[%s]", table, key) : name;
+	final class TableField implements LValue {
+		private final Register table;
+		private final Register key;
+
+		private TableField(Register table, Register key) {
+			this.table = table;
+			this.key = key;
+		}
+
+		@Override
+		public String toString() {
+			return table + "[" + key + "]";
+		}
+	}
+
+	final class Variable implements LValue {
+		private final String name;
+
+		private Variable(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public String toString() {
+			return name;
+		}
 	}
 }

@@ -1,13 +1,18 @@
 package optic.lua.asm;
 
+import optic.lua.asm.LValue.*;
 import optic.lua.asm.instructions.*;
 
 import java.util.*;
 
 class StepFactory {
-	static Step assign(LValue name, Register value) {
+	static Step assign(LValue target, Register value) {
 		checkVararg(false, value);
-		return new Assign(name, value);
+		if (target instanceof LValue.Variable) {
+			return new Assign((Variable) target, value);
+		} else {
+			return new TableWrite((TableField) target, value);
+		}
 	}
 
 	static Step declareLocal(String name) {
@@ -76,7 +81,7 @@ class StepFactory {
 	}
 
 	static Step tableIndex(Register table, Register key, Register out) {
-		return new TableIndex(table, key, out);
+		return new TableRead(table, key, out);
 	}
 
 	static Step ifThen(Register condition, List<Step> body) {

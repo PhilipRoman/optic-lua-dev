@@ -25,7 +25,7 @@ function createTable(...)
         foo = "bar",
         ...
     }
-    t[4] = 0
+    t[4] = t[3]
     foo, t.foo = "baz", "baz"
     return t
 end

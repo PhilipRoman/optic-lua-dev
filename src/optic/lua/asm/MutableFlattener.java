@@ -262,7 +262,7 @@ public class MutableFlattener {
 			var table = flattenExpression(assignment.getChild(0));
 			Trees.expectChild(INDEX, assignment, 1);
 			var key = flattenExpression(assignment.getChild(1).getChild(0));
-			return LValue.tableKey(table, key);
+			return LValue.tableField(table, key);
 		} else {
 			// variable assignment;
 			return LValue.variable(name.toString());
