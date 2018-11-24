@@ -197,7 +197,7 @@ public class MutableFlattener {
 		for (Object obj : fields) {
 			var field = Trees.expect(FIELD, (CommonTree) obj);
 			boolean hasKey = field.getChildCount() == 2;
-			if (field.getChildCount() == 1 || field.getChildCount() == 2) {
+			if (!(field.getChildCount() == 1 || field.getChildCount() == 2)) {
 				emit(Level.ERROR, "Expected 1 or 2 children in " + tree.toStringTree(), tree);
 			}
 			if (hasKey) {
