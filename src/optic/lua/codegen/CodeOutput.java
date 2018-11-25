@@ -1,9 +1,7 @@
 package optic.lua.codegen;
 
+import optic.lua.asm.AsmBlock;
 import optic.lua.messages.*;
-import optic.lua.asm.Step;
-
-import java.util.List;
 
 /**
  * End converter from intermediate representation to resulting code.
@@ -13,5 +11,5 @@ import java.util.List;
  */
 @FunctionalInterface
 public interface CodeOutput {
-	void output(List<Step> steps, MessageReporter reporter) throws CompilationFailure;
+	void output(AsmBlock body, MessageReporter reporter) throws CompilationFailure;
 }

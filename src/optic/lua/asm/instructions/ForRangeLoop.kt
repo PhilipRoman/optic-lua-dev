@@ -1,6 +1,7 @@
 package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
+import optic.lua.asm.AsmBlock
 import optic.lua.asm.Step
 import java.util.stream.Stream
 
@@ -8,7 +9,7 @@ class ForRangeLoop(
         val varName: String,
         val from: Register,
         val to: Register,
-        val block: List<Step>) : Step {
+        val block: AsmBlock) : Step {
 
     override fun toString(): String {
         return "for $varName = $from, $to"

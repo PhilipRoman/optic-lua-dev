@@ -1,21 +1,20 @@
 package optic.lua.codegen.java;
 
+import optic.lua.asm.*;
 import optic.lua.codegen.CodeOutput;
 import optic.lua.messages.*;
-import optic.lua.asm.Step;
 
 import java.io.*;
-import java.util.List;
 
 public class JavaCodeOutput {
 	private final PrintStream out;
-	private final List<Step> steps;
+	private final AsmBlock block;
 	private final MessageReporter reporter;
 	private int indent = 0;
 
-	private JavaCodeOutput(PrintStream out, List<Step> steps, MessageReporter reporter) {
+	private JavaCodeOutput(PrintStream out, AsmBlock block, MessageReporter reporter) {
 		this.out = out;
-		this.steps = steps;
+		this.block = block;
 		this.reporter = reporter;
 	}
 

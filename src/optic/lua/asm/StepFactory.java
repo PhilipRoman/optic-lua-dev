@@ -30,7 +30,7 @@ class StepFactory {
 		return new Operator(param, register, op);
 	}
 
-	static Step forRange(String varName, Register from, Register to, List<Step> block) {
+	static Step forRange(String varName, Register from, Register to, AsmBlock block) {
 		return new ForRangeLoop(varName, from, to, block);
 	}
 
@@ -46,11 +46,11 @@ class StepFactory {
 		return new Call(function, registers, output);
 	}
 
-	static Step doBlock(List<Step> steps) {
-		return new Block(steps);
+	static Step doBlock(AsmBlock block) {
+		return new Block(block);
 	}
 
-	static Step functionLiteral(List<Step> body, Register assignTo, ParameterList params) {
+	static Step functionLiteral(AsmBlock body, Register assignTo, ParameterList params) {
 		return new FunctionLiteral(body, assignTo, params);
 	}
 
@@ -75,7 +75,7 @@ class StepFactory {
 		return new TableRead(table, key, out);
 	}
 
-	static Step ifThen(Register condition, List<Step> body) {
+	static Step ifThen(Register condition, AsmBlock body) {
 		return new Branch(condition, body);
 	}
 

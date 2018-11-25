@@ -1,13 +1,11 @@
 package optic.lua;
 
 import nl.bigo.luaparser.*;
+import optic.lua.asm.*;
 import optic.lua.codegen.CodeOutput;
 import optic.lua.messages.*;
-import optic.lua.asm.*;
 import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
-
-import java.util.List;
 
 public final class Pipeline {
 	private final CodeSource source;
@@ -26,7 +24,7 @@ public final class Pipeline {
 		long startTime = System.nanoTime();
 		CharStream charStream = source.newCharStream(reporter.withPhase(Phase.READING));
 		CommonTree ast = parse(charStream);
-		List<Step> steps = flattener.flatten(ast, reporter.withPhase(Phase.FLATTENING));
+		AsmBlock steps = flattener.flatten(ast, reporter.withPhase(Phase.FLATTENING));
 		output.output(steps, reporter.withPhase(Phase.CODEGEN));
 		long endTime = System.nanoTime();
 		reporter.report(durationInfo(endTime - startTime));

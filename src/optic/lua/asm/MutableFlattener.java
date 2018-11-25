@@ -40,11 +40,11 @@ public class MutableFlattener {
 		this.steps = steps;
 	}
 
-	public static List<Step> flatten(CommonTree tree, MessageReporter reporter) throws CompilationFailure {
+	public static AsmBlock flatten(CommonTree tree, MessageReporter reporter) throws CompilationFailure {
 		return flatten(tree, reporter, null, false, List.of());
 	}
 
-	private static List<Step> flatten(CommonTree tree, MessageReporter reporter, MutableFlattener parent, boolean boundary, List<String> locals) throws CompilationFailure {
+	private static AsmBlock flatten(CommonTree tree, MessageReporter reporter, MutableFlattener parent, boolean boundary, List<String> locals) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
@@ -61,14 +61,14 @@ public class MutableFlattener {
 				throw new CompilationFailure();
 			}
 		}
-		return f.steps;
+		return new AsmBlock(f.steps, f.locals);
 	}
 
-	private List<Step> flattenBlock(CommonTree tree) throws CompilationFailure {
+	private AsmBlock flattenBlock(CommonTree tree) throws CompilationFailure {
 		return flatten(tree, reporter, this, false, List.of());
 	}
 
-	private List<Step> flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
+	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
 		return flatten(tree, reporter, this, true, params.list());
 	}
 
@@ -117,7 +117,7 @@ public class MutableFlattener {
 				Register from = flattenExpression(t.getChild(1));
 				Register to = flattenExpression(t.getChild(2));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				List<Step> body = flattenBlock(block);
+				AsmBlock body = flattenBlock(block);
 				steps.add(StepFactory.forRange(varName, from, to, body));
 				return;
 			}
@@ -128,7 +128,7 @@ public class MutableFlattener {
 			}
 			case CHUNK: {
 				CommonTree block = (CommonTree) t;
-				steps.addAll(flattenBlock(block));
+				steps.addAll(flattenBlock(block).steps());
 				return;
 			}
 			case Return: {
@@ -143,7 +143,7 @@ public class MutableFlattener {
 			}
 			case If: {
 				Register condition = flattenExpression(t.getChild(0).getChild(0));
-				List<Step> then = flattenBlock((CommonTree) t.getChild(0).getChild(1));
+				AsmBlock then = flattenBlock((CommonTree) t.getChild(0).getChild(1));
 				steps.add(StepFactory.ifThen(condition, then));
 				if (t.getChildCount() > 1) {
 					var children = Trees.childrenOf(t);
@@ -426,7 +426,7 @@ public class MutableFlattener {
 		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
 		Tree chunk = Trees.expectChild(CHUNK, t, 1);
-		List<Step> body = flattenFunctionBody((CommonTree) chunk, params);
+		AsmBlock body = flattenFunctionBody((CommonTree) chunk, params);
 		Register out = RegisterFactory.create();
 		steps.add(StepFactory.functionLiteral(body, out, params));
 		return out;

@@ -1,13 +1,12 @@
 package optic.lua;
 
+import optic.lua.asm.*;
 import optic.lua.codegen.CodeOutput;
 import optic.lua.messages.*;
-import optic.lua.asm.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
 import java.io.PrintStream;
-import java.util.List;
 import java.util.stream.*;
 
 public class Main {
@@ -96,8 +95,8 @@ public class Main {
 		}
 
 		@Override
-		public void output(List<Step> steps, MessageReporter reporter) {
-			steps.forEach(step -> print(step, 0));
+		public void output(AsmBlock body, MessageReporter reporter) {
+			body.steps().forEach(step -> print(step, 0));
 		}
 
 		private void print(Step step, int depth) {
