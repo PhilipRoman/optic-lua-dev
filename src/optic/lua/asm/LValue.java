@@ -12,7 +12,7 @@ public interface LValue {
 	}
 
 	static LValue variable(String name) {
-		return new Variable(name);
+		return new Name(name);
 	}
 
 	final class TableField implements LValue {
@@ -30,10 +30,10 @@ public interface LValue {
 		}
 	}
 
-	final class Variable implements LValue {
+	final class Name implements LValue {
 		private final String name;
 
-		private Variable(String name) {
+		private Name(String name) {
 			this.name = name;
 		}
 

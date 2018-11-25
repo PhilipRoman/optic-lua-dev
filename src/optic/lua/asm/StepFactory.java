@@ -8,8 +8,8 @@ import java.util.*;
 class StepFactory {
 	static Step assign(LValue target, Register value) {
 		checkVararg(false, value);
-		if (target instanceof LValue.Variable) {
-			return new Assign((Variable) target, value);
+		if (target instanceof Name) {
+			return new Assign((Name) target, value);
 		} else {
 			return new TableWrite((TableField) target, value);
 		}
