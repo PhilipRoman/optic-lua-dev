@@ -1,18 +1,13 @@
 package optic.lua.asm;
 
-import optic.lua.asm.LValue.*;
 import optic.lua.asm.instructions.*;
 
 import java.util.*;
 
 class StepFactory {
-	static Step assign(LValue target, Register value) {
+	static Step tableWrite(LValue.TableField target, Register value) {
 		checkVararg(false, value);
-		if (target instanceof Name) {
-			return new Assign((Name) target, value);
-		} else {
-			return new TableWrite((TableField) target, value);
-		}
+		return new TableWrite(target, value);
 	}
 
 	static Step declareLocal(String name) {
@@ -33,10 +28,6 @@ class StepFactory {
 
 	static Step unaryOperator(Register param, String op, Register register) {
 		return new Operator(param, register, op);
-	}
-
-	static Step dereference(Register register, String name) {
-		return new Dereference(register, name);
 	}
 
 	static Step forRange(String varName, Register from, Register to, List<Step> block) {
@@ -98,5 +89,29 @@ class StepFactory {
 			var msg = register + " is " + (expected ? "not " : "") + "a vararg register!";
 			throw new IllegalArgumentException(msg);
 		}
+	}
+
+	static Step setGlobal(String name, Register value) {
+		return new Write(name, value, VariableMode.GLOBAL);
+	}
+
+	static Step setLocal(String name, Register value) {
+		return new Write(name, value, VariableMode.LOCAL);
+	}
+
+	static Step setUpvalue(String name, Register value) {
+		return new Write(name, value, VariableMode.UPVALUE);
+	}
+
+	static Step readGlobal(String name, Register out) {
+		return new Read(out, name, VariableMode.GLOBAL);
+	}
+
+	static Step readLocal(String name, Register out) {
+		return new Read(out, name, VariableMode.LOCAL);
+	}
+
+	static Step readUpvalue(String name, Register out) {
+		return new Read(out, name, VariableMode.UPVALUE);
 	}
 }

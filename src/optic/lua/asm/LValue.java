@@ -41,5 +41,9 @@ public interface LValue {
 		public String toString() {
 			return name;
 		}
+
+		public String name() {
+			return name;
+		}
 	}
 }

@@ -19,7 +19,7 @@ public final class ParameterList {
 		this.names = names;
 	}
 
-	public static ParameterList parse(CommonTree tree) {
+	static ParameterList parse(CommonTree tree) {
 		Trees.expect(Lua52Walker.PARAM_LIST, tree);
 		var names = Optional.ofNullable(tree.getChildren())
 				.orElse(Collections.emptyList())
@@ -28,7 +28,7 @@ public final class ParameterList {
 				.peek(x -> Trees.expectEither(DotDotDot, Name, x))
 				.map(Object::toString)
 				.collect(Collectors.toList());
-		return new ParameterList(names);
+		return new ParameterList(List.copyOf(names));
 	}
 
 	public boolean hasVarargs() {
@@ -43,5 +43,9 @@ public final class ParameterList {
 	@Override
 	public String toString() {
 		return names.toString();
+	}
+
+	public List<java.lang.String> list() {
+		return List.copyOf(names);
 	}
 }

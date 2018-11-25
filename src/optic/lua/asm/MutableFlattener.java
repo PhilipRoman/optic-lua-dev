@@ -1,5 +1,7 @@
 package optic.lua.asm;
 
+import optic.lua.asm.LValue.Name;
+import optic.lua.asm.LValue.*;
 import optic.lua.messages.*;
 import optic.lua.util.*;
 import org.antlr.runtime.tree.*;
@@ -9,6 +11,7 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
+import static nl.bigo.luaparser.Lua52Walker.Name;
 import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
@@ -20,9 +23,17 @@ import static nl.bigo.luaparser.Lua52Walker.*;
 public class MutableFlattener {
 	private static final Logger log = LoggerFactory.getLogger(MutableFlattener.class);
 	private final List<Step> steps;
+	// local variable info
+	private final Map<String, VariableInfo> locals = new HashMap<>(8);
+	// parent scope
+	private final MutableFlattener parent;
+	// whether or not local variables from parent are accessed as upvalues
+	private final boolean lexicalBoundary;
 	private final MessageReporter reporter;
 
-	private MutableFlattener(List<Step> steps, MessageReporter reporter) {
+	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, MessageReporter reporter) {
+		this.parent = parent;
+		lexicalBoundary = boundary;
 		Objects.requireNonNull(steps);
 		Objects.requireNonNull(reporter);
 		this.reporter = reporter;
@@ -30,10 +41,17 @@ public class MutableFlattener {
 	}
 
 	public static List<Step> flatten(CommonTree tree, MessageReporter reporter) throws CompilationFailure {
+		return flatten(tree, reporter, null, false, List.of());
+	}
+
+	private static List<Step> flatten(CommonTree tree, MessageReporter reporter, MutableFlattener parent, boolean boundary, List<String> locals) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
-		var f = new MutableFlattener(new ArrayList<>(expectedSize), reporter);
+		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, boundary, reporter);
+		for (var local : locals) {
+			f.locals.put(local, new VariableInfo());
+		}
 		for (var stat : statements) {
 			f.steps.add(StepFactory.comment("line " + ((Tree) stat).getLine()));
 			try {
@@ -46,8 +64,30 @@ public class MutableFlattener {
 		return f.steps;
 	}
 
-	private List<Step> flattenChunk(CommonTree tree) throws CompilationFailure {
-		return flatten(tree, reporter);
+	private List<Step> flattenBlock(CommonTree tree) throws CompilationFailure {
+		return flatten(tree, reporter, this, false, List.of());
+	}
+
+	private List<Step> flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
+		return flatten(tree, reporter, this, true, params.list());
+	}
+
+	@Nullable
+	private VariableView resolve(String name) {
+		var localVar = locals.get(name);
+		if (localVar != null) {
+			return VariableView.viewAsLocal(localVar);
+		}
+		if (parent == null) {
+			return null;
+		}
+		var parentVar = parent.resolve(name);
+		if(parentVar != null) {
+			return lexicalBoundary
+					? VariableView.viewAsUpvalue(parentVar.variable())
+					: VariableView.viewAsLocal(parentVar.variable());
+		}
+		return null;
 	}
 
 	private void flattenStatement(Tree t) throws CompilationFailure {
@@ -77,18 +117,18 @@ public class MutableFlattener {
 				Register from = flattenExpression(t.getChild(1));
 				Register to = flattenExpression(t.getChild(2));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				List<Step> body = flattenChunk(block);
+				List<Step> body = flattenBlock(block);
 				steps.add(StepFactory.forRange(varName, from, to, body));
 				return;
 			}
 			case Do: {
 				CommonTree block = (CommonTree) t;
-				steps.add(StepFactory.doBlock(flattenChunk(block)));
+				steps.add(StepFactory.doBlock(flattenBlock(block)));
 				return;
 			}
 			case CHUNK: {
 				CommonTree block = (CommonTree) t;
-				steps.addAll(flattenChunk(block));
+				steps.addAll(flattenBlock(block));
 				return;
 			}
 			case Return: {
@@ -103,7 +143,7 @@ public class MutableFlattener {
 			}
 			case If: {
 				Register condition = flattenExpression(t.getChild(0).getChild(0));
-				List<Step> then = flattenChunk((CommonTree) t.getChild(0).getChild(1));
+				List<Step> then = flattenBlock((CommonTree) t.getChild(0).getChild(1));
 				steps.add(StepFactory.ifThen(condition, then));
 				if (t.getChildCount() > 1) {
 					var children = Trees.childrenOf(t);
@@ -150,7 +190,7 @@ public class MutableFlattener {
 			case Name: {
 				var register = RegisterFactory.create();
 				String name = t.getText();
-				steps.add(StepFactory.dereference(register, name));
+				steps.add(createReadStep(name, register));
 				return register;
 			}
 			case VAR: {
@@ -284,6 +324,43 @@ public class MutableFlattener {
 	}
 
 	@Contract(mutates = "this")
+	private Step createWriteStep(LValue left, Register right) {
+		if (left instanceof LValue.TableField) {
+			return StepFactory.tableWrite((TableField) left, right);
+		} else if (left instanceof LValue.Name) {
+			var name = ((Name) left);
+			VariableView view = resolve(name.name());
+			if (view == null) {
+				return StepFactory.setGlobal(name.name(), right);
+			}
+			view.markAsWritten();
+			switch (view.viewType()) {
+				case LOCAL:
+					return StepFactory.setLocal(name.name(), right);
+				case UPVALUE:
+					return StepFactory.setUpvalue(name.name(), right);
+			}
+		}
+		throw new AssertionError();
+	}
+
+	@Contract(mutates = "this")
+	private Step createReadStep(String name, Register out) {
+		VariableView view = resolve(name);
+		if (view == null) {
+			return StepFactory.readGlobal(name, out);
+		}
+		view.markAsRead();
+		switch (view.viewType()) {
+			case LOCAL:
+				return StepFactory.readLocal(name, out);
+			case UPVALUE:
+				return StepFactory.readUpvalue(name, out);
+		}
+		throw new AssertionError();
+	}
+
+	@Contract(mutates = "this")
 	private void createAssignment(CommonTree t, boolean local) throws CompilationFailure {
 		var nameList = t.getChild(0);
 		Trees.expect(local ? NAME_LIST : VAR_LIST, nameList);
@@ -295,6 +372,7 @@ public class MutableFlattener {
 			// this code is illegal: "local a, tb[k] = 4, 2"
 			for (var name : names) {
 				Step step = StepFactory.declareLocal(name.toString());
+				locals.put(name.toString(), new VariableInfo());
 				steps.add(step);
 			}
 		}
@@ -313,13 +391,13 @@ public class MutableFlattener {
 			LValue variable = variables.get(i);
 			if (i < nonVarargRegisters) {
 				Register value = values.get(i);
-				steps.add(StepFactory.assign(variable, value));
+				steps.add(createWriteStep(variable, value));
 			} else if (vararg == null) {
-				steps.add(StepFactory.assign(variable, nil()));
+				steps.add(createWriteStep(variable, nil()));
 			} else {
 				Register selected = RegisterFactory.create();
 				steps.add(StepFactory.select(selected, vararg, overflow));
-				steps.add(StepFactory.assign(variable, selected));
+				steps.add(createWriteStep(variable, selected));
 				overflow++;
 			}
 		}
@@ -345,10 +423,10 @@ public class MutableFlattener {
 	@Contract(mutates = "this")
 	private Register createFunctionLiteral(Tree t) throws CompilationFailure {
 		Trees.expect(FUNCTION, t);
-		Tree chunk = Trees.expectChild(CHUNK, t, 1);
-		List<Step> body = flattenChunk((CommonTree) chunk);
 		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
+		Tree chunk = Trees.expectChild(CHUNK, t, 1);
+		List<Step> body = flattenFunctionBody((CommonTree) chunk, params);
 		Register out = RegisterFactory.create();
 		steps.add(StepFactory.functionLiteral(body, out, params));
 		return out;
