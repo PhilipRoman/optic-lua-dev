@@ -22,6 +22,7 @@ end
 
 function createTable(...)
     local t = {
+        ...;
         foo = "bar",
         ...
     }

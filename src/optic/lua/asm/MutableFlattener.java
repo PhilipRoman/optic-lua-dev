@@ -208,7 +208,7 @@ public class MutableFlattener {
 				var key = constant(arrayFieldIndex++);
 				var value = flattenExpression(field.getChild(0));
 				boolean isLastField = fieldIndex == fieldCount - 1;
-				table.put(key, isLastField ? discardRemaining(value) : value);
+				table.put(key, isLastField ? value : discardRemaining(value));
 			}
 			fieldIndex++;
 		}
