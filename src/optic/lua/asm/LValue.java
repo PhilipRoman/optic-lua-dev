@@ -28,6 +28,14 @@ public interface LValue {
 		public String toString() {
 			return table + "[" + key + "]";
 		}
+
+		public Register getKey() {
+			return key;
+		}
+
+		public Register getTable() {
+			return table;
+		}
 	}
 
 	final class Name implements LValue {

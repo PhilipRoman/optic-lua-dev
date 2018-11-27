@@ -2,6 +2,7 @@ package optic.lua;
 
 import optic.lua.asm.*;
 import optic.lua.codegen.CodeOutput;
+import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
@@ -18,7 +19,7 @@ public class Main {
 				codeSource,
 				MutableFlattener::flatten,
 				new LogMessageReporter(log, new SimpleMessageFormat()),
-				new PrintingCodeOutput(System.err)
+				JavaCodeOutput.writingTo(System.err)
 		);
 		try {
 			pipeline.run();

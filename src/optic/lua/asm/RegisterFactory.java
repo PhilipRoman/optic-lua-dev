@@ -13,7 +13,7 @@ public class RegisterFactory {
 
 	@NotNull
 	@Contract(" -> new")
-	static Register create() {
+	public static Register create() {
 		return new Register(false);
 	}
 
