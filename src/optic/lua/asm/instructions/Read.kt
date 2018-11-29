@@ -2,9 +2,15 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
+import optic.lua.asm.VariableInfo
 
-class Read(val register: Register, val name: String, val mode: VariableMode) : Step {
+class Read(val register: Register, val sourceInfo: VariableInfo) : Step {
     override fun toString(): String {
-        return "get-${mode.toString().toLowerCase()} $register = $name"
+        val modeName = sourceInfo.mode.toString().toLowerCase();
+        return "get-$modeName $register = ${sourceInfo.name}"
+    }
+
+    fun getName(): String {
+        return sourceInfo.name
     }
 }

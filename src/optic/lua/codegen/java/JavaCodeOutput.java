@@ -99,13 +99,13 @@ public class JavaCodeOutput {
 
 	private void writeRead(Step step) {
 		var read = (Read) step;
-		switch (read.getMode()) {
+		switch (read.getSourceInfo().getMode()) {
 			case LOCAL: {
 				out.printLine("Dynamic ", read.getRegister(), " = ", read.getName(), ";");
 				break;
 			}
 			case UPVALUE: {
-				out.printLine("Dynamic ", read.getRegister(), " = ", read.getName(), "get();");
+				out.printLine("Dynamic ", read.getRegister(), " = ", read.getName(), ".get();");
 				break;
 			}
 			case GLOBAL: {
@@ -148,7 +148,7 @@ public class JavaCodeOutput {
 
 	private void writeWrite(Step step) {
 		var write = (Write) step;
-		switch (write.getMode()) {
+		switch (write.getTarget().getMode()) {
 			case LOCAL: {
 				out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
 				break;

@@ -91,27 +91,11 @@ class StepFactory {
 		}
 	}
 
-	static Step setGlobal(String name, Register value) {
-		return new Write(name, value, VariableMode.GLOBAL);
+	static Step write(VariableInfo target, Register value) {
+		return new Write(target, value);
 	}
 
-	static Step setLocal(String name, Register value) {
-		return new Write(name, value, VariableMode.LOCAL);
-	}
-
-	static Step setUpvalue(String name, Register value) {
-		return new Write(name, value, VariableMode.UPVALUE);
-	}
-
-	static Step readGlobal(String name, Register out) {
-		return new Read(out, name, VariableMode.GLOBAL);
-	}
-
-	static Step readLocal(String name, Register out) {
-		return new Read(out, name, VariableMode.LOCAL);
-	}
-
-	static Step readUpvalue(String name, Register out) {
-		return new Read(out, name, VariableMode.UPVALUE);
+	static Step read(VariableInfo source, Register target) {
+		return new Read(target, source);
 	}
 }

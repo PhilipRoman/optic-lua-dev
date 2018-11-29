@@ -50,7 +50,7 @@ public class MutableFlattener {
 		int expectedSize = statements.size() * 4 + 10;
 		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, boundary, reporter);
 		for (var local : locals) {
-			f.locals.put(local, new VariableInfo());
+			f.locals.put(local, new VariableInfo(local));
 		}
 		for (var stat : statements) {
 			f.steps.add(StepFactory.comment("line " + ((Tree) stat).getLine()));
@@ -73,19 +73,20 @@ public class MutableFlattener {
 	}
 
 	@Nullable
-	private VariableView resolve(String name) {
+	private VariableInfo resolve(String name) {
 		var localVar = locals.get(name);
 		if (localVar != null) {
-			return VariableView.viewAsLocal(localVar);
+			return localVar;
 		}
 		if (parent == null) {
 			return null;
 		}
 		var parentVar = parent.resolve(name);
-		if(parentVar != null) {
-			return lexicalBoundary
-					? VariableView.viewAsUpvalue(parentVar.variable())
-					: VariableView.viewAsLocal(parentVar.variable());
+		if (parentVar != null) {
+			if (lexicalBoundary) {
+				parentVar.markAsUpvalue();
+			}
+			return parentVar;
 		}
 		return null;
 	}
@@ -324,40 +325,29 @@ public class MutableFlattener {
 	}
 
 	@Contract(mutates = "this")
-	private Step createWriteStep(LValue left, Register right) {
+	private Step createWriteStep(LValue left, Register value) {
 		if (left instanceof LValue.TableField) {
-			return StepFactory.tableWrite((TableField) left, right);
+			return StepFactory.tableWrite((TableField) left, value);
 		} else if (left instanceof LValue.Name) {
 			var name = ((Name) left);
-			VariableView view = resolve(name.name());
-			if (view == null) {
-				return StepFactory.setGlobal(name.name(), right);
+			VariableInfo info = resolve(name.name());
+			if (info == null) {
+				return StepFactory.write(VariableInfo.global(name.name()), value);
 			}
-			view.markAsWritten();
-			switch (view.viewType()) {
-				case LOCAL:
-					return StepFactory.setLocal(name.name(), right);
-				case UPVALUE:
-					return StepFactory.setUpvalue(name.name(), right);
-			}
+			info.markAsWritten();
+			return StepFactory.write(info, value);
 		}
 		throw new AssertionError();
 	}
 
 	@Contract(mutates = "this")
 	private Step createReadStep(String name, Register out) {
-		VariableView view = resolve(name);
-		if (view == null) {
-			return StepFactory.readGlobal(name, out);
+		VariableInfo info = resolve(name);
+		if (info == null) {
+			var global = VariableInfo.global(name);
+			return StepFactory.read(global, out);
 		}
-		view.markAsRead();
-		switch (view.viewType()) {
-			case LOCAL:
-				return StepFactory.readLocal(name, out);
-			case UPVALUE:
-				return StepFactory.readUpvalue(name, out);
-		}
-		throw new AssertionError();
+		return StepFactory.read(info, out);
 	}
 
 	@Contract(mutates = "this")
@@ -372,7 +362,7 @@ public class MutableFlattener {
 			// this code is illegal: "local a, tb[k] = 4, 2"
 			for (var name : names) {
 				Step step = StepFactory.declareLocal(name.toString());
-				locals.put(name.toString(), new VariableInfo());
+				locals.put(name.toString(), new VariableInfo(name.toString()));
 				steps.add(step);
 			}
 		}

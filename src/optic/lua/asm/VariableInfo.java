@@ -1,15 +1,72 @@
 package optic.lua.asm;
 
-import java.util.EnumSet;
+import optic.lua.asm.instructions.VariableMode;
+import org.jetbrains.annotations.NotNull;
 
-final class VariableInfo {
-	private final EnumSet<AccessType> access = EnumSet.noneOf(AccessType.class);
+import static optic.lua.asm.instructions.VariableMode.*;
 
-	EnumSet<AccessType> accessInfo() {
-		return access;
+public class VariableInfo {
+	private boolean isFinal = true;
+	private boolean isUpvalue = false;
+	private final String name;
+
+	VariableInfo(String name) {
+		this.name = name;
 	}
 
-	enum AccessType {
-		READ, WRITE
+	void markAsUpvalue() {
+		isUpvalue = true;
+	}
+
+	@NotNull
+	public VariableMode getMode() {
+		return isUpvalue ? UPVALUE : LOCAL;
+	}
+
+	void markAsWritten() {
+		isFinal = true;
+	}
+
+	public boolean isFinal() {
+		return isFinal;
+	}
+
+	static VariableInfo global(String name) {
+		return new GlobalVariableInfo(name);
+	}
+
+	@Override
+	public String toString() {
+		return name;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	private static final class GlobalVariableInfo extends VariableInfo {
+		private GlobalVariableInfo(String name) {
+			super(name);
+		}
+
+		@Override
+		public @NotNull VariableMode getMode() {
+			return GLOBAL;
+		}
+
+		@Override
+		public boolean isFinal() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		void markAsUpvalue() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		void markAsWritten() {
+			throw new UnsupportedOperationException();
+		}
 	}
 }
