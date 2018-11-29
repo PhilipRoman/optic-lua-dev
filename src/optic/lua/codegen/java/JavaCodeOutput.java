@@ -183,7 +183,13 @@ public class JavaCodeOutput {
 	}
 
 	private void writeDeclare(Step step) {
-		out.printLine("Dynamic ", ((Declare) step).getName(), ";");
+		var declare = (Declare) step;
+		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
+		if(declare.getVariable().getMode() == VariableMode.LOCAL) {
+			out.printLine("Dynamic ", ((Declare) step).getName(), ";");
+		} else {
+			out.printLine("Upvalue ", declare.getName(), " = Upvalue.create();");
+		}
 	}
 
 	private void writeComment(Step step) {

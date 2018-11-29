@@ -361,8 +361,8 @@ public class MutableFlattener {
 			// if the assignment starts with local, no need to worry about table assignments
 			// this code is illegal: "local a, tb[k] = 4, 2"
 			for (var name : names) {
-				Step step = StepFactory.declareLocal(name.toString());
 				locals.put(name.toString(), new VariableInfo(name.toString()));
+				Step step = StepFactory.declareLocal(resolve(name.toString()));
 				steps.add(step);
 			}
 		}

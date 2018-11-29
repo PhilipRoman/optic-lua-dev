@@ -10,8 +10,8 @@ class StepFactory {
 		return new TableWrite(target, value);
 	}
 
-	static Step declareLocal(String name) {
-		return new Declare(name);
+	static Step declareLocal(VariableInfo info) {
+		return new Declare(info);
 	}
 
 	static Step constNumber(Register register, double num) {
