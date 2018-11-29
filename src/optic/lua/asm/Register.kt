@@ -1,7 +1,6 @@
 package optic.lua.asm
 
-import java.lang.Integer.toHexString
-import java.util.concurrent.atomic.AtomicInteger
+import optic.lua.util.UniqueNames
 
 /**
  * Register is the basic unit of ASM form. Each assignment targets a new, unique register.
@@ -13,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class Register constructor(val name: String, val isVararg: Boolean) {
 
-    constructor(isVararg: Boolean) : this("v" + randomSuffix(), isVararg)
+    constructor(isVararg: Boolean) : this(UniqueNames.next(), isVararg)
 
     override fun toString(): String {
         return name + if (isVararg) "@" else ""
@@ -21,13 +20,5 @@ class Register constructor(val name: String, val isVararg: Boolean) {
 
     fun isUnused(): Boolean {
         return name == "_"
-    }
-
-    companion object {
-        private val counter = AtomicInteger()
-
-        private fun randomSuffix(): String {
-            return toHexString(counter.getAndIncrement()).toUpperCase()
-        }
     }
 }

@@ -4,23 +4,36 @@ import optic.lua.asm.*;
 import optic.lua.asm.instructions.*;
 import optic.lua.codegen.*;
 import optic.lua.messages.*;
+import optic.lua.util.UniqueNames;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class JavaCodeOutput {
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final MessageReporter reporter;
+	/**
+	 * <p>
+	 * Stack containing names of varargs variables in nested functions.
+	 * There is an entry for each level of nested functions. If an Optional
+	 * is empty, it means that function did not have a vararg parameter.
+	 * </p>
+	 * <p>
+	 * Initially, the stack contains the root vararg.
+	 * </p>
+	 */
+	private final Deque<Optional<String>> varargNamesInFunction = new ArrayDeque<>(List.of(
+			Optional.of("vararg" + UniqueNames.next()))
+	);
 
-	private static final Map<Class<? extends Step>, BiConsumer<JavaCodeOutput, Step>> TABLE;
+	private static final Map<Class<? extends Step>, WriterFunction> TABLE;
 
 	static {
-		Map<Class<? extends Step>, BiConsumer<JavaCodeOutput, Step>> table = new HashMap<>(20);
+		Map<Class<? extends Step>, WriterFunction> table = new HashMap<>(20);
 		table.put(Block.class, JavaCodeOutput::writeBlock);
 		table.put(Branch.class, JavaCodeOutput::writeBranch);
 		table.put(Call.class, JavaCodeOutput::writeCall);
@@ -41,23 +54,31 @@ public class JavaCodeOutput {
 		TABLE = Map.copyOf(table);
 	}
 
-	private void writeFunctionLiteral(Step step) {
+	private void writeFunctionLiteral(Step step) throws CompilationFailure {
 		var fn = (FunctionLiteral) step;
 		var target = fn.getAssignTo().getName();
 		var params = fn.getParams().list();
-		out.printLine("Dynamic ", target, " = DynamicFunction.make((args) -> {");
+		var argsName = "args" + UniqueNames.next();
+		out.printLine("Dynamic ", target, " = DynamicFunction.make((", argsName, ") -> {");
 		out.addIndent();
 		for (var p : params) {
-			if (p.equals("..."))
-				out.printLine("MultiValue varargs = args.getVarargs();");
-			else
-				out.printLine("Dynamic ", p, " = args.get(", params.indexOf(p), ");");
+			if (p.equals("...")) {
+				var varargName = "vararg" + UniqueNames.next();
+				varargNamesInFunction.addLast(Optional.of(varargName));
+				out.printLine("MultiValue ", varargName, " = ", argsName, ".getVarargs();");
+			} else {
+				out.printLine("Dynamic ", p, " = ", argsName, ".get(", params.indexOf(p), ");");
+			}
+		}
+		if (!fn.getParams().hasVarargs()) {
+			varargNamesInFunction.addLast(Optional.empty());
 		}
 		for (var s : fn.getBody().steps()) {
 			write(s);
 		}
+		varargNamesInFunction.removeLast();
 		out.removeIndent();
-		out.printLine("})");
+		out.printLine("});");
 	}
 
 	private void writeLoadConstant(Step step) {
@@ -123,9 +144,15 @@ public class JavaCodeOutput {
 		out.printLine("return MultiValue.of(", commaList(regs), ");");
 	}
 
-	private void writeGetVarargs(Step step) {
+	private void writeGetVarargs(Step step) throws CompilationFailure {
 		var g = (GetVarargs) step;
-		out.printLine("MultiValue ", g.getTo().getName(), " = varargs;");
+		var varargsName = varargNamesInFunction.getLast();
+		if (varargsName.isPresent()) {
+			var varargs = varargsName.get();
+			out.printLine("MultiValue ", g.getTo().getName(), " = ", varargs, ";");
+		} else {
+			illegalVarargUsage();
+		}
 	}
 
 	private void writeSelect(Step step) {
@@ -166,7 +193,7 @@ public class JavaCodeOutput {
 		}
 	}
 
-	private void writeForRangeLoop(Step step) {
+	private void writeForRangeLoop(Step step) throws CompilationFailure {
 		var loop = ((ForRangeLoop) step);
 		var from = loop.getFrom().getName();
 		var to = loop.getTo().getName();
@@ -185,7 +212,7 @@ public class JavaCodeOutput {
 	private void writeDeclare(Step step) {
 		var declare = (Declare) step;
 		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
-		if(declare.getVariable().getMode() == VariableMode.LOCAL) {
+		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
 			out.printLine("Dynamic ", ((Declare) step).getName(), ";");
 		} else {
 			out.printLine("Upvalue ", declare.getName(), " = Upvalue.create();");
@@ -216,7 +243,7 @@ public class JavaCodeOutput {
 		return builder;
 	}
 
-	private void writeBranch(Step step) {
+	private void writeBranch(Step step) throws CompilationFailure {
 		var branch = (Branch) step;
 		out.printLine("if(DynamicOps.isTruthy(", branch.getCondition().getName(), ") {");
 		out.addIndent();
@@ -227,7 +254,7 @@ public class JavaCodeOutput {
 		out.printLine("}");
 	}
 
-	private void writeBlock(Step step) {
+	private void writeBlock(Step step) throws CompilationFailure {
 		var block = (Block) step;
 		out.printLine("{");
 		out.addIndent();
@@ -238,9 +265,9 @@ public class JavaCodeOutput {
 		out.printLine("}");
 	}
 
-	private void write(Step step) {
+	private void write(Step step) throws CompilationFailure {
 		assert Modifier.isFinal(step.getClass().getModifiers());
-		TABLE.get(step.getClass()).accept(this, step);
+		TABLE.get(step.getClass()).write(this, step);
 	}
 
 	private JavaCodeOutput(PrintStream out, AsmBlock block, MessageReporter reporter) {
@@ -263,5 +290,16 @@ public class JavaCodeOutput {
 		for (var step : block.steps()) {
 			write(step);
 		}
+	}
+
+	private void illegalVarargUsage() throws CompilationFailure {
+		var msg = Message.create("Cannot use ... outside of vararg function");
+		msg.setLevel(Level.ERROR);
+		reporter.report(msg);
+		throw new CompilationFailure();
+	}
+
+	private interface WriterFunction {
+		void write(JavaCodeOutput self, Step step) throws CompilationFailure;
 	}
 }
