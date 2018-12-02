@@ -1,6 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'application'
+apply plugin: 'groovy'
 
 buildscript {
     ext.kotlin_version = "1.3.10"
@@ -19,7 +20,7 @@ sourceSets {
         }
     }
     test {
-        java {
+        groovy {
             srcDir 'test'
         }
     }
@@ -43,7 +44,7 @@ dependencies {
     compile group: 'ch.qos.logback', name: 'logback-core', version: '1.3.0-alpha4'
     compile group: 'org.jetbrains', name: 'annotations', version: '16.0.2'
     compile 'com.github.bkiers:lua-parser:-SNAPSHOT'
-    testCompile 'junit:junit:4.12'
+    compile 'org.codehaus.groovy:groovy-all:2.5.4'
     testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: '1.3'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
