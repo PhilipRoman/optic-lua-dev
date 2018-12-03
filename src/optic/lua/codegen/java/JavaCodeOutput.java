@@ -51,7 +51,15 @@ public class JavaCodeOutput {
 		table.put(TableRead.class, JavaCodeOutput::writeTableRead);
 		table.put(TableWrite.class, JavaCodeOutput::writeTableWrite);
 		table.put(Write.class, JavaCodeOutput::writeWrite);
+		table.put(ToNumber.class, JavaCodeOutput::writeToNumber);
 		TABLE = Map.copyOf(table);
+	}
+
+	private void writeToNumber(Step step) {
+		var toNumber = (ToNumber) step;
+		var from = toNumber.getSource();
+		var to = toNumber.getTarget();
+		out.printLine("Dynamic ", to, " = DynamicOps.toNumber(", from, ");");
 	}
 
 	private void writeFunctionLiteral(Step step) throws CompilationFailure {
@@ -199,7 +207,7 @@ public class JavaCodeOutput {
 		var to = loop.getTo().getName();
 		var name = loop.getVarName();
 		var loopName = RegisterFactory.create().getName();
-		out.printLine("for(int ", loopName, " = DynamicOps.toInt(", from, "); ", loopName, " <= DynamicOps.toInt(", to, ")); ", loopName, "++) {");
+		out.printLine("for(double ", loopName, " = ", from, "; ", loopName, " <= ", to, "; ", loopName, "++) {");
 		out.addIndent();
 		out.printLine("Dynamic ", name, " = Dynamic.of(", loopName, ");");
 		for (Step s : loop.getBlock().steps()) {

@@ -98,4 +98,10 @@ class StepFactory {
 	static Step read(VariableInfo source, Register target) {
 		return new Read(target, source);
 	}
+
+	static Step toNumber(Register source, Register target) {
+		checkVararg(false, source);
+		checkVararg(false, target);
+		return new ToNumber(source, target);
+	}
 }

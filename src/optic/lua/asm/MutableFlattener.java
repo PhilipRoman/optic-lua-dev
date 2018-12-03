@@ -115,8 +115,8 @@ public class MutableFlattener {
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
-				Register from = flattenExpression(t.getChild(1));
-				Register to = flattenExpression(t.getChild(2));
+				Register from = toNumber(flattenExpression(t.getChild(1)));
+				Register to = toNumber(flattenExpression(t.getChild(2)));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
 				AsmBlock body = flattenBlock(block);
 				steps.add(StepFactory.forRange(varName, from, to, body));
@@ -256,6 +256,13 @@ public class MutableFlattener {
 		Register result = RegisterFactory.create();
 		steps.add(StepFactory.createTable(table, result));
 		return result;
+	}
+
+	@Contract(mutates = "this")
+	private Register toNumber(Register a) {
+		var b = RegisterFactory.create();
+		steps.add(StepFactory.toNumber(a, b));
+		return b;
 	}
 
 	@Contract(mutates = "this")
