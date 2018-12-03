@@ -2,9 +2,9 @@ package optic.lua.asm
 
 /**
  * Represents a location which may be assigned a value.
- * Can be either a variable (represented by a string) or
- * a table assignment in form of `table[key]`
- * represented as two [registers][Register]: table and key.
+ * Can be either a [name][Name] or
+ * a [table field][TableField]
+ * represented as two registers: table and key.
  */
 interface LValue {
 
