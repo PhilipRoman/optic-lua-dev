@@ -4,8 +4,8 @@ import optic.lua.messages.*;
 import org.antlr.runtime.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-import java.util.Objects;
+import java.nio.file.*;
+import java.util.*;
 
 public interface CodeSource {
 	/**
@@ -24,22 +24,30 @@ public interface CodeSource {
 	@NotNull
 	String name();
 
-	static CodeSource ofFile(String path) throws IOException {
-		var name = new File(path).getCanonicalPath();
-		return CodeSource.create(name, () -> new ANTLRFileStream(path));
+	/**
+	 * @return returns the file path associated with this code source, if present
+	 */
+	Optional<Path> path();
+
+	static CodeSource ofFile(String filePath) {
+		var path = Paths.get(filePath).toAbsolutePath();
+		return new CodeSourceImpl(path.toString(), () -> new ANTLRFileStream(filePath), path);
 	}
 
-	static CodeSource create(String name, CharStreamSupplier streamSupplier) {
-		return new CodeSourceImpl(name, streamSupplier);
+	static CodeSource custom(String name, CharStreamSupplier streamSupplier) {
+		return new CodeSourceImpl(name, streamSupplier, null);
 	}
 
 	class CodeSourceImpl implements CodeSource {
 		private final String name;
 		private final CharStreamSupplier streamSupplier;
+		@Nullable
+		private final Path path;
 
-		private CodeSourceImpl(String name, CharStreamSupplier supplier) {
+		private CodeSourceImpl(String name, CharStreamSupplier supplier, @Nullable Path path) {
 			this.name = name;
 			streamSupplier = supplier;
+			this.path = path;
 		}
 
 		@Override
@@ -68,6 +76,11 @@ public interface CodeSource {
 		@Override
 		public String name() {
 			return name;
+		}
+
+		@Override
+		public Optional<Path> path() {
+			return Optional.ofNullable(path);
 		}
 	}
 
