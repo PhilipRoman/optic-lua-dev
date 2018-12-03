@@ -21,5 +21,4 @@ public class RegisterFactory {
 	public static Register unused() {
 		return UNUSED_REGISTER;
 	}
-
 }

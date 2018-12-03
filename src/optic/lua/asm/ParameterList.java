@@ -31,13 +31,17 @@ public final class ParameterList {
 		return new ParameterList(List.copyOf(names));
 	}
 
+	static ParameterList of(List<String> names) {
+		return new ParameterList(List.copyOf(names));
+	}
+
 	public boolean hasVarargs() {
 		return !names.isEmpty() && names.get(names.size() - 1).equals("...");
 	}
 
 	public OptionalInt indexOf(String parameterName) {
 		int index = names.indexOf(parameterName);
-		return index > 0 ? OptionalInt.of(index) : OptionalInt.empty();
+		return index >= 0 ? OptionalInt.of(index) : OptionalInt.empty();
 	}
 
 	@Override

@@ -1,26 +1,33 @@
 package optic.lua.files
 
+import groovy.transform.CompileStatic
 
 import java.nio.file.Paths
 
+@CompileStatic
 class FileExtensionMapperTest extends GroovyTestCase {
     void testCreateValid() {
         FileExtensionMapper.create(".foo", ".bar")
         FileExtensionMapper.create(".lua", ".java")
     }
 
-//    @Test(expected = IllegalArgumentException)
     void testCreateInvalid() {
-        try {
+        shouldFail {
             FileExtensionMapper.create("foo", "bar")
-        } catch(IllegalArgumentException ignored) {
-            return
         }
-        fail()
+        shouldFail {
+            FileExtensionMapper.create("", "foo")
+        }
+        shouldFail {
+            FileExtensionMapper.create("...", "foo")
+        }
+        shouldFail {
+            FileExtensionMapper.create(".foo", null)
+        }
     }
 
     void testMap() {
         def mapper = FileExtensionMapper.create(".lua", ".java")
-        assertEquals(Paths.get("/foo/bar.java"), mapper.map(Paths.get("/foo/bar.lua")))
+        assert Paths.get("/foo/bar.java") == mapper.map(Paths.get("/foo/bar.lua"))
     }
 }

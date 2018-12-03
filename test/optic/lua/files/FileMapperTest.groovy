@@ -1,8 +1,11 @@
 package optic.lua.files
 
+import groovy.transform.CompileStatic
+
 import java.nio.file.Path
 import java.nio.file.Paths
 
+@CompileStatic
 class FileMapperTest extends GroovyTestCase {
     void testAllOf() {
         def mapper = FileMapper.allOf(
@@ -17,6 +20,6 @@ class FileMapperTest extends GroovyTestCase {
                     }
                 }
         )
-        assertEquals(Paths.get("/foo"), mapper.map(Paths.get("/foo/bar/baz")))
+        assert Paths.get("/foo") == mapper.map(Paths.get("/foo/bar/baz"))
     }
 }
