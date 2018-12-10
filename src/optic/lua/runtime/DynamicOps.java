@@ -4,12 +4,22 @@ package optic.lua.runtime;
 public class DynamicOps {
 	@RuntimeApi
 	public static double toNumber(Dynamic value) {
+		if (value.type == Dynamic.NUMBER) return ((DynamicNumber) value).value;
+		if (value.type == Dynamic.STRING) {
+			return Double.parseDouble(((DynamicString) value).value);
+		}
+		Errors.forbidden();
 		return -1;
 	}
 
 	@RuntimeApi
+	public static double toNumber(DynamicNumber value) {
+		return value.value;
+	}
+
+	@RuntimeApi
 	public static boolean isTruthy(Dynamic value) {
-		return false;
+		return value != DynamicNil.nil() && value != DynamicBool.FALSE;
 	}
 
 	@RuntimeApi
