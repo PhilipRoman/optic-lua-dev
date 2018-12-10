@@ -3,11 +3,13 @@ package optic.lua;
 import optic.lua.asm.*;
 import optic.lua.codegen.CodeOutput;
 import optic.lua.codegen.java.JavaCodeOutput;
+import optic.lua.files.Compiler;
 import optic.lua.messages.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.stream.*;
 
 public class Main {
@@ -15,11 +17,12 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		var codeSource = CodeSource.ofFile("sample.lua");
+		var temp = Files.createTempFile("optic_lua_", ".java");
 		var pipeline = new Pipeline(
 				codeSource,
 				MutableFlattener::flatten,
 				new LogMessageReporter(log, new SimpleMessageFormat()),
-				JavaCodeOutput.writingTo(System.err)
+				JavaCodeOutput.writingTo(Files.newOutputStream(temp))
 		);
 		try {
 			pipeline.run();
@@ -27,6 +30,8 @@ public class Main {
 			System.err.print("Failed!");
 			System.exit(1);
 		}
+		Files.copy(temp, System.err);
+		Compiler.run(temp);
 	}
 
 	private static class LogMessageReporter implements MessageReporter {

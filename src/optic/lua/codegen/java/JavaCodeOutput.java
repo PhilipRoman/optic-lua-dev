@@ -12,6 +12,24 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+/**
+ * Creates Java source code from given {@link AsmBlock}.
+ */
+/*
+ * A valid Java method (excluding void) must end with a return statement in
+ * every possible code path. Lua does not have such a restriction and simply
+ * returns [nil, nil, ...] when it reaches the end of a function. Furthermore,
+ * in Java, unreachable code is illegal.
+ *
+ * Since verifying whether code is reachable would be complicated, I've
+ * wrapped ALL function bodies like this:
+ *
+ * if(1 == 1) {
+ *   functionBodyGoesHere();
+ * }
+ * return MultiValue.of();
+ *
+ * */
 public class JavaCodeOutput {
 	private final TemplateOutput out;
 	private final AsmBlock block;
@@ -59,7 +77,7 @@ public class JavaCodeOutput {
 		var toNumber = (ToNumber) step;
 		var from = toNumber.getSource();
 		var to = toNumber.getTarget();
-		out.printLine("Dynamic ", to, " = DynamicOps.toNumber(", from, ");");
+		out.printLine("double ", to, " = DynamicOps.toNumber(", from, ");");
 	}
 
 	private void writeFunctionLiteral(Step step) throws CompilationFailure {
@@ -67,26 +85,30 @@ public class JavaCodeOutput {
 		var target = fn.getAssignTo().getName();
 		var params = fn.getParams().list();
 		var argsName = "args" + UniqueNames.next();
-		out.printLine("Dynamic ", target, " = DynamicFunction.make((", argsName, ") -> {");
+		out.printLine("Dynamic ", target, " = new DynamicFunction(){MultiValue call(MultiValue ", argsName, ") {");
 		out.addIndent();
 		for (var p : params) {
 			if (p.equals("...")) {
 				var varargName = "vararg" + UniqueNames.next();
 				varargNamesInFunction.addLast(Optional.of(varargName));
-				out.printLine("MultiValue ", varargName, " = ", argsName, ".getVarargs();");
+				int offset = params.size() - 1;
+				out.printLine("MultiValue ", varargName, " = ", argsName, ".selectFrom(", offset, ");");
 			} else {
-				out.printLine("Dynamic ", p, " = ", argsName, ".get(", params.indexOf(p), ");");
+				out.printLine("Dynamic ", p, " = ", argsName, ".select(", params.indexOf(p), ");");
 			}
 		}
 		if (!fn.getParams().hasVarargs()) {
 			varargNamesInFunction.addLast(Optional.empty());
 		}
+		out.printLine("if(1 == 1) {");
 		for (var s : fn.getBody().steps()) {
 			write(s);
 		}
+		out.printLine("}");
+		out.printLine("return MultiValue.of();");
 		varargNamesInFunction.removeLast();
 		out.removeIndent();
-		out.printLine("});");
+		out.printLine("}};");
 	}
 
 	private void writeLoadConstant(Step step) {
@@ -107,7 +129,9 @@ public class JavaCodeOutput {
 		Optional<Entry<Register, Register>> vararg = map.entrySet().stream()
 				.filter(e -> e.getValue().isVararg())
 				.findAny();
-		String list = map.entrySet().stream().map(e -> e.getKey() + ", " + e.getValue()).collect(Collectors.joining());
+		// vararg is treated separately, remove it from the map
+		vararg.ifPresent(v -> map.remove(v.getKey()));
+		String list = map.entrySet().stream().map(e -> e.getKey() + ", " + e.getValue()).collect(Collectors.joining(", "));
 		vararg.ifPresentOrElse(o -> {
 			var offset = o.getKey();
 			var value = o.getValue().getName();
@@ -149,7 +173,14 @@ public class JavaCodeOutput {
 	private void writeReturn(Step step) {
 		var ret = (Return) step;
 		var regs = ret.getRegisters();
-		out.printLine("return MultiValue.of(", commaList(regs), ");");
+		if (!regs.isEmpty() && regs.get(regs.size() - 1).isVararg()) {
+			var varargs = regs.get(regs.size() - 1).getName();
+			var values = new ArrayList<>(regs);
+			values.remove(values.size() - 1);
+			out.printLine("return MultiValue.of(", varargs, ", ", commaList(values), ");");
+		} else {
+			out.printLine("return MultiValue.of(", commaList(regs), ");");
+		}
 	}
 
 	private void writeGetVarargs(Step step) throws CompilationFailure {
@@ -168,17 +199,17 @@ public class JavaCodeOutput {
 		var n = select.getN();
 		var vararg = select.getVarargs().getName();
 		var target = select.getOut().getName();
-		out.printLine(target, " = MultiOps.select(", vararg, ", ", n, ");");
+		out.printLine("Dynamic ", target, " = ", vararg, ".select(", n, ");");
 	}
 
 	private void writeTableRead(Step step) {
 		var read = (TableRead) step;
-		out.printLine("Dynamic ", read.getOut(), " = DynamicOps.index(", read.getTable(), ", ", read.getKey(), ");");
+		out.printLine("Dynamic ", read.getOut(), " = ", read.getTable(), ".get(", read.getKey(), ");");
 	}
 
 	private void writeTableWrite(Step step) {
 		var write = (TableWrite) step;
-		out.printLine("DynamicOps.setIndex(", write.getField().getTable(), ", ", write.getField().getKey(), ", ", write.getValue(), ");");
+		out.printLine(write.getField().getTable(), ".set(", write.getField().getKey(), ", ", write.getValue(), ");");
 	}
 
 	private void writeWrite(Step step) {
@@ -193,7 +224,7 @@ public class JavaCodeOutput {
 				break;
 			}
 			case GLOBAL: {
-				out.printLine("_ENV.get().set(", write.getTarget(), ", ", write.getSource().getName(), ");");
+				out.printLine("_ENV.get().set(\"", write.getTarget(), "\", ", write.getSource().getName(), ");");
 				break;
 			}
 			default:
@@ -223,7 +254,7 @@ public class JavaCodeOutput {
 		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
 			out.printLine("Dynamic ", ((Declare) step).getName(), ";");
 		} else {
-			out.printLine("Upvalue ", declare.getName(), " = Upvalue.create();");
+			out.printLine("final UpValue ", declare.getName(), " = UpValue.create();");
 		}
 	}
 
@@ -234,9 +265,15 @@ public class JavaCodeOutput {
 	private void writeCall(Step step) {
 		var call = (Call) step;
 		var function = call.getFunction().getName();
-		var variable = call.getFunction().getName();
-		var args = commaList(call.getArgs());
-		out.printLine("Dynamic ", variable, " = DynamicOps.call(", function, ", MultiValue.of(", args, "));");
+		var argList = new ArrayList<>(call.getArgs());
+		boolean isVararg = !argList.isEmpty() && argList.get(argList.size() - 1).isVararg();
+		if (isVararg) {
+			// put the last element in the first position
+			argList.add(0, argList.remove(argList.size() - 1));
+		}
+		var prefix = call.getOutput().isUnused() ? "" : ("MultiValue " + call.getOutput().getName() + " = ");
+		var args = commaList(argList);
+		out.printLine(prefix, function, ".call(MultiValue.of(", args, "));");
 	}
 
 	private static CharSequence commaList(List<Register> args) {
@@ -253,7 +290,7 @@ public class JavaCodeOutput {
 
 	private void writeBranch(Step step) throws CompilationFailure {
 		var branch = (Branch) step;
-		out.printLine("if(DynamicOps.isTruthy(", branch.getCondition().getName(), ") {");
+		out.printLine("if(DynamicOps.isTruthy(", branch.getCondition().getName(), ")) {");
 		out.addIndent();
 		for (Step s : branch.getBody().steps()) {
 			write(s);
@@ -295,9 +332,17 @@ public class JavaCodeOutput {
 		var msg = Message.create("Java code output still in development!");
 		msg.setLevel(Level.WARNING);
 		reporter.report(msg);
+		out.printLine("import optic.lua.runtime.*;");
+		out.printLine("MultiValue main(final UpValue _ENV) {");
+		out.addIndent();
+		out.printLine("if(1 == 1) {");
 		for (var step : block.steps()) {
 			write(step);
 		}
+		out.printLine("}");
+		out.printLine("return MultiValue.of();");
+		out.removeIndent();
+		out.printLine("}");
 	}
 
 	private void illegalVarargUsage() throws CompilationFailure {
