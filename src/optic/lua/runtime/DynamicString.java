@@ -1,35 +1,78 @@
 package optic.lua.runtime;
 
-import java.lang.invoke.*;
-
 final class DynamicString extends Dynamic {
-	private static final MethodHandle STR_BYTES;
+	private static final DynamicString EMPTY = new DynamicString("");
+	private static final DynamicString[] chars = new DynamicString[128];
 
 	static {
-		MethodHandle strBytes;
-		try {
-			strBytes = MethodHandles.lookup().findGetter(String.class, "value", byte[].class);
-		} catch (NoSuchFieldException | IllegalAccessException e) {
-			System.err.println("Fast string array access not supported");
-			try {
-				strBytes = MethodHandles.lookup().findVirtual(String.class, "getBytes", MethodType.methodType(byte[].class));
-			} catch (NoSuchMethodException | IllegalAccessException e1) {
-				throw new AssertionError("You fucked up really bad.");
-			}
+		for (char i = 0; i < chars.length; i++) {
+			chars[i] = new DynamicString(String.valueOf(i));
 		}
-		STR_BYTES = strBytes;
 	}
 
-	//	final byte[] value;
 	final String value;
 
 	protected DynamicString(String value) {
 		super(Dynamic.STRING);
-//		try {
-//			this.value = (byte[])STR_BYTES.invokeExact(value);
-//		} catch (Throwable throwable) {
-//			throw new AssertionError("How did we get here?");
-//		}
 		this.value = value;
+	}
+
+	public static DynamicString of(String str) {
+		switch (str.length()) {
+			case 0:
+				return EMPTY;
+			case 1:
+				char c = str.charAt(0);
+				return c < 128 ? chars[c] : new DynamicString(String.valueOf(c));
+			default:
+				return new DynamicString(str);
+		}
+	}
+
+	DynamicString sub(int from, int to) {
+		from = normalizeIndex(from);
+		to = normalizeIndex(to);
+		// negative indices are counted from end
+		if (to <= 0 || from > to || from >= value.length()) {
+			return EMPTY;
+		}
+		if (from == to) {
+			return chars[value.charAt(from)];
+		}
+		return new DynamicString(value.substring(from, to + 1));
+	}
+
+	DynamicString sub(int from) {
+		from = normalizeIndex(from);
+		if (from >= value.length()) {
+			return EMPTY;
+		}
+		return new DynamicString(value.substring(from));
+	}
+
+	private int normalizeIndex(int n) {
+		if (n < 0) {
+			return Math.max(0, value.length() + n);
+		}
+		return Math.min(value.length(), n - 1);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return this == obj || obj instanceof DynamicString && ((DynamicString) obj).value.equals(value);
+	}
+
+	@Override
+	public int hashCode() {
+		return value.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return value;
+	}
+
+	public String value() {
+		return value;
 	}
 }
