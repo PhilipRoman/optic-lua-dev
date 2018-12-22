@@ -130,4 +130,8 @@ public class DynamicTable extends Dynamic {
 	public String toString() {
 		return "table 0x" + Integer.toHexString(hashCode());
 	}
+
+	Dynamic arrayGet(int i) {
+		return array.get(i-1);
+	}
 }

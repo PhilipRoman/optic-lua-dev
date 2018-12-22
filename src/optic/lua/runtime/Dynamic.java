@@ -18,25 +18,27 @@ public abstract class Dynamic {
 	}
 
 	@RuntimeApi
-	@SuppressWarnings("unchecked")
 	public static Dynamic of(Object x) {
-		if(x == null) {
+		if (x == null) {
 			return DynamicNil.nil();
 		}
-		if(x instanceof Dynamic) {
+		if (x instanceof Dynamic) {
 			return (Dynamic) x;
 		}
-		if(x instanceof Number) {
+		if (x instanceof Number) {
 			return DynamicNumber.of(((Number) x).doubleValue());
 		}
-		if(x instanceof CharSequence) {
+		if (x instanceof CharSequence) {
 			return DynamicString.of(x.toString());
 		}
-		if(x instanceof List) {
-			return DynamicTable.ofArray((List)x);
+		if (x instanceof List) {
+			return DynamicTable.ofArray((List) x);
 		}
-		if(x instanceof Map) {
-			return DynamicTable.ofMap((Map)x);
+		if (x instanceof Map) {
+			return DynamicTable.ofMap((Map) x);
+		}
+		if (x instanceof Boolean) {
+			return ((boolean) x) ? DynamicBool.TRUE : DynamicBool.FALSE;
 		}
 		return DynamicNil.nil();
 	}
