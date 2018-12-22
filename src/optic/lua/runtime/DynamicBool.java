@@ -7,4 +7,9 @@ final class DynamicBool extends Dynamic {
 	private DynamicBool() {
 		super(Dynamic.BOOL);
 	}
+
+	@Override
+	public String toString() {
+		return this == TRUE ? "true" : "false";
+	}
 }

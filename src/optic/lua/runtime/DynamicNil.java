@@ -10,4 +10,9 @@ final class DynamicNil extends Dynamic {
 	private DynamicNil() {
 		super(Dynamic.NIL);
 	}
+
+	@Override
+	public String toString() {
+		return "nil";
+	}
 }

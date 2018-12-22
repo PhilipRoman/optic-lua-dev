@@ -2,11 +2,15 @@ package optic.lua.runtime;
 
 final class DynamicNumber extends Dynamic {
 	final double value;
-	private static final DynamicNumber[] cache = new DynamicNumber[64];
+	private static final DynamicNumber[] cache = new DynamicNumber[128];
+	private static final String[] toStringCache = new String[10];
 
 	static {
 		for (int i = 0; i < cache.length; i++) {
 			cache[i] = new DynamicNumber(i);
+		}
+		for (int i = 0; i < toStringCache.length; i++) {
+			toStringCache[i] = Integer.toString(i);
 		}
 	}
 
@@ -17,7 +21,7 @@ final class DynamicNumber extends Dynamic {
 
 	public static DynamicNumber of(double x) {
 		int i;
-		if (x >= 0 && x < cache.length && (i = (int) x) == x) {
+		if ((i = (int) x) == x && i >= 0 && i < cache.length) {
 			return cache[i];
 		}
 		return new DynamicNumber(x);
@@ -25,5 +29,21 @@ final class DynamicNumber extends Dynamic {
 
 	public double value() {
 		return value;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return this == obj || obj instanceof DynamicNumber && ((DynamicNumber) obj).value == value;
+	}
+
+	@Override
+	public int hashCode() {
+		return (int) value;
+	}
+
+	@Override
+	public String toString() {
+		int i;
+		return (i = (int) value) == value && (i < toStringCache.length) && i >= 0 ? toStringCache[i] : Double.toString(i);
 	}
 }

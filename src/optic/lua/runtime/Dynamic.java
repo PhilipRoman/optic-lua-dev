@@ -1,5 +1,7 @@
 package optic.lua.runtime;
 
+import java.util.*;
+
 @RuntimeApi
 public abstract class Dynamic {
 	final int type;
@@ -16,8 +18,27 @@ public abstract class Dynamic {
 	}
 
 	@RuntimeApi
+	@SuppressWarnings("unchecked")
 	public static Dynamic of(Object x) {
-		return null;
+		if(x == null) {
+			return DynamicNil.nil();
+		}
+		if(x instanceof Dynamic) {
+			return (Dynamic) x;
+		}
+		if(x instanceof Number) {
+			return DynamicNumber.of(((Number) x).doubleValue());
+		}
+		if(x instanceof CharSequence) {
+			return DynamicString.of(x.toString());
+		}
+		if(x instanceof List) {
+			return DynamicTable.ofArray((List)x);
+		}
+		if(x instanceof Map) {
+			return DynamicTable.ofMap((Map)x);
+		}
+		return DynamicNil.nil();
 	}
 
 	@RuntimeApi
