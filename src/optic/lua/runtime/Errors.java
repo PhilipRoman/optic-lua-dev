@@ -9,7 +9,7 @@ class Errors {
 		throw new IllegalArgumentException("Bad parameter #" + n + " (" + expected + " expected)");
 	}
 
-	public static void notInt(Dynamic value) {
+	public static void notInt(Object value) {
 		throw new IllegalArgumentException("Value " + value + " has no integer representation");
 	}
 }

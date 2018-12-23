@@ -1,80 +1,100 @@
 package optic.lua.runtime;
 
+import java.util.*;
+
 public class StandardLibrary {
+	private static final boolean USE_CLASS_PREDICTION = true;
 
-	private static final DynamicString HASH_STRING = DynamicString.of("#");
-
-	private static final MultiValue[] TYPE_STRING_CACHE = {
-			MultiValue.of(DynamicString.of("nil")),
-			MultiValue.of(DynamicString.of("number")),
-			MultiValue.of(DynamicString.of("function")),
-			MultiValue.of(DynamicString.of("string")),
-			MultiValue.of(DynamicString.of("bool")),
-			MultiValue.of(DynamicString.of("table")),
-	};
-
-	public static MultiValue tostring(MultiValue args) {
-		if (args.length() == 0) {
-			Errors.argument(1, "value");
-			return null;
-		}
-		return MultiValue.of(DynamicString.of(args.select(0).toString()));
+	public static double toNumber(double d) {
+		return d;
 	}
 
-	public static MultiValue type(MultiValue args) {
-		if (args.length() == 0) {
-			Errors.argument(1, "value");
-			return null;
-		}
-		Dynamic x = args.select(0);
-		return TYPE_STRING_CACHE[x.type];
+	public static double toNumber(Double d) {
+		Objects.requireNonNull(d);
+		return d;
 	}
 
-	public static MultiValue select(MultiValue args) {
-		var symbol = args.select(0);
-		if (symbol.equals(HASH_STRING)) {
-			return MultiValue.singleInt(args.length() - 1);
-		} else if (symbol.type == Dynamic.NUMBER) {
-			int n = DynamicOps.toInt(symbol);
-			return args.selectFrom(n);
-		} else {
-			Errors.argument(1, "integer or '#'");
+	public static Double toNumber(String s) {
+		Objects.requireNonNull(s);
+		try {
+			return Double.parseDouble(s);
+		} catch (NumberFormatException e) {
 			return null;
 		}
 	}
 
-	public static MultiValue table_concat(MultiValue args) {
-		Dynamic first = args.select(0);
-		if (first.type != Dynamic.TABLE) {
-			Errors.argument(1, "table");
-			return null;
+	public static Double toNumber(Object o) {
+		Objects.requireNonNull(o);
+		if (USE_CLASS_PREDICTION && o.getClass() == String.class) {
+			return toNumber((String) o);
 		}
-		DynamicTable table = (DynamicTable) first;
-		int len = table.length();
-		if (len == 0) {
-			return MultiValue.of(DynamicString.of(""));
+		if (USE_CLASS_PREDICTION && o.getClass() == Double.class) {
+			return (double) o;
 		}
+		if (o instanceof CharSequence) {
+			return toNumber(o.toString());
+		}
+		if (o instanceof Number) {
+			return ((Number) o).doubleValue();
+		}
+		return null;
+	}
+
+	public static CharSequence toString(Object o) {
+		if (o instanceof CharSequence) {
+			return (CharSequence) o;
+		}
+		return Objects.toString(o, "nil");
+	}
+
+	public static CharSequence toString(double d) {
+		return Double.toString(d);
+	}
+
+	public static void print(Object... o) {
+		int lim = o.length - 1;
+		for (int i = 0; i < lim; i++) {
+			System.out.print(o[i]);
+			System.out.write('\t');
+		}
+		System.out.println(o[lim]);
+	}
+
+	public static void print(double d) {
+		System.out.println(d);
+	}
+
+	public static void print(CharSequence s) {
+		System.out.println(s == null ? "nil" : s);
+	}
+
+	public static void print(String s) {
+		System.out.println(s == null ? "nil" : s);
+	}
+
+	public static void print(Object s) {
+		System.out.println(s == null ? "nil" : s);
+	}
+
+	public static CharSequence tableConcat(LuaTable table) {
+		int length = table.length();
+		ArrayList<?> array = table.array;
 		int size = 0;
-		for (int i = 1; i <= len; i++) {
-			Dynamic value = table.arrayGet(i);
-			switch (value.type) {
-				case Dynamic.FUNCTION:
-				case Dynamic.BOOL:
-				case Dynamic.TABLE:
-				case Dynamic.NIL:
-					throw new IllegalArgumentException("Invalid value (" + value + ") #" + i);
-				case Dynamic.NUMBER:
-					size += 8;
-					break;
-				case Dynamic.STRING:
-					size += ((DynamicString) value).value.length();
-					break;
+		for (int i = 0; i < length; i++) {
+			Object o = array.get(i);
+			if (o instanceof Number) {
+				size += 8;
+			} else if (o instanceof CharSequence) {
+				size += ((CharSequence) o).length();
+			} else {
+				throw new IllegalArgumentException("Illegal value (" + o + "), expected string or number");
 			}
 		}
 		StringBuilder builder = new StringBuilder(size);
-		for (int i = 1; i <= len; i++) {
-			builder.append(table.arrayGet(i).toString());
+		for (int i = 0; i < length; i++) {
+			Object o = array.get(i);
+			builder.append(o);
 		}
-		return MultiValue.of(DynamicString.of(builder.toString()));
+		return builder;
 	}
 }

@@ -77,7 +77,7 @@ public class JavaCodeOutput {
 		var toNumber = (ToNumber) step;
 		var from = toNumber.getSource();
 		var to = toNumber.getTarget();
-		out.printLine("double ", to, " = DynamicOps.toNumber(", from, ");");
+		out.printLine("double ", to, " = StandardLibrary.toNumber(", from, ");");
 	}
 
 	private void writeFunctionLiteral(Step step) throws CompilationFailure {
@@ -85,16 +85,16 @@ public class JavaCodeOutput {
 		var target = fn.getAssignTo().getName();
 		var params = fn.getParams().list();
 		var argsName = "args" + UniqueNames.next();
-		out.printLine("Dynamic ", target, " = new DynamicFunction(){MultiValue call(MultiValue ", argsName, ") {");
+		out.printLine("LuaFunction ", target, " = new LuaFunction(){Object[] call(Object[] ", argsName, ") {");
 		out.addIndent();
 		for (var p : params) {
 			if (p.equals("...")) {
 				var varargName = "vararg" + UniqueNames.next();
 				varargNamesInFunction.addLast(Optional.of(varargName));
 				int offset = params.size() - 1;
-				out.printLine("MultiValue ", varargName, " = ", argsName, ".selectFrom(", offset, ");");
+				out.printLine("Object[] ", varargName, " = ListOps.sublist(", argsName, ", ", offset, ");");
 			} else {
-				out.printLine("Dynamic ", p, " = ", argsName, ".select(", params.indexOf(p), ");");
+				out.printLine("Object ", p, " = ListOps.get(", argsName, ", ", params.indexOf(p), ");");
 			}
 		}
 		if (!fn.getParams().hasVarargs()) {
@@ -105,7 +105,7 @@ public class JavaCodeOutput {
 			write(s);
 		}
 		out.printLine("}");
-		out.printLine("return MultiValue.of();");
+		out.printLine("return ListOps.empty();");
 		varargNamesInFunction.removeLast();
 		out.removeIndent();
 		out.printLine("}};");
@@ -119,7 +119,11 @@ public class JavaCodeOutput {
 		} else if (c instanceof String) {
 			c = '"' + c.toString() + '"';
 		}
-		out.printLine("Dynamic ", target, " = Dynamic.of(", c, ");");
+		String typeName = c.getClass().getSimpleName();
+		if (c.getClass() == Double.class) {
+			typeName = "double";
+		}
+		out.printLine(typeName, " ", target, " = ", c, ";");
 	}
 
 	private void writeMakeTable(Step step) {
@@ -135,9 +139,9 @@ public class JavaCodeOutput {
 		vararg.ifPresentOrElse(o -> {
 			var offset = o.getKey();
 			var value = o.getValue().getName();
-			out.printLine("Dynamic ", result, " = TableOps.createWithVararg(", offset, ", ", value, ", ", list, ");");
+			out.printLine("LuaTable ", result, " = TableOps.createWithVararg(", offset, ", ", value, ", ", list, ");");
 		}, () -> {
-			out.printLine("Dynamic ", result, " = TableOps.create(", list, ");");
+			out.printLine("LuaTable ", result, " = TableOps.create(", list, ");");
 		});
 	}
 
@@ -147,22 +151,22 @@ public class JavaCodeOutput {
 		var b = op.getB().getName();
 		var symbol = '"' + op.getSymbol() + '"';
 		var target = op.getTarget().getName();
-		out.printLine("Dynamic ", target, " = DynamicOps.operator(", a, ", ", symbol, ", ", b, ");");
+		out.printLine("Object ", target, " = DynamicOps.operator(", a, ", ", symbol, ", ", b, ");");
 	}
 
 	private void writeRead(Step step) {
 		var read = (Read) step;
 		switch (read.getSourceInfo().getMode()) {
 			case LOCAL: {
-				out.printLine("Dynamic ", read.getRegister(), " = ", read.getName(), ";");
+				out.printLine("Object ", read.getRegister(), " = ", read.getName(), ";");
 				break;
 			}
 			case UPVALUE: {
-				out.printLine("Dynamic ", read.getRegister(), " = ", read.getName(), ".get();");
+				out.printLine("Object ", read.getRegister(), " = ", read.getName(), ".get();");
 				break;
 			}
 			case GLOBAL: {
-				out.printLine("Dynamic ", read.getRegister(), " = ", "_ENV.get().get(\"", read.getName(), "\");");
+				out.printLine("Object ", read.getRegister(), " = EnvOps.get(_ENV, \"", read.getName(), "\");");
 				break;
 			}
 			default:
@@ -177,9 +181,9 @@ public class JavaCodeOutput {
 			var varargs = regs.get(regs.size() - 1).getName();
 			var values = new ArrayList<>(regs);
 			values.remove(values.size() - 1);
-			out.printLine("return MultiValue.of(", varargs, ", ", commaList(values), ");");
+			out.printLine("return ListOps.concat(", varargs, ", ", commaList(values), ");");
 		} else {
-			out.printLine("return MultiValue.of(", commaList(regs), ");");
+			out.printLine("return ListOps.create(", commaList(regs), ");");
 		}
 	}
 
@@ -188,7 +192,7 @@ public class JavaCodeOutput {
 		var varargsName = varargNamesInFunction.getLast();
 		if (varargsName.isPresent()) {
 			var varargs = varargsName.get();
-			out.printLine("MultiValue ", g.getTo().getName(), " = ", varargs, ";");
+			out.printLine("Object[] ", g.getTo().getName(), " = ", varargs, ";");
 		} else {
 			illegalVarargUsage();
 		}
@@ -199,17 +203,17 @@ public class JavaCodeOutput {
 		var n = select.getN();
 		var vararg = select.getVarargs().getName();
 		var target = select.getOut().getName();
-		out.printLine("Dynamic ", target, " = ", vararg, ".select(", n, ");");
+		out.printLine("Object ", target, " = ListOps.get(", vararg, ", ", n, ");");
 	}
 
 	private void writeTableRead(Step step) {
 		var read = (TableRead) step;
-		out.printLine("Dynamic ", read.getOut(), " = ", read.getTable(), ".get(", read.getKey(), ");");
+		out.printLine("Object ", read.getOut(), " = DynamicOps.index(", read.getTable(), ", ", read.getKey(), ");");
 	}
 
 	private void writeTableWrite(Step step) {
 		var write = (TableWrite) step;
-		out.printLine(write.getField().getTable(), ".set(", write.getField().getKey(), ", ", write.getValue(), ");");
+		out.printLine("DynamicOps.setIndex(", write.getField().getTable(), ", ", write.getField().getKey(), ", ", write.getValue(), ");");
 	}
 
 	private void writeWrite(Step step) {
@@ -224,7 +228,7 @@ public class JavaCodeOutput {
 				break;
 			}
 			case GLOBAL: {
-				out.printLine("_ENV.get().set(\"", write.getTarget(), "\", ", write.getSource().getName(), ");");
+				out.printLine("EnvOps.set(_ENV, \"", write.getTarget(), "\", ", write.getSource().getName(), ");");
 				break;
 			}
 			default:
@@ -237,10 +241,8 @@ public class JavaCodeOutput {
 		var from = loop.getFrom().getName();
 		var to = loop.getTo().getName();
 		var name = loop.getVarName();
-		var loopName = RegisterFactory.create().getName();
-		out.printLine("for(double ", loopName, " = ", from, "; ", loopName, " <= ", to, "; ", loopName, "++) {");
+		out.printLine("for(double ", name, " = ", from, "; ", name, " <= ", to, "; ", name, "++) {");
 		out.addIndent();
-		out.printLine("Dynamic ", name, " = Dynamic.of(", loopName, ");");
 		for (Step s : loop.getBlock().steps()) {
 			write(s);
 		}
@@ -252,7 +254,7 @@ public class JavaCodeOutput {
 		var declare = (Declare) step;
 		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
 		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
-			out.printLine("Dynamic ", ((Declare) step).getName(), ";");
+			out.printLine("Object ", ((Declare) step).getName(), ";");
 		} else {
 			out.printLine("final UpValue ", declare.getName(), " = UpValue.create();");
 		}
@@ -271,9 +273,9 @@ public class JavaCodeOutput {
 			// put the last element in the first position
 			argList.add(0, argList.remove(argList.size() - 1));
 		}
-		var prefix = call.getOutput().isUnused() ? "" : ("MultiValue " + call.getOutput().getName() + " = ");
+		var prefix = call.getOutput().isUnused() ? "" : ("Object[] " + call.getOutput().getName() + " = ");
 		var args = commaList(argList);
-		out.printLine(prefix, function, ".call(MultiValue.of(", args, "));");
+		out.printLine(prefix, "FunctionOps.call(", function, argList.isEmpty() ? "" : ", ", args, ");");
 	}
 
 	private static CharSequence commaList(List<Register> args) {
@@ -290,7 +292,7 @@ public class JavaCodeOutput {
 
 	private void writeBranch(Step step) throws CompilationFailure {
 		var branch = (Branch) step;
-		out.printLine("if(DynamicOps.isTruthy(", branch.getCondition().getName(), ")) {");
+		out.printLine("if(DynamicOps.isTrue(", branch.getCondition().getName(), ")) {");
 		out.addIndent();
 		for (Step s : branch.getBody().steps()) {
 			write(s);
@@ -333,14 +335,14 @@ public class JavaCodeOutput {
 		msg.setLevel(Level.WARNING);
 		reporter.report(msg);
 		out.printLine("import optic.lua.runtime.*;");
-		out.printLine("MultiValue main(final UpValue _ENV) {");
+		out.printLine("Object[] main(final UpValue _ENV, Object[] args) {");
 		out.addIndent();
 		out.printLine("if(1 == 1) {");
 		for (var step : block.steps()) {
 			write(step);
 		}
 		out.printLine("}");
-		out.printLine("return MultiValue.of();");
+		out.printLine("return ListOps.empty();");
 		out.removeIndent();
 		out.printLine("}");
 	}
