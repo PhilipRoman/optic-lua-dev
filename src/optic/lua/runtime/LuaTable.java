@@ -14,7 +14,11 @@ public class LuaTable {
 	}
 
 	public static LuaTable ofArray(List<?> values) {
-		return new LuaTable(new HashMap<>(0), new ArrayList<>(values), values.size());
+		int size = values.indexOf(null);
+		if (size < 0) {
+			size = values.size();
+		}
+		return new LuaTable(new HashMap<>(0), new ArrayList<>(values), size);
 	}
 
 	public static LuaTable copyOf(LuaTable src) {
@@ -38,7 +42,7 @@ public class LuaTable {
 			double x = num.doubleValue();
 			int i;
 			if ((i = (int) x) == x && i >= 1 && i <= array.size()) {
-				return array.get(i-1);
+				return array.get(i - 1);
 			}
 		}
 		return hash.get(key);
@@ -50,7 +54,7 @@ public class LuaTable {
 
 	public Object get(int key) {
 		if (key >= 1 && key <= array.size()) {
-			return array.get(key-1);
+			return array.get(key - 1);
 		} else {
 			return hash.get(key);
 		}
@@ -65,22 +69,22 @@ public class LuaTable {
 			int i;
 			if ((i = (int) x) == x && i >= 1) {
 				int size = array.size();
-				if (i-1 < size) {
+				if (i - 1 < size) {
 					if (remove) {
 						if (length >= i) {
 							length = i - 1;
 						}
 					} else {
-						array.set(i-1, value);
+						array.set(i - 1, value);
 					}
 					return;
-				} else if (i-1 == size) {
-					if (remove) {
-						length--;
-						array.remove(i);
-					} else {
+				} else if (i - 1 == size) {
+					if (!remove) {
 						length++;
 						array.add(value);
+					} else if (!array.isEmpty()) {
+						length--;
+						array.remove(i - 1);
 					}
 					return;
 				}
@@ -117,6 +121,6 @@ public class LuaTable {
 	}
 
 	Object arrayGet(int i) {
-		return array.get(i-1);
+		return array.get(i - 1);
 	}
 }

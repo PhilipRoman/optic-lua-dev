@@ -53,4 +53,13 @@ class LuaTableTest extends GroovyTestCase {
         table.set(11, null)
         assert table.length() == 10
     }
+
+    void testNullValues() {
+        def table = LuaTable.ofMap(1: null, 2: "foo", 3: "bar")
+        assert table.get(1) == null
+        assert table.get(2) == "foo"
+        assert table.get(3) == "bar"
+        assert table.get(4) == null
+        assert table.get(0) == null
+    }
 }

@@ -24,7 +24,9 @@ public class StandardLibrary {
 	}
 
 	public static Double toNumber(Object o) {
-		Objects.requireNonNull(o);
+		if (o == null) {
+			return null;
+		}
 		if (USE_CLASS_PREDICTION && o.getClass() == String.class) {
 			return toNumber((String) o);
 		}
@@ -47,7 +49,7 @@ public class StandardLibrary {
 		return Objects.toString(o, "nil");
 	}
 
-	public static CharSequence toString(double d) {
+	public static String toString(double d) {
 		return Double.toString(d);
 	}
 
@@ -76,6 +78,13 @@ public class StandardLibrary {
 		System.out.println(s == null ? "nil" : s);
 	}
 
+	public static CharSequence tableConcat(Object arg) {
+		if (arg instanceof LuaTable) {
+			return tableConcat((LuaTable) arg);
+		}
+		throw new IllegalArgumentException("Expected table, got " + arg);
+	}
+
 	public static CharSequence tableConcat(LuaTable table) {
 		int length = table.length();
 		ArrayList<?> array = table.array;
@@ -87,7 +96,7 @@ public class StandardLibrary {
 			} else if (o instanceof CharSequence) {
 				size += ((CharSequence) o).length();
 			} else {
-				throw new IllegalArgumentException("Illegal value (" + o + "), expected string or number");
+				throw new IllegalArgumentException("Illegal value (" + toString(o) + "), expected string or number");
 			}
 		}
 		StringBuilder builder = new StringBuilder(size);
