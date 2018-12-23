@@ -68,6 +68,10 @@ public class MutableFlattener {
 		return flatten(tree, reporter, this, false, List.of());
 	}
 
+	private AsmBlock flattenBlock(CommonTree tree, List<String> locals) throws CompilationFailure {
+		return flatten(tree, reporter, this, false, locals);
+	}
+
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
 		return flatten(tree, reporter, this, true, params.list());
 	}
@@ -118,7 +122,7 @@ public class MutableFlattener {
 				Register from = toNumber(flattenExpression(t.getChild(1)));
 				Register to = toNumber(flattenExpression(t.getChild(2)));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				AsmBlock body = flattenBlock(block);
+				AsmBlock body = flattenBlock(block, List.of(varName));
 				steps.add(StepFactory.forRange(varName, from, to, body));
 				return;
 			}
