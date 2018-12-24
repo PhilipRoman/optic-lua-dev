@@ -4,16 +4,17 @@ package optic.lua.runtime;
 public class FunctionOps {
 	@RuntimeApi
 	public static Object[] call(Object func, Object... args) {
-		return null;
+		if (func instanceof LuaFunction) {
+			return ((LuaFunction) func).call(args);
+		}
+		throw new IllegalArgumentException("attempt to call a " + StandardLibrary.type(func) + " value");
 	}
 
 	@RuntimeApi
-	public static Object[] call(Object func, Object arg) {
-		return null;
-	}
-
-	@RuntimeApi
-	public static Object[] call(Object func, Object arg1, Object arg2) {
-		return null;
+	public static Object[] call(Object func, Object[] trailing, Object... args) {
+		if (func instanceof LuaFunction) {
+			return ((LuaFunction) func).call(ListOps.concat(trailing, args));
+		}
+		throw new IllegalArgumentException("attempt to call a " + StandardLibrary.type(func) + " value");
 	}
 }

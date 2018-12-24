@@ -27,13 +27,14 @@ import java.util.stream.Collectors;
  * if(1 == 1) {
  *   functionBodyGoesHere();
  * }
- * return MultiValue.of();
+ * return EMPTY_ARRAY;
  *
  * */
 public class JavaCodeOutput {
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final MessageReporter reporter;
+	private boolean keepComments = false;
 	/**
 	 * <p>
 	 * Stack containing names of varargs variables in nested functions.
@@ -261,7 +262,9 @@ public class JavaCodeOutput {
 	}
 
 	private void writeComment(Step step) {
-		out.printLine("// ", ((Comment) step).getText());
+		if (keepComments) {
+			out.printLine("// ", ((Comment) step).getText());
+		}
 	}
 
 	private void writeCall(Step step) {
@@ -335,16 +338,14 @@ public class JavaCodeOutput {
 		msg.setLevel(Level.WARNING);
 		reporter.report(msg);
 		out.printLine("import optic.lua.runtime.*;");
-		out.printLine("Object[] main(final UpValue _ENV, Object[] args) {");
+		out.printLine("static Object[] main(final UpValue _ENV, Object[] args) { if(1 == 1) {");
 		out.addIndent();
-		out.printLine("if(1 == 1) {");
 		for (var step : block.steps()) {
 			write(step);
 		}
-		out.printLine("}");
-		out.printLine("return ListOps.empty();");
 		out.removeIndent();
-		out.printLine("}");
+		out.printLine("} return ListOps.empty(); }");
+		out.printLine("main(UpValue.create(EnvOps.createEnv()), new Object[0]);");
 	}
 
 	private void illegalVarargUsage() throws CompilationFailure {

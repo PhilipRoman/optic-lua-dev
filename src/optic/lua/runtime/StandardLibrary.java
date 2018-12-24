@@ -106,4 +106,26 @@ public class StandardLibrary {
 		}
 		return builder;
 	}
+
+	public static String type(Object x) {
+		if (x == null) {
+			return "nil";
+		}
+		if (x instanceof CharSequence) {
+			return "string";
+		}
+		if (x instanceof Number) {
+			return "number";
+		}
+		if (x instanceof LuaFunction) {
+			return "function";
+		}
+		if (x instanceof LuaTable) {
+			return "table";
+		}
+		if (x.getClass() == Boolean.class) {
+			return "bool";
+		}
+		return "userdata";
+	}
 }

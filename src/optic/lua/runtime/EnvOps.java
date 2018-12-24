@@ -11,4 +11,14 @@ public class EnvOps {
 	public static void set(UpValue _ENV, String key, Object value) {
 		((LuaTable) _ENV.value).set(key, value);
 	}
+
+	@RuntimeApi
+	public static LuaTable createEnv() {
+		LuaTable env = new LuaTable(64, 0);
+		env.set("print", LuaFunction.of(objects -> {
+			StandardLibrary.print(objects);
+			return ListOps.empty();
+		}));
+		return env;
+	}
 }
