@@ -42,10 +42,7 @@ public class StandardLibrary {
 		return null;
 	}
 
-	public static CharSequence toString(Object o) {
-		if (o instanceof CharSequence) {
-			return (CharSequence) o;
-		}
+	public static String toString(Object o) {
 		return Objects.toString(o, "nil");
 	}
 

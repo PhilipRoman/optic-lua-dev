@@ -25,6 +25,10 @@ public class DynamicOps {
 					return a.toString().contentEquals((CharSequence) b);
 				}
 				return Objects.equals(a, b);
+			case "..":
+				Objects.requireNonNull(a);
+				Objects.requireNonNull(b);
+				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
 		}
 		return null;
 	}

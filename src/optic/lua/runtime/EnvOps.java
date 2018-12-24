@@ -1,6 +1,6 @@
 package optic.lua.runtime;
 
-import java.util.Map;
+import java.util.*;
 
 @RuntimeApi
 public class EnvOps {
@@ -68,6 +68,14 @@ public class EnvOps {
 				return ListOps.create(false, msg);
 			}
 		}));
+		env.set("os", LuaTable.ofMap(Map.of(
+				"time", LuaFunction.of(args -> ListOps.create(System.currentTimeMillis()))
+		)));
+		env.set("math", LuaTable.ofMap(Map.of(
+				"floor", LuaFunction.of(args -> ListOps.create(
+						Math.floor(Objects.requireNonNull(StandardLibrary.toNumber(ListOps.get(args, 0))))
+				))
+		)));
 		return env;
 	}
 }
