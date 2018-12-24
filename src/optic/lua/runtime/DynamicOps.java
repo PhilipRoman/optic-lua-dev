@@ -45,8 +45,9 @@ public class DynamicOps {
 	public static void setIndex(Object obj, Object key, Object value) {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
+		} else {
+			throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value");
 		}
-		throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value");
 	}
 
 	@RuntimeApi
