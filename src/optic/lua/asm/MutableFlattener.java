@@ -30,6 +30,11 @@ public class MutableFlattener {
 	// whether or not local variables from parent are accessed as upvalues
 	private final boolean lexicalBoundary;
 	private final MessageReporter reporter;
+	private final VariableInfo _ENV = new VariableInfo("_ENV");
+
+	{
+		_ENV.markAsUpvalue();
+	}
 
 	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, MessageReporter reporter) {
 		this.parent = parent;
@@ -81,6 +86,9 @@ public class MutableFlattener {
 		var localVar = locals.get(name);
 		if (localVar != null) {
 			return localVar;
+		}
+		if (name.equals("_ENV")) {
+			return _ENV;
 		}
 		if (parent == null) {
 			return null;
