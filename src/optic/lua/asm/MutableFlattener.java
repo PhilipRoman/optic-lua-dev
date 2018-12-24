@@ -177,8 +177,8 @@ public class MutableFlattener {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			var register = RegisterFactory.create();
-			var a = flattenExpression(t.getChild(0));
-			var b = flattenExpression(t.getChild(1));
+			var a = discardRemaining(flattenExpression(t.getChild(0)));
+			var b = discardRemaining(flattenExpression(t.getChild(1)));
 			String op = t.getText();
 			steps.add(StepFactory.binaryOperator(a, b, op, register));
 			return register;
@@ -186,7 +186,7 @@ public class MutableFlattener {
 		if (Operators.isUnary(t)) {
 			var register = RegisterFactory.create();
 			String op = Operators.getUnarySymbol(t);
-			Register param = flattenExpression(t.getChild(0));
+			Register param = discardRemaining(flattenExpression(t.getChild(0)));
 			steps.add(StepFactory.unaryOperator(param, op, register));
 			return register;
 		}

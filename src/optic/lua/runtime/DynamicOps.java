@@ -1,5 +1,7 @@
 package optic.lua.runtime;
 
+import java.util.Objects;
+
 import static optic.lua.runtime.StandardLibrary.toNumber;
 
 @RuntimeApi
@@ -15,6 +17,14 @@ public class DynamicOps {
 				return toNumber(a) * toNumber(b);
 			case "/":
 				return toNumber(a) / toNumber(b);
+			case "==":
+				if (a instanceof Number && b instanceof Number) {
+					return ((Number) a).doubleValue() == ((Number) b).doubleValue();
+				}
+				if (a instanceof CharSequence && b instanceof CharSequence) {
+					return a.toString().contentEquals((CharSequence) b);
+				}
+				return Objects.equals(a, b);
 		}
 		return null;
 	}

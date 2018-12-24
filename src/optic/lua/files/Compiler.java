@@ -13,8 +13,10 @@ public class Compiler {
 		try {
 			evaluator.cookFile(path.toAbsolutePath().toString());
 			evaluator.evaluate(new Object[0]);
-		} catch (CompileException | IOException | InvocationTargetException e) {
+		} catch (CompileException | IOException e) {
 			throw new RuntimeException(e);
+		} catch (InvocationTargetException e) {
+			throw new RuntimeException(e.getCause().getMessage());
 		}
 	}
 }

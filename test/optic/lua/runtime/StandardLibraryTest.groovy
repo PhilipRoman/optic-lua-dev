@@ -36,6 +36,11 @@ class StandardLibraryTest extends GroovyTestCase {
         shouldFail {
             StandardLibrary.tableConcat((LuaTable) null)
         }
+        LuaTable table = LuaTable.ofArray([])
+        table.set(2, "b")
+        table.set(3, "c")
+        table.set(1, "a")
+        assert StandardLibrary.tableConcat(table).toString() == "abc"
     }
 
     void testPrint() {

@@ -87,10 +87,9 @@ public class StandardLibrary {
 
 	public static CharSequence tableConcat(LuaTable table) {
 		int length = table.length();
-		ArrayList<?> array = table.array;
 		int size = 0;
-		for (int i = 0; i < length; i++) {
-			Object o = array.get(i);
+		for (int i = 1; i <= length; i++) {
+			Object o = table.get(i);
 			if (o instanceof Number) {
 				size += 8;
 			} else if (o instanceof CharSequence) {
@@ -100,11 +99,11 @@ public class StandardLibrary {
 			}
 		}
 		StringBuilder builder = new StringBuilder(size);
-		for (int i = 0; i < length; i++) {
-			Object o = array.get(i);
+		for (int i = 1; i <= length; i++) {
+			Object o = table.get(i);
 			builder.append(o);
 		}
-		return builder;
+		return builder.length() < 16 ? builder.toString() : builder;
 	}
 
 	public static String type(Object x) {

@@ -46,6 +46,9 @@ public class ListOps {
 		if (from == array.length) {
 			return EMPTY;
 		}
+		if (from == 0) {
+			return array;
+		}
 		Object[] sub = new Object[array.length - from];
 		System.arraycopy(array, from, sub, 0, sub.length);
 		return sub;
