@@ -10,6 +10,7 @@ import org.slf4j.*;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.Set;
 import java.util.stream.*;
 
 public class Main {
@@ -19,9 +20,10 @@ public class Main {
 		var codeSource = CodeSource.ofFile("samples/spectral-norm.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var pipeline = new Pipeline(
+				Set.of(Option.KEEP_COMMENTS, Option.DEBUG_COMMENTS),
+				new LogMessageReporter(log, new SimpleMessageFormat()),
 				codeSource,
 				MutableFlattener::flatten,
-				new LogMessageReporter(log, new SimpleMessageFormat()),
 				JavaCodeOutput.writingTo(Files.newOutputStream(temp))
 		);
 		try {
@@ -102,7 +104,7 @@ public class Main {
 		}
 
 		@Override
-		public void output(AsmBlock body, MessageReporter reporter) {
+		public void output(AsmBlock body, Context context) {
 			body.steps().forEach(step -> print(step, 0));
 		}
 

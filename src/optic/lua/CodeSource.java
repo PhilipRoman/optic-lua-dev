@@ -15,7 +15,7 @@ public interface CodeSource {
 	 * for purposes such as error reporting, benchmarking, etc.
 	 */
 	@NotNull
-	CharStream newCharStream(MessageReporter reporter) throws CompilationFailure;
+	CharStream newCharStream(Context context) throws CompilationFailure;
 
 	/**
 	 * @return a human-friendly, short name which identifies this source. The name
@@ -57,7 +57,7 @@ public interface CodeSource {
 
 		@NotNull
 		@Override
-		public CharStream newCharStream(MessageReporter reporter) throws CompilationFailure {
+		public CharStream newCharStream(Context context) throws CompilationFailure {
 			final CharStream stream;
 			try {
 				stream = streamSupplier.get();
@@ -65,7 +65,7 @@ public interface CodeSource {
 				var msg = Message.create("Could not obtain character stream");
 				msg.setCause(e);
 				msg.setLevel(Level.ERROR);
-				reporter.report(msg);
+				context.reporter().report(msg);
 				throw new CompilationFailure();
 			}
 			Objects.requireNonNull(stream);

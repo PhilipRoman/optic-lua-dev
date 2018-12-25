@@ -2,9 +2,9 @@
 -- https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 -- originally contributed by Mike Pall
 
-local function A(p_i, p_j)
+local function A(p_i, j)
     local i = 0+p_i
-    local j = 0+p_j
+    --local j = 0+p_j
     local ij = i+j-1
     return 1.0 / (ij * (ij-1) * 0.5 + i)
 end

@@ -29,31 +29,31 @@ public class MutableFlattener {
 	private final MutableFlattener parent;
 	// whether or not local variables from parent are accessed as upvalues
 	private final boolean lexicalBoundary;
-	private final MessageReporter reporter;
 	private final VariableInfo _ENV = new VariableInfo("_ENV");
+	private final Context context;
 
 	{
 		_ENV.markAsUpvalue();
 	}
 
-	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, MessageReporter reporter) {
+	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Context context) {
 		this.parent = parent;
 		lexicalBoundary = boundary;
 		Objects.requireNonNull(steps);
-		Objects.requireNonNull(reporter);
-		this.reporter = reporter;
+		Objects.requireNonNull(context);
+		this.context = context;
 		this.steps = steps;
 	}
 
-	public static AsmBlock flatten(CommonTree tree, MessageReporter reporter) throws CompilationFailure {
-		return flatten(tree, reporter, null, false, List.of());
+	public static AsmBlock flatten(CommonTree tree, Context context) throws CompilationFailure {
+		return flatten(tree, context, null, false, List.of());
 	}
 
-	private static AsmBlock flatten(CommonTree tree, MessageReporter reporter, MutableFlattener parent, boolean boundary, List<VariableInfo> locals) throws CompilationFailure {
+	private static AsmBlock flatten(CommonTree tree, Context context, MutableFlattener parent, boolean boundary, List<VariableInfo> locals) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
-		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, boundary, reporter);
+		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, boundary, context);
 		for (var local : locals) {
 			f.locals.put(local.getName(), local);
 		}
@@ -70,22 +70,24 @@ public class MutableFlattener {
 	}
 
 	private AsmBlock flattenBlock(CommonTree tree) throws CompilationFailure {
-		return flatten(tree, reporter, this, false, List.of());
+		return flatten(tree, context, this, false, List.of());
 	}
 
 	private AsmBlock flattenForRangeBody(CommonTree tree, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.enableNumbers();
-		return flatten(tree, reporter, this, false, List.of(info));
+		return flatten(tree, context, this, false, List.of(info));
 	}
 
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
 		var infos = new ArrayList<VariableInfo>(params.list().size());
 		for (var param : params.list()) {
 			var info = new VariableInfo(param);
+			info.enableObjects();
+			info.enableNumbers();
 			infos.add(info);
 		}
-		return flatten(tree, reporter, this, true, infos);
+		return flatten(tree, context, this, true, infos);
 	}
 
 	@Nullable
@@ -189,7 +191,9 @@ public class MutableFlattener {
 			var b = discardRemaining(flattenExpression(t.getChild(1)));
 			if (Operators.isMathOp(t)) {
 				register.addStatusDependency(a::status);
-				register.addStatusDependency(b::status);
+				if(!context.options().contains(Option.FIRST_NUM_OPERATORS)) {
+					register.addStatusDependency(b::status);
+				}
 			} else {
 				register.updateStatus(TypeStatus.OBJECT);
 			}
@@ -471,6 +475,6 @@ public class MutableFlattener {
 		warning.setColumn(location.getCharPositionInLine());
 		warning.setLevel(level);
 		warning.setCause(cause);
-		reporter.report(warning);
+		context.reporter().report(warning);
 	}
 }

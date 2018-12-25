@@ -11,5 +11,5 @@ import optic.lua.messages.*;
  */
 @FunctionalInterface
 public interface CodeOutput {
-	void output(AsmBlock body, MessageReporter reporter) throws CompilationFailure;
+	void output(AsmBlock body, Context context) throws CompilationFailure;
 }

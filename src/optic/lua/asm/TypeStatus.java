@@ -5,7 +5,7 @@ public enum TypeStatus {
 
 	private final int code;
 	private static final String[] toStringTable = {
-			"{}", "NUMBER", "OBJECT", "NUMBER|OBJECT"
+			"NONE", "NUMBER", "OBJECT", "NUMBER|OBJECT"
 	};
 	private static final TypeStatus[] statusByCode = {NONE, NUMBER, OBJECT, HYBRID};
 

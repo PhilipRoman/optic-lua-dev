@@ -7,25 +7,28 @@ import optic.lua.messages.*;
 import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 
+import java.util.Set;
+
 public final class Pipeline {
 	private final CodeSource source;
 	private final SyntaxTreeFlattener flattener;
-	private final MessageReporter reporter;
+	private final Context context;
 	private final CodeOutput output;
 
-	public Pipeline(CodeSource source, SyntaxTreeFlattener flattener, MessageReporter reporter, CodeOutput output) {
+	public Pipeline(Set<Option> options, MessageReporter reporter, CodeSource source, SyntaxTreeFlattener flattener, CodeOutput output) {
 		this.source = source;
 		this.flattener = flattener;
-		this.reporter = reporter.withSource(source);
+		this.context = new Context(Set.copyOf(options), reporter.withSource(source));
 		this.output = output;
 	}
 
 	public void run() throws CompilationFailure {
+		MessageReporter reporter = context.reporter();
 		long startTime = System.nanoTime();
-		CharStream charStream = source.newCharStream(reporter.withPhase(Phase.READING));
+		CharStream charStream = source.newCharStream(context.withPhase(Phase.READING));
 		CommonTree ast = parse(charStream);
-		AsmBlock steps = flattener.flatten(ast, reporter.withPhase(Phase.FLATTENING));
-		output.output(steps, reporter.withPhase(Phase.CODEGEN));
+		AsmBlock steps = flattener.flatten(ast, context.withPhase(Phase.FLATTENING));
+		output.output(steps, context.withPhase(Phase.CODEGEN));
 		long endTime = System.nanoTime();
 		reporter.report(durationInfo(endTime - startTime));
 	}
@@ -37,7 +40,7 @@ public final class Pipeline {
 			return parser.parse().getTree();
 		} catch (RecognitionException e) {
 			var msg = parsingError(e);
-			reporter.report(msg);
+			context.reporter().report(msg);
 			throw new CompilationFailure();
 		}
 	}

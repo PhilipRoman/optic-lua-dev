@@ -33,8 +33,7 @@ import java.util.stream.Collectors;
 public class JavaCodeOutput {
 	private final TemplateOutput out;
 	private final AsmBlock block;
-	private final MessageReporter reporter;
-	private boolean keepComments = true;
+	private final Context context;
 	/**
 	 * <p>
 	 * Stack containing names of varargs variables in nested functions.
@@ -300,13 +299,13 @@ public class JavaCodeOutput {
 	}
 
 	private void writeComment(Step step) {
-		if (keepComments) {
+		if (context.options().contains(Option.KEEP_COMMENTS)) {
 			out.printLine("// ", ((Comment) step).getText());
 		}
 	}
 
 	private void writeDebugComment(String comment) {
-		if (keepComments) {
+		if (context.options().contains(Option.DEBUG_COMMENTS)) {
 			out.printLine("// ", comment);
 		}
 	}
@@ -372,23 +371,23 @@ public class JavaCodeOutput {
 		TABLE.get(step.getClass()).write(this, step);
 	}
 
-	private JavaCodeOutput(PrintStream out, AsmBlock block, MessageReporter reporter) {
+	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
 		this.out = new TemplateOutput(out);
 		this.block = block;
-		this.reporter = reporter;
+		this.context = context;
 	}
 
 	public static CodeOutput writingTo(OutputStream stream) {
 		PrintStream printStream = stream instanceof PrintStream
 				? (PrintStream) stream
 				: new PrintStream(stream);
-		return (steps, reporter) -> new JavaCodeOutput(printStream, steps, reporter).execute();
+		return (steps, context) -> new JavaCodeOutput(printStream, steps, context).execute();
 	}
 
 	private void execute() throws CompilationFailure {
 		var msg = Message.create("Java code output still in development!");
 		msg.setLevel(Level.WARNING);
-		reporter.report(msg);
+		context.reporter().report(msg);
 		out.printLine("import optic.lua.runtime.*;");
 		out.printLine("static Object[] main(final UpValue _ENV, Object[] args) { if(1 == 1) {");
 		out.addIndent();
@@ -403,7 +402,7 @@ public class JavaCodeOutput {
 	private void illegalVarargUsage() throws CompilationFailure {
 		var msg = Message.create("Cannot use ... outside of vararg function");
 		msg.setLevel(Level.ERROR);
-		reporter.report(msg);
+		context.reporter().report(msg);
 		throw new CompilationFailure();
 	}
 
