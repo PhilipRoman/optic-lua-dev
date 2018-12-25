@@ -112,7 +112,7 @@ public class DynamicOps {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);
 		}
-		throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value");
+		throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ")");
 	}
 
 	@RuntimeApi
@@ -120,7 +120,7 @@ public class DynamicOps {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
 		} else {
-			throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value");
+			throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ", value=" + value + ")");
 		}
 	}
 

@@ -16,7 +16,7 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		var codeSource = CodeSource.ofFile("samples/sum-loop.lua");
+		var codeSource = CodeSource.ofFile("samples/spectral-norm.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var pipeline = new Pipeline(
 				codeSource,
@@ -31,7 +31,7 @@ public class Main {
 			System.exit(1);
 		}
 		Files.copy(temp, System.err);
-		Compiler.run(temp);
+		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(temp, 20);
 	}
 
 	private static class LogMessageReporter implements MessageReporter {

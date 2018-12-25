@@ -156,7 +156,7 @@ public class JavaCodeOutput {
 				&& op.getA().status() == TypeStatus.NUMBER
 				&& op.getB().status() == TypeStatus.NUMBER
 				&& op.getTarget().status() == TypeStatus.NUMBER) {
-			writeComment("Fast numeric operation between " + op.getA().toDebugString() + " and " + op.getB().toDebugString());
+			writeDebugComment("Fast numeric operation between " + op.getA().toDebugString() + " and " + op.getB().toDebugString());
 			out.printLine("double ", target, " = ", a, " ", op.getSymbol(), " ", b, ";");
 			return;
 		}
@@ -178,7 +178,7 @@ public class JavaCodeOutput {
 
 	private void writeRead(Step step) {
 		var read = (Read) step;
-		writeComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
+		writeDebugComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
 		switch (read.getSourceInfo().getMode()) {
 			case LOCAL: {
 				if (read.getSourceInfo().status() == TypeStatus.NUMBER && read.getRegister().status() == TypeStatus.NUMBER) {
@@ -245,6 +245,7 @@ public class JavaCodeOutput {
 
 	private void writeWrite(Step step) {
 		var write = (Write) step;
+		writeDebugComment("writing " + write.getSource().toDebugString() + " to " + write.getTarget().toDebugString());
 		switch (write.getTarget().getMode()) {
 			case LOCAL: {
 				if (write.getTarget().status() == TypeStatus.NUMBER && write.getSource().status() != TypeStatus.NUMBER)
@@ -304,7 +305,7 @@ public class JavaCodeOutput {
 		}
 	}
 
-	private void writeComment(String comment) {
+	private void writeDebugComment(String comment) {
 		if (keepComments) {
 			out.printLine("// ", comment);
 		}

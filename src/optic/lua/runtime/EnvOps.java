@@ -74,7 +74,12 @@ public class EnvOps {
 		env.set("math", LuaTable.ofMap(Map.of(
 				"floor", LuaFunction.of(args -> ListOps.create(
 						Math.floor(Objects.requireNonNull(StandardLibrary.toNumber(ListOps.get(args, 0))))
-				))
+				)),
+				"sqrt", LuaFunction.of(args -> {
+					Double value = StandardLibrary.toNumber(ListOps.get(args, 0));
+					assert value != null;
+					return ListOps.create(Math.sqrt(value));
+				})
 		)));
 		return env;
 	}

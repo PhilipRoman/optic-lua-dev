@@ -56,7 +56,7 @@ public class VariableInfo {
 	}
 
 	public TypeStatus status() {
-		return status;
+		return isUpvalue ? TypeStatus.OBJECT : status;
 	}
 
 	void enableObjects() {
