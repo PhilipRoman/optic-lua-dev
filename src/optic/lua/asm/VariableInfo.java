@@ -8,7 +8,9 @@ import static optic.lua.asm.instructions.VariableMode.*;
 public class VariableInfo {
 	private boolean isFinal = true;
 	private boolean isUpvalue = false;
+	private boolean initialized = false;
 	private final String name;
+	private TypeStatus status = TypeStatus.NONE;
 
 	VariableInfo(String name) {
 		this.name = name;
@@ -24,7 +26,11 @@ public class VariableInfo {
 	}
 
 	void markAsWritten() {
-		isFinal = true;
+		if(initialized) {
+			isFinal = false;
+		} else {
+			initialized = true;
+		}
 	}
 
 	public boolean isFinal() {
@@ -35,6 +41,11 @@ public class VariableInfo {
 		return new GlobalVariableInfo(name);
 	}
 
+	public String toDebugString() {
+		String mode = getMode().toString().toLowerCase();
+		return "variable(" + (isFinal() ? "final " : "") + mode + " \"" + name + "\" " + status + ")";
+	}
+
 	@Override
 	public String toString() {
 		return name;
@@ -42,6 +53,22 @@ public class VariableInfo {
 
 	public String getName() {
 		return name;
+	}
+
+	public TypeStatus status() {
+		return status;
+	}
+
+	void enableObjects() {
+		status = status.and(TypeStatus.OBJECT);
+	}
+
+	void enableNumbers() {
+		status = status.and(TypeStatus.NUMBER);
+	}
+
+	void update(TypeStatus other) {
+		status = status.and(other);
 	}
 
 	private static final class GlobalVariableInfo extends VariableInfo {
@@ -56,7 +83,7 @@ public class VariableInfo {
 
 		@Override
 		public boolean isFinal() {
-			throw new UnsupportedOperationException();
+			return false;
 		}
 
 		@Override
@@ -67,6 +94,16 @@ public class VariableInfo {
 		@Override
 		void markAsWritten() {
 			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public TypeStatus status() {
+			return TypeStatus.OBJECT;
+		}
+
+		@Override
+		public String toString() {
+			return "global " + getName();
 		}
 	}
 }

@@ -49,13 +49,13 @@ public class MutableFlattener {
 		return flatten(tree, reporter, null, false, List.of());
 	}
 
-	private static AsmBlock flatten(CommonTree tree, MessageReporter reporter, MutableFlattener parent, boolean boundary, List<String> locals) throws CompilationFailure {
+	private static AsmBlock flatten(CommonTree tree, MessageReporter reporter, MutableFlattener parent, boolean boundary, List<VariableInfo> locals) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
 		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, boundary, reporter);
 		for (var local : locals) {
-			f.locals.put(local, new VariableInfo(local));
+			f.locals.put(local.getName(), local);
 		}
 		for (var stat : statements) {
 			f.steps.add(StepFactory.comment("line " + ((Tree) stat).getLine()));
@@ -73,12 +73,19 @@ public class MutableFlattener {
 		return flatten(tree, reporter, this, false, List.of());
 	}
 
-	private AsmBlock flattenBlock(CommonTree tree, List<String> locals) throws CompilationFailure {
-		return flatten(tree, reporter, this, false, locals);
+	private AsmBlock flattenForRangeBody(CommonTree tree, String name) throws CompilationFailure {
+		var info = new VariableInfo(name);
+		info.enableNumbers();
+		return flatten(tree, reporter, this, false, List.of(info));
 	}
 
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
-		return flatten(tree, reporter, this, true, params.list());
+		var infos = new ArrayList<VariableInfo>(params.list().size());
+		for (var param : params.list()) {
+			var info = new VariableInfo(param);
+			infos.add(info);
+		}
+		return flatten(tree, reporter, this, true, infos);
 	}
 
 	@Nullable
@@ -130,8 +137,9 @@ public class MutableFlattener {
 				Register from = toNumber(flattenExpression(t.getChild(1)));
 				Register to = toNumber(flattenExpression(t.getChild(2)));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				AsmBlock body = flattenBlock(block, List.of(varName));
-				steps.add(StepFactory.forRange(varName, from, to, body));
+				AsmBlock body = flattenForRangeBody(block, varName);
+				VariableInfo counter = body.locals().get(varName);
+				steps.add(StepFactory.forRange(counter, from, to, body));
 				return;
 			}
 			case Do: {
@@ -179,6 +187,12 @@ public class MutableFlattener {
 			var register = RegisterFactory.create();
 			var a = discardRemaining(flattenExpression(t.getChild(0)));
 			var b = discardRemaining(flattenExpression(t.getChild(1)));
+			if (Operators.isMathOp(t)) {
+				register.addStatusDependency(a::status);
+				register.addStatusDependency(b::status);
+			} else {
+				register.updateStatus(TypeStatus.OBJECT);
+			}
 			String op = t.getText();
 			steps.add(StepFactory.binaryOperator(a, b, op, register));
 			return register;
@@ -198,6 +212,7 @@ public class MutableFlattener {
 				var register = RegisterFactory.create();
 				String value = (t.getText());
 				steps.add(StepFactory.constString(register, value));
+				register.updateStatus(TypeStatus.OBJECT);
 				return register;
 			}
 			case Name: {
@@ -274,6 +289,7 @@ public class MutableFlattener {
 	private Register toNumber(Register a) {
 		var b = RegisterFactory.create();
 		steps.add(StepFactory.toNumber(a, b));
+		b.updateStatus(TypeStatus.NUMBER);
 		return b;
 	}
 
@@ -333,6 +349,7 @@ public class MutableFlattener {
 	private Register nil() {
 		var nil = RegisterFactory.create();
 		steps.add(StepFactory.constNil(nil));
+		nil.updateStatus(TypeStatus.OBJECT);
 		return nil;
 	}
 
@@ -340,6 +357,7 @@ public class MutableFlattener {
 	private Register constant(double d) {
 		var num = RegisterFactory.create();
 		steps.add(StepFactory.constNumber(num, d));
+		num.updateStatus(TypeStatus.NUMBER);
 		return num;
 	}
 
@@ -353,6 +371,7 @@ public class MutableFlattener {
 			if (info == null) {
 				return StepFactory.write(VariableInfo.global(name.name()), value);
 			}
+			info.update(value.status());
 			info.markAsWritten();
 			return StepFactory.write(info, value);
 		}
@@ -366,6 +385,7 @@ public class MutableFlattener {
 			var global = VariableInfo.global(name);
 			return StepFactory.read(global, out);
 		}
+		out.addStatusDependency(info::status);
 		return StepFactory.read(info, out);
 	}
 

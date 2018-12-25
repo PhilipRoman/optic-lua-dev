@@ -24,20 +24,20 @@ public class StandardLibrary {
 	}
 
 	public static Double toNumber(Object o) {
+		if (USE_CLASS_PREDICTION && o.getClass() == Double.class) {
+			return (double) o;
+		}
 		if (o == null) {
 			return null;
 		}
 		if (USE_CLASS_PREDICTION && o.getClass() == String.class) {
 			return toNumber((String) o);
 		}
-		if (USE_CLASS_PREDICTION && o.getClass() == Double.class) {
-			return (double) o;
+		if (o instanceof Number) {
+			return ((Number) o).doubleValue();
 		}
 		if (o instanceof CharSequence) {
 			return toNumber(o.toString());
-		}
-		if (o instanceof Number) {
-			return ((Number) o).doubleValue();
 		}
 		return null;
 	}

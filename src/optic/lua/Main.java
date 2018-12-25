@@ -65,6 +65,7 @@ public class Main {
 				case ERROR:
 					log.error(text);
 			}
+			message.cause().ifPresent(cause -> log.error("Stack trace", cause));
 		}
 	}
 

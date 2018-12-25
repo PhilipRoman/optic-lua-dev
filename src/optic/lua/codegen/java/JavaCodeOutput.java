@@ -34,7 +34,7 @@ public class JavaCodeOutput {
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final MessageReporter reporter;
-	private boolean keepComments = false;
+	private boolean keepComments = true;
 	/**
 	 * <p>
 	 * Stack containing names of varargs variables in nested functions.
@@ -148,18 +148,44 @@ public class JavaCodeOutput {
 
 	private void writeOperator(Step step) {
 		var op = (Operator) step;
+		var target = op.getTarget().getName();
 		var a = Optional.ofNullable(op.getA()).map(Register::getName).orElse("");
 		var b = op.getB().getName();
-		var symbol = '"' + op.getSymbol() + '"';
-		var target = op.getTarget().getName();
-		out.printLine("Object ", target, " = DynamicOps.operator(", a, ", ", symbol, ", ", b, ");");
+		if (Set.of("*", "+", "-", "/").contains(op.getSymbol())
+				&& op.getA() != null
+				&& op.getA().status() == TypeStatus.NUMBER
+				&& op.getB().status() == TypeStatus.NUMBER
+				&& op.getTarget().status() == TypeStatus.NUMBER) {
+			writeComment("Fast numeric operation between " + op.getA().toDebugString() + " and " + op.getB().toDebugString());
+			out.printLine("double ", target, " = ", a, " ", op.getSymbol(), " ", b, ";");
+			return;
+		}
+		var symbolNames = Map.of(
+				"+", "add",
+				"-", "sub",
+				"*", "mul",
+				"/", "div"
+		);
+		if (op.getA() != null && symbolNames.containsKey(op.getSymbol())) {
+			String resultType = (op.getA().status() == TypeStatus.NUMBER) ? "double" : "Object";
+			String function = symbolNames.get(op.getSymbol());
+			out.printLine(resultType, " ", target, " = DynamicOps.", function, "(", a, ", ", b, ");");
+		} else {
+			var symbolString = '"' + op.getSymbol() + '"';
+			out.printLine("Object ", target, " = DynamicOps.operator(", a, ", ", symbolString, ", ", b, ");");
+		}
 	}
 
 	private void writeRead(Step step) {
 		var read = (Read) step;
+		writeComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
 		switch (read.getSourceInfo().getMode()) {
 			case LOCAL: {
-				out.printLine("Object ", read.getRegister(), " = ", read.getName(), ";");
+				if (read.getSourceInfo().status() == TypeStatus.NUMBER && read.getRegister().status() == TypeStatus.NUMBER) {
+					out.printLine("double ", read.getRegister(), " = ", read.getName(), ";");
+				} else {
+					out.printLine("Object ", read.getRegister(), " = ", read.getName(), ";");
+				}
 				break;
 			}
 			case UPVALUE: {
@@ -221,7 +247,10 @@ public class JavaCodeOutput {
 		var write = (Write) step;
 		switch (write.getTarget().getMode()) {
 			case LOCAL: {
-				out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
+				if (write.getTarget().status() == TypeStatus.NUMBER && write.getSource().status() != TypeStatus.NUMBER)
+					out.printLine(write.getTarget(), " = StandardLibrary.toNumber(", write.getSource().getName(), ");");
+				else
+					out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
 				break;
 			}
 			case UPVALUE: {
@@ -241,9 +270,12 @@ public class JavaCodeOutput {
 		var loop = ((ForRangeLoop) step);
 		var from = loop.getFrom().getName();
 		var to = loop.getTo().getName();
-		var name = loop.getVarName();
-		out.printLine("for(double ", name, " = ", from, "; ", name, " <= ", to, "; ", name, "++) {");
+		var counter = loop.getCounter();
+		var counterName = "i_" + counter.getName();
+		out.printLine("for(double ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
 		out.addIndent();
+		String counterTypeName = loop.getCounter().status() == TypeStatus.NUMBER ? "double" : "Object";
+		out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
 		for (Step s : loop.getBlock().steps()) {
 			write(s);
 		}
@@ -255,7 +287,12 @@ public class JavaCodeOutput {
 		var declare = (Declare) step;
 		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
 		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
-			out.printLine("Object ", ((Declare) step).getName(), ";");
+			String finalPrefix = declare.getVariable().isFinal() ? "final " : "";
+			if (declare.getVariable().status() == TypeStatus.NUMBER) {
+				out.printLine(finalPrefix, "double ", ((Declare) step).getName(), ";");
+			} else {
+				out.printLine(finalPrefix, "Object ", ((Declare) step).getName(), ";");
+			}
 		} else {
 			out.printLine("final UpValue ", declare.getName(), " = UpValue.create();");
 		}
@@ -264,6 +301,12 @@ public class JavaCodeOutput {
 	private void writeComment(Step step) {
 		if (keepComments) {
 			out.printLine("// ", ((Comment) step).getText());
+		}
+	}
+
+	private void writeComment(String comment) {
+		if (keepComments) {
+			out.printLine("// ", comment);
 		}
 	}
 
@@ -291,6 +334,14 @@ public class JavaCodeOutput {
 			}
 		}
 		return builder;
+	}
+
+	private static String toNumber(VariableInfo info) {
+		return info.status() == TypeStatus.NUMBER ? info.getName() : "StandardLibrary.toNumber(" + info.getName() + ")";
+	}
+
+	private static String toNumber(Register r) {
+		return r.status() == TypeStatus.NUMBER ? r.getName() : "StandardLibrary.toNumber(" + r.getName() + ")";
 	}
 
 	private void writeBranch(Step step) throws CompilationFailure {

@@ -6,6 +6,54 @@ import static optic.lua.runtime.StandardLibrary.toNumber;
 
 @RuntimeApi
 public class DynamicOps {
+	public static Object add(Object a, Object b) {
+		return (double) a + (double) b;
+	}
+
+	public static Object mul(Object a, Object b) {
+		return (double) a * (double) b;
+	}
+
+	public static Object sub(Object a, Object b) {
+		return (double) a - (double) b;
+	}
+
+	public static Object div(Object a, Object b) {
+		return (double) a / (double) b;
+	}
+
+	public static double add(double a, Object b) {
+		return a + (double) b;
+	}
+
+	public static double mul(double a, Object b) {
+		return a * (double) b;
+	}
+
+	public static double sub(double a, Object b) {
+		return a - (double) b;
+	}
+
+	public static double div(double a, Object b) {
+		return a / (double) b;
+	}
+
+	public static double add(double a, double b) {
+		return a + b;
+	}
+
+	public static double mul(double a, double b) {
+		return a * b;
+	}
+
+	public static double sub(double a, double b) {
+		return a - b;
+	}
+
+	public static double div(double a, double b) {
+		return a / b;
+	}
+
 	@RuntimeApi
 	public static Object operator(Object a, String symbol, Object b) {
 		switch (symbol) {
@@ -27,6 +75,32 @@ public class DynamicOps {
 				return Objects.equals(a, b);
 			case "..":
 				Objects.requireNonNull(a);
+				Objects.requireNonNull(b);
+				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
+		}
+		return null;
+	}
+
+	@RuntimeApi
+	public static Object operator(double a, String symbol, Object b) {
+		switch (symbol) {
+			case "+":
+				return a + toNumber(b);
+			case "-":
+				return a - toNumber(b);
+			case "*":
+				return a * toNumber(b);
+			case "/":
+				return a / toNumber(b);
+			case "==":
+				if (b instanceof Number) {
+					return a == ((Number) b).doubleValue();
+				}
+				if (b instanceof CharSequence) {
+					return false;
+				}
+				return false;
+			case "..":
 				Objects.requireNonNull(b);
 				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
 		}

@@ -1,6 +1,7 @@
 package optic.lua.asm
 
 import optic.lua.util.UniqueNames
+import java.util.function.Supplier
 
 /**
  * Register is the basic unit of ASM form. Each assignment targets a new, unique register.
@@ -11,14 +12,31 @@ import optic.lua.util.UniqueNames
  * Use [RegisterFactory] to obtain instances of this class.
  */
 class Register constructor(val name: String, val isVararg: Boolean) {
-
     constructor(isVararg: Boolean) : this(UniqueNames.next(), isVararg)
 
+    private val statusDependencies: CombinedTypeStatus = CombinedTypeStatus()
     override fun toString(): String {
         return name + if (isVararg) "@" else ""
     }
 
     fun isUnused(): Boolean {
         return name == "_"
+    }
+
+    fun status(): TypeStatus {
+        return statusDependencies.get()
+    }
+
+    fun updateStatus(type: TypeStatus) {
+        statusDependencies.add(type)
+    }
+
+    fun addStatusDependency(type: Supplier<TypeStatus>) {
+        statusDependencies.add(type)
+    }
+
+    fun toDebugString(): String {
+        val varargSuffix = if (isVararg) "..." else ""
+        return "register(\"$name$varargSuffix\" ${status()})"
     }
 }

@@ -8,6 +8,7 @@ import java.util.*;
 public final class Operators {
 	private static final BitSet binaryOperators = new BitSet(128);
 	private static final BitSet unaryOperators = new BitSet(128);
+	private static final BitSet mathOps = new BitSet(128);
 
 	static {
 		List.of(
@@ -33,6 +34,15 @@ public final class Operators {
 				Lua52Walker.BIT_NOT,
 				Lua52Walker.UNARY_MINUS
 		).forEach(unaryOperators::set);
+		List.of(
+				Lua52Walker.Add,
+				Lua52Walker.Minus,
+				Lua52Walker.Div,
+				Lua52Walker.Mult,
+				Lua52Walker.Tilde,
+				Lua52Walker.BitLShift,
+				Lua52Walker.BitRShift
+		).forEach(mathOps::set);
 	}
 
 	private Operators() {
@@ -40,6 +50,10 @@ public final class Operators {
 
 	public static boolean isBinary(Tree tree) {
 		return binaryOperators.get(tree.getType());
+	}
+
+	public static boolean isMathOp(Tree tree) {
+		return mathOps.get(tree.getType());
 	}
 
 	public static boolean isUnary(Tree tree) {

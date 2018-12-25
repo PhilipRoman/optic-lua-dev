@@ -30,8 +30,8 @@ class StepFactory {
 		return new Operator(param, register, op);
 	}
 
-	static Step forRange(String varName, Register from, Register to, AsmBlock block) {
-		return new ForRangeLoop(varName, from, to, block);
+	static Step forRange(VariableInfo counter, Register from, Register to, AsmBlock block) {
+		return new ForRangeLoop(counter, from, to, block);
 	}
 
 	static Step call(Register function, List<Register> args) {

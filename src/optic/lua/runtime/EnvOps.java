@@ -69,7 +69,7 @@ public class EnvOps {
 			}
 		}));
 		env.set("os", LuaTable.ofMap(Map.of(
-				"time", LuaFunction.of(args -> ListOps.create(System.currentTimeMillis()))
+				"time", LuaFunction.of(args -> ListOps.create((double) (System.currentTimeMillis() / 1000)))
 		)));
 		env.set("math", LuaTable.ofMap(Map.of(
 				"floor", LuaFunction.of(args -> ListOps.create(
