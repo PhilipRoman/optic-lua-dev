@@ -1,6 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.asm.instructions.VariableMode;
+import optic.lua.optimization.TypeStatus;
 import org.jetbrains.annotations.NotNull;
 
 import static optic.lua.asm.instructions.VariableMode.*;

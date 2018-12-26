@@ -4,6 +4,7 @@ import optic.lua.asm.*;
 import optic.lua.asm.instructions.*;
 import optic.lua.codegen.*;
 import optic.lua.messages.*;
+import optic.lua.optimization.TypeStatus;
 import optic.lua.util.UniqueNames;
 
 import java.io.*;

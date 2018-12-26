@@ -3,6 +3,7 @@ package optic.lua.asm;
 import optic.lua.asm.LValue.Name;
 import optic.lua.asm.LValue.*;
 import optic.lua.messages.*;
+import optic.lua.optimization.TypeStatus;
 import optic.lua.util.*;
 import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;

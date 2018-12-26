@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import optic.lua.optimization.TypeStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -10,8 +11,7 @@ public class CombinedTypeStatus {
 	private static final EnumMap<TypeStatus, Supplier<TypeStatus>> supplierCache = new EnumMap<>(Map.of(
 			TypeStatus.NONE, () -> TypeStatus.NONE,
 			TypeStatus.NUMBER, () -> TypeStatus.NUMBER,
-			TypeStatus.OBJECT, () -> TypeStatus.OBJECT,
-			TypeStatus.HYBRID, () -> TypeStatus.HYBRID
+			TypeStatus.OBJECT, () -> TypeStatus.OBJECT
 	));
 
 	@SafeVarargs
@@ -22,7 +22,16 @@ public class CombinedTypeStatus {
 	}
 
 	public TypeStatus get() {
-		return sources.stream().map(Supplier::get).reduce(TypeStatus.NONE, TypeStatus::and);
+		TypeStatus acc = TypeStatus.NONE;
+		for (Supplier<TypeStatus> source : sources) {
+			TypeStatus status = source.get();
+			acc = acc.and(status);
+			// shortcut
+			if (acc == TypeStatus.OBJECT) {
+				return TypeStatus.OBJECT;
+			}
+		}
+		return acc;
 	}
 
 	public void add(@NotNull Supplier<TypeStatus> supplier) {
