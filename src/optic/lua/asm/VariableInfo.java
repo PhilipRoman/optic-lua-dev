@@ -11,7 +11,7 @@ public class VariableInfo {
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
 	private final String name;
-	private TypeStatus status = TypeStatus.NONE;
+	private TypeStatus status = TypeStatus.UNKNOWN;
 
 	VariableInfo(String name) {
 		this.name = name;

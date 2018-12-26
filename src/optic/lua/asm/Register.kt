@@ -1,5 +1,6 @@
 package optic.lua.asm
 
+import optic.lua.optimization.CombinedTypeStatus
 import optic.lua.optimization.TypeStatus
 import optic.lua.util.UniqueNames
 import java.util.function.Supplier
