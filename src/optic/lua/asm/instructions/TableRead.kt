@@ -2,7 +2,7 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
-import java.util.*
+import java.util.function.Consumer
 
 class TableRead(val table: Register, val key: Register, val out: Register) : Step {
     override fun toString(): String {
@@ -10,4 +10,9 @@ class TableRead(val table: Register, val key: Register, val out: Register) : Ste
     }
 
     override fun modified(): Register? = out
+
+    override fun forEachObserved(action: Consumer<Register>) {
+        action.accept(table)
+        action.accept(key)
+    }
 }

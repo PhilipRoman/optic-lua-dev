@@ -4,6 +4,7 @@ import optic.lua.asm.AsmBlock
 import optic.lua.asm.Register
 import optic.lua.asm.Step
 import optic.lua.asm.VariableInfo
+import java.util.function.Consumer
 
 class ForRangeLoop(
         val counter: VariableInfo,
@@ -17,5 +18,10 @@ class ForRangeLoop(
 
     override fun children(): List<Step> {
         return block.steps()
+    }
+
+    override fun forEachObserved(action: Consumer<Register>) {
+        action.accept(from)
+        action.accept(to)
     }
 }

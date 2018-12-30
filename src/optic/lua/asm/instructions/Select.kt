@@ -2,7 +2,7 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
-import java.util.*
+import java.util.function.Consumer
 
 class Select(val out: Register, val varargs: Register, val n: Int) : Step {
     override fun toString(): String {
@@ -10,4 +10,6 @@ class Select(val out: Register, val varargs: Register, val n: Int) : Step {
     }
 
     override fun modified(): Register? = out
+
+    override fun forEachObserved(action: Consumer<Register>) = action.accept(varargs)
 }

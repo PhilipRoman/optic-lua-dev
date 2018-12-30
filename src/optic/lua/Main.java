@@ -4,7 +4,7 @@ import optic.lua.asm.*;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.files.Compiler;
 import optic.lua.messages.*;
-import optic.lua.verify.SingleAssignmentVerifier;
+import optic.lua.verify.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
@@ -27,6 +27,7 @@ public class Main {
 				codeSource
 		);
 		pipeline.registerPlugin(SingleAssignmentVerifier::new);
+		pipeline.registerPlugin(SingleRegisterUseVerifier::new);
 		pipeline.registerPlugin(JavaCodeOutput.writingTo(Files.newOutputStream(temp)));
 		try {
 			pipeline.run();

@@ -2,7 +2,7 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
-import java.util.*
+import java.util.function.Consumer
 
 class Operator : Step {
     val a: Register?
@@ -29,4 +29,11 @@ class Operator : Step {
     }
 
     override fun modified(): Register? = target
+
+    override fun forEachObserved(action: Consumer<Register>) {
+        if (a != null) {
+            action.accept(a)
+        }
+        action.accept(b)
+    }
 }
