@@ -4,7 +4,6 @@ import optic.lua.asm.AsmBlock
 import optic.lua.asm.Register
 import optic.lua.asm.Step
 import optic.lua.asm.VariableInfo
-import java.util.stream.Stream
 
 class ForRangeLoop(
         val counter: VariableInfo,
@@ -16,7 +15,7 @@ class ForRangeLoop(
         return "for $counter = $from, $to"
     }
 
-    override fun children(): Stream<Step> {
-        return block.stream()
+    override fun children(): List<Step> {
+        return block.steps()
     }
 }

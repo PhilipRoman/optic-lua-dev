@@ -1,15 +1,19 @@
 package optic.lua.asm;
 
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.stream.Stream;
+import java.util.List;
 
 /**
  * Obtain instances of this interface using {@link StepFactory} methods.
  */
 public interface Step {
-	@NotNull
-	default Stream<Step> children() {
-		return Stream.empty();
+	default List<Step> children() {
+		return List.of();
+	}
+
+	@Nullable
+	default Register modified() {
+		return null;
 	}
 }

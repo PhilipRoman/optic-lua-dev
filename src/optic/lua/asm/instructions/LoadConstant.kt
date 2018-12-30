@@ -3,6 +3,7 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
+import java.util.*
 
 class LoadConstant(val target: Register, val constant: Any?) : Step {
     init {
@@ -14,4 +15,6 @@ class LoadConstant(val target: Register, val constant: Any?) : Step {
     override fun toString(): String {
         return "constant $target = ${constant?:"nil"}"
     }
+
+    override fun modified(): Register? = target
 }

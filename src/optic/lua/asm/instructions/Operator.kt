@@ -2,6 +2,7 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
+import java.util.*
 
 class Operator : Step {
     val a: Register?
@@ -26,4 +27,6 @@ class Operator : Step {
     override fun toString(): String {
         return "op $target = ${a ?: ""} $symbol $b"
     }
+
+    override fun modified(): Register? = target
 }

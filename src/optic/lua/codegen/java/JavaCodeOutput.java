@@ -1,5 +1,6 @@
 package optic.lua.codegen.java;
 
+import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.asm.instructions.*;
 import optic.lua.codegen.*;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput {
+public class JavaCodeOutput implements CompilerPlugin {
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final Context context;
@@ -378,11 +379,9 @@ public class JavaCodeOutput {
 		this.context = context;
 	}
 
-	public static CodeOutput writingTo(OutputStream stream) {
-		PrintStream printStream = stream instanceof PrintStream
-				? (PrintStream) stream
-				: new PrintStream(stream);
-		return (steps, context) -> new JavaCodeOutput(printStream, steps, context).execute();
+	public static CompilerPlugin.Factory writingTo(OutputStream stream) {
+		PrintStream printStream = new PrintStream(new BufferedOutputStream(stream));
+		return (steps, context) -> new JavaCodeOutput(printStream, steps, context);
 	}
 
 	private void execute() throws CompilationFailure {
@@ -398,6 +397,7 @@ public class JavaCodeOutput {
 		out.removeIndent();
 		out.printLine("} return ListOps.empty(); }");
 		out.printLine("main(UpValue.create(EnvOps.createEnv()), new Object[0]);");
+		out.flush();
 	}
 
 	private void illegalVarargUsage() throws CompilationFailure {
@@ -405,6 +405,22 @@ public class JavaCodeOutput {
 		msg.setLevel(Level.ERROR);
 		context.reporter().report(msg);
 		throw new CompilationFailure();
+	}
+
+	@Override
+	public AsmBlock apply() throws CompilationFailure {
+		execute();
+		return block;
+	}
+
+	@Override
+	public boolean concurrent() {
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getName();
 	}
 
 	private interface WriterFunction {

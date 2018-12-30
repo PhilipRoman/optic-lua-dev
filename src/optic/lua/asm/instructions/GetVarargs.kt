@@ -7,4 +7,6 @@ class GetVarargs(val to: Register) : Step {
     override fun toString(): String {
         return "varargs $to = ..."
     }
+
+    override fun modified(): Register? = to
 }

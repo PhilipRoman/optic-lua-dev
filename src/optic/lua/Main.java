@@ -1,17 +1,19 @@
 package optic.lua;
 
 import optic.lua.asm.*;
-import optic.lua.codegen.CodeOutput;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.files.Compiler;
 import optic.lua.messages.*;
+import optic.lua.verify.SingleAssignmentVerifier;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.Set;
 import java.util.stream.*;
+
+import static optic.lua.messages.Option.*;
 
 public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
@@ -20,20 +22,20 @@ public class Main {
 		var codeSource = CodeSource.ofFile("samples/spectral-norm.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var pipeline = new Pipeline(
-				Set.of(Option.KEEP_COMMENTS, Option.DEBUG_COMMENTS),
+				Set.of(KEEP_COMMENTS, DEBUG_COMMENTS, PARALLEL, VERIFY),
 				new LogMessageReporter(log, new SimpleMessageFormat()),
-				codeSource,
-				MutableFlattener::flatten,
-				JavaCodeOutput.writingTo(Files.newOutputStream(temp))
+				codeSource
 		);
+		pipeline.registerPlugin(SingleAssignmentVerifier::new);
+		pipeline.registerPlugin(JavaCodeOutput.writingTo(Files.newOutputStream(temp)));
 		try {
 			pipeline.run();
 		} catch (CompilationFailure e) {
 			System.err.print("Failed!");
 			System.exit(1);
 		}
-		Files.copy(temp, System.err);
-		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(temp, 20);
+//		Files.copy(temp, System.err);
+		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(Files.newInputStream(temp), 20);
 	}
 
 	private static class LogMessageReporter implements MessageReporter {
@@ -96,16 +98,29 @@ public class Main {
 		}
 	}
 
-	private static class PrintingCodeOutput implements CodeOutput {
+	private static class PrintingCodeOutput implements CompilerPlugin {
 		private final PrintStream out;
+		private final AsmBlock body;
 
-		private PrintingCodeOutput(PrintStream out) {
+		private PrintingCodeOutput(PrintStream out, AsmBlock body) {
 			this.out = out;
+			this.body = body;
+		}
+
+		private static CompilerPlugin.Factory factory(PrintStream out) {
+			return (block, context) -> new PrintingCodeOutput(out, block);
 		}
 
 		@Override
-		public void output(AsmBlock body, Context context) {
+		public AsmBlock apply() {
 			body.steps().forEach(step -> print(step, 0));
+			out.flush();
+			return body;
+		}
+
+		@Override
+		public boolean concurrent() {
+			return true;
 		}
 
 		private void print(Step step, int depth) {

@@ -10,4 +10,11 @@ class Call(val function: Register, val args: List<Register>, val output: Registe
         else
             "call $output = $function($args)"
     }
+
+    override fun modified(): Register? {
+        return when {
+            output.isUnused() -> null
+            else -> output
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package optic.lua.asm;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class AsmBlock {
@@ -22,7 +23,7 @@ public final class AsmBlock {
 	}
 
 	private static Stream<Step> expandStepRecursive(Step step) {
-		return step.children().flatMap(AsmBlock::expandStepRecursive);
+		return step.children().stream().flatMap(AsmBlock::expandStepRecursive);
 	}
 
 	public Map<String, VariableInfo> locals() {
@@ -31,5 +32,16 @@ public final class AsmBlock {
 
 	public List<Step> steps() {
 		return steps;
+	}
+
+	public void forEachRecursive(Consumer<Step> action) {
+		forEachRecursiveChild(steps, action);
+	}
+
+	private void forEachRecursiveChild(List<Step> steps, Consumer<Step> action) {
+		for(var step : steps) {
+			action.accept(step);
+			forEachRecursiveChild(step.children(), action);
+		}
 	}
 }

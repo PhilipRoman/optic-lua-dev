@@ -1,7 +1,7 @@
 package optic.lua.messages;
 
 import optic.lua.CodeSource;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -36,7 +36,7 @@ public interface Message {
 	/**
 	 * @return the phase during which the message was made
 	 */
-	@NotNull
+	@Nullable
 	Phase phase();
 
 	/**
@@ -52,10 +52,28 @@ public interface Message {
 	Optional<Throwable> cause();
 
 	/**
-	 * @return mutable message with the given message
+	 * @return mutable message with the given text
 	 */
 	static MessageBuilder create(String message) {
 		Objects.requireNonNull(message);
 		return new MessageImpl(message);
+	}
+
+	/**
+	 * @return mutable message with the given text and {@link Level#ERROR} level
+	 */
+	static MessageBuilder createError(String message) {
+		var msg = create(message);
+		msg.setLevel(Level.ERROR);
+		return msg;
+	}
+
+	/**
+	 * @return mutable message with the given text and {@link Level#INFO} level
+	 */
+	static Message createInfo(String message) {
+		var msg = create(message);
+		msg.setLevel(Level.INFO);
+		return msg;
 	}
 }

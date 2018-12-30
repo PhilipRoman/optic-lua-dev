@@ -112,4 +112,6 @@ class TemplateOutput(private val out: PrintStream) {
             out.print('\t')
         }
     }
+
+    fun flush() = out.flush()
 }

@@ -1,7 +1,7 @@
 package optic.lua.messages;
 
 import optic.lua.CodeSource;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -70,10 +70,10 @@ class MessageImpl implements Message, MessageBuilder {
 		return Optional.ofNullable(source);
 	}
 
-	@NotNull
+	@Nullable
 	@Override
 	public Phase phase() {
-		return Objects.requireNonNull(phase);
+		return phase;
 	}
 
 	@NotNull

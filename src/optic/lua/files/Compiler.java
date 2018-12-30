@@ -4,9 +4,8 @@ import optic.lua.messages.*;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
 
 public class Compiler {
 	private final MessageReporter reporter;
@@ -15,21 +14,17 @@ public class Compiler {
 		this.reporter = reporter;
 	}
 
-	public void run(Path path) {
-		run(path, 1);
-	}
-
-	public void run(Path path, int nTimes) {
-		var evaluator = compile(path);
+	public void run(InputStream input, int nTimes) {
+		var evaluator = compile(new BufferedInputStream(input));
 		for (int i = 0; i < nTimes; i++) {
 			measure(evaluator);
 		}
 	}
 
-	private ScriptEvaluator compile(Path path) {
+	private ScriptEvaluator compile(InputStream input) {
 		var evaluator = new ScriptEvaluator();
 		try {
-			evaluator.cookFile(path.toAbsolutePath().toString());
+			evaluator.cook(input);
 		} catch (CompileException | IOException e) {
 			throw new RuntimeException(e);
 		}
