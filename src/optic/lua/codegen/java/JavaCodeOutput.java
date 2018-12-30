@@ -3,13 +3,13 @@ package optic.lua.codegen.java;
 import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.asm.instructions.*;
-import optic.lua.codegen.*;
+import optic.lua.codegen.TemplateOutput;
 import optic.lua.messages.*;
 import optic.lua.optimization.TypeStatus;
-import optic.lua.util.UniqueNames;
+import optic.lua.util.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput implements CompilerPlugin {
+public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin  {
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final Context context;
@@ -50,42 +50,16 @@ public class JavaCodeOutput implements CompilerPlugin {
 			Optional.of("vararg" + UniqueNames.next()))
 	);
 
-	private static final Map<Class<? extends Step>, WriterFunction> TABLE;
-
-	static {
-		Map<Class<? extends Step>, WriterFunction> table = new HashMap<>(20);
-		table.put(Block.class, JavaCodeOutput::writeBlock);
-		table.put(Branch.class, JavaCodeOutput::writeBranch);
-		table.put(Call.class, JavaCodeOutput::writeCall);
-		table.put(Comment.class, JavaCodeOutput::writeComment);
-		table.put(Declare.class, JavaCodeOutput::writeDeclare);
-		table.put(ForRangeLoop.class, JavaCodeOutput::writeForRangeLoop);
-		table.put(FunctionLiteral.class, JavaCodeOutput::writeFunctionLiteral);
-		table.put(GetVarargs.class, JavaCodeOutput::writeGetVarargs);
-		table.put(LoadConstant.class, JavaCodeOutput::writeLoadConstant);
-		table.put(MakeTable.class, JavaCodeOutput::writeMakeTable);
-		table.put(Operator.class, JavaCodeOutput::writeOperator);
-		table.put(Read.class, JavaCodeOutput::writeRead);
-		table.put(Return.class, JavaCodeOutput::writeReturn);
-		table.put(Select.class, JavaCodeOutput::writeSelect);
-		table.put(TableRead.class, JavaCodeOutput::writeTableRead);
-		table.put(TableWrite.class, JavaCodeOutput::writeTableWrite);
-		table.put(Write.class, JavaCodeOutput::writeWrite);
-		table.put(ToNumber.class, JavaCodeOutput::writeToNumber);
-		TABLE = Map.copyOf(table);
-	}
-
-	private void writeToNumber(Step step) {
-		var toNumber = (ToNumber) step;
+	public Void visitToNumber(@NotNull ToNumber toNumber) {
 		var from = toNumber.getSource();
 		var to = toNumber.getTarget();
 		out.printLine("double ", to, " = StandardLibrary.toNumber(", from, ");");
+		return null;
 	}
 
-	private void writeFunctionLiteral(Step step) throws CompilationFailure {
-		var fn = (FunctionLiteral) step;
-		var target = fn.getAssignTo().getName();
-		var params = fn.getParams().list();
+	public Void visitFunctionLiteral(@NotNull FunctionLiteral function) throws CompilationFailure {
+		var target = function.getAssignTo().getName();
+		var params = function.getParams().list();
 		var argsName = "args" + UniqueNames.next();
 		out.printLine("LuaFunction ", target, " = new LuaFunction(){Object[] call(Object[] ", argsName, ") {");
 		out.addIndent();
@@ -99,23 +73,22 @@ public class JavaCodeOutput implements CompilerPlugin {
 				out.printLine("Object ", p, " = ListOps.get(", argsName, ", ", params.indexOf(p), ");");
 			}
 		}
-		if (!fn.getParams().hasVarargs()) {
+		if (!function.getParams().hasVarargs()) {
 			varargNamesInFunction.addLast(Optional.empty());
 		}
 		out.printLine("if(1 == 1) {");
-		for (var s : fn.getBody().steps()) {
-			write(s);
-		}
+		visitAll(function.getBody().steps());
 		out.printLine("}");
 		out.printLine("return ListOps.empty();");
 		varargNamesInFunction.removeLast();
 		out.removeIndent();
 		out.printLine("}};");
+		return null;
 	}
 
-	private void writeLoadConstant(Step step) {
-		var c = ((LoadConstant) step).getConstant();
-		var target = ((LoadConstant) step).getTarget().getName();
+	public Void visitLoadConstant(@NotNull LoadConstant loadConstant) {
+		var c = loadConstant.getConstant();
+		var target = loadConstant.getTarget().getName();
 		if (c == null) {
 			c = "null";
 		} else if (c instanceof String) {
@@ -126,12 +99,12 @@ public class JavaCodeOutput implements CompilerPlugin {
 			typeName = "double";
 		}
 		out.printLine(typeName, " ", target, " = ", c, ";");
+		return null;
 	}
 
-	private void writeMakeTable(Step step) {
-		var mt = (MakeTable) step;
-		var result = mt.getResult();
-		var map = new HashMap<>(mt.getValues());
+	public Void visitMakeTable(@NotNull MakeTable makeTable) {
+		var result = makeTable.getResult();
+		var map = new HashMap<>(makeTable.getValues());
 		Optional<Entry<Register, Register>> vararg = map.entrySet().stream()
 				.filter(e -> e.getValue().isVararg())
 				.findAny();
@@ -145,10 +118,10 @@ public class JavaCodeOutput implements CompilerPlugin {
 		}, () -> {
 			out.printLine("LuaTable ", result, " = TableOps.create(", list, ");");
 		});
+		return null;
 	}
 
-	private void writeOperator(Step step) {
-		var op = (Operator) step;
+	public Void visitOperator(@NotNull Operator op) {
 		var target = op.getTarget().getName();
 		var a = Optional.ofNullable(op.getA()).map(Register::getName).orElse("");
 		var b = op.getB().getName();
@@ -159,7 +132,7 @@ public class JavaCodeOutput implements CompilerPlugin {
 				&& op.getTarget().status() == TypeStatus.NUMBER) {
 			writeDebugComment("Fast numeric operation between " + op.getA().toDebugString() + " and " + op.getB().toDebugString());
 			out.printLine("double ", target, " = ", a, " ", op.getSymbol(), " ", b, ";");
-			return;
+			return null;
 		}
 		var symbolNames = Map.of(
 				"+", "add",
@@ -175,10 +148,10 @@ public class JavaCodeOutput implements CompilerPlugin {
 			var symbolString = '"' + op.getSymbol() + '"';
 			out.printLine("Object ", target, " = DynamicOps.operator(", a, ", ", symbolString, ", ", b, ");");
 		}
+		return null;
 	}
 
-	private void writeRead(Step step) {
-		var read = (Read) step;
+	public Void visitRead(@NotNull Read read) {
 		writeDebugComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
 		switch (read.getSourceInfo().getMode()) {
 			case LOCAL: {
@@ -200,10 +173,10 @@ public class JavaCodeOutput implements CompilerPlugin {
 			default:
 				throw new AssertionError();
 		}
+		return null;
 	}
 
-	private void writeReturn(Step step) {
-		var ret = (Return) step;
+	public Void visitReturn(@NotNull Return ret) {
 		var regs = ret.getRegisters();
 		if (!regs.isEmpty() && regs.get(regs.size() - 1).isVararg()) {
 			var varargs = regs.get(regs.size() - 1).getName();
@@ -213,39 +186,39 @@ public class JavaCodeOutput implements CompilerPlugin {
 		} else {
 			out.printLine("return ListOps.create(", commaList(regs), ");");
 		}
+		return null;
 	}
 
-	private void writeGetVarargs(Step step) throws CompilationFailure {
-		var g = (GetVarargs) step;
+	public Void visitGetVarargs(@NotNull GetVarargs getVarargs) throws CompilationFailure {
 		var varargsName = varargNamesInFunction.getLast();
 		if (varargsName.isPresent()) {
 			var varargs = varargsName.get();
-			out.printLine("Object[] ", g.getTo().getName(), " = ", varargs, ";");
+			out.printLine("Object[] ", getVarargs.getTo().getName(), " = ", varargs, ";");
 		} else {
 			illegalVarargUsage();
 		}
+		return null;
 	}
 
-	private void writeSelect(Step step) {
-		var select = (Select) step;
+	public Void visitSelect(@NotNull Select select) {
 		var n = select.getN();
 		var vararg = select.getVarargs().getName();
 		var target = select.getOut().getName();
 		out.printLine("Object ", target, " = ListOps.get(", vararg, ", ", n, ");");
+		return null;
 	}
 
-	private void writeTableRead(Step step) {
-		var read = (TableRead) step;
-		out.printLine("Object ", read.getOut(), " = DynamicOps.index(", read.getTable(), ", ", read.getKey(), ");");
+	public Void visitTableRead(@NotNull TableRead tableRead) {
+		out.printLine("Object ", tableRead.getOut(), " = DynamicOps.index(", tableRead.getTable(), ", ", tableRead.getKey(), ");");
+		return null;
 	}
 
-	private void writeTableWrite(Step step) {
-		var write = (TableWrite) step;
-		out.printLine("DynamicOps.setIndex(", write.getField().getTable(), ", ", write.getField().getKey(), ", ", write.getValue(), ");");
+	public Void visitTableWrite(@NotNull TableWrite tableWrite) {
+		out.printLine("DynamicOps.setIndex(", tableWrite.getField().getTable(), ", ", tableWrite.getField().getKey(), ", ", tableWrite.getValue(), ");");
+		return null;
 	}
 
-	private void writeWrite(Step step) {
-		var write = (Write) step;
+	public Void visitWrite(@NotNull Write write) {
 		writeDebugComment("writing " + write.getSource().toDebugString() + " to " + write.getTarget().toDebugString());
 		switch (write.getTarget().getMode()) {
 			case LOCAL: {
@@ -253,23 +226,22 @@ public class JavaCodeOutput implements CompilerPlugin {
 					out.printLine(write.getTarget(), " = StandardLibrary.toNumber(", write.getSource().getName(), ");");
 				else
 					out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
-				break;
+				return null;
 			}
 			case UPVALUE: {
 				out.printLine(write.getTarget(), ".set(", write.getSource().getName(), ");");
-				break;
+				return null;
 			}
 			case GLOBAL: {
 				out.printLine("EnvOps.set(_ENV, \"", write.getTarget(), "\", ", write.getSource().getName(), ");");
-				break;
+				return null;
 			}
 			default:
 				throw new AssertionError();
 		}
 	}
 
-	private void writeForRangeLoop(Step step) throws CompilationFailure {
-		var loop = ((ForRangeLoop) step);
+	public Void visitForRangeLoop(@NotNull ForRangeLoop loop) throws CompilationFailure {
 		var from = loop.getFrom().getName();
 		var to = loop.getTo().getName();
 		var counter = loop.getCounter();
@@ -279,31 +251,33 @@ public class JavaCodeOutput implements CompilerPlugin {
 		String counterTypeName = loop.getCounter().status() == TypeStatus.NUMBER ? "double" : "Object";
 		out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
 		for (Step s : loop.getBlock().steps()) {
-			write(s);
+			visit(s);
 		}
 		out.removeIndent();
 		out.printLine("}");
+		return null;
 	}
 
-	private void writeDeclare(Step step) {
-		var declare = (Declare) step;
+	public Void visitDeclare(@NotNull Declare declare) {
 		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
 		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
 			String finalPrefix = declare.getVariable().isFinal() ? "final " : "";
 			if (declare.getVariable().status() == TypeStatus.NUMBER) {
-				out.printLine(finalPrefix, "double ", ((Declare) step).getName(), ";");
+				out.printLine(finalPrefix, "double ", declare.getName(), ";");
 			} else {
-				out.printLine(finalPrefix, "Object ", ((Declare) step).getName(), ";");
+				out.printLine(finalPrefix, "Object ", declare.getName(), ";");
 			}
 		} else {
 			out.printLine("final UpValue ", declare.getName(), " = UpValue.create();");
 		}
+		return null;
 	}
 
-	private void writeComment(Step step) {
+	public Void visitComment(@NotNull Comment comment) {
 		if (context.options().contains(Option.KEEP_COMMENTS)) {
-			out.printLine("// ", ((Comment) step).getText());
+			out.printLine("// ", comment.getText());
 		}
+		return null;
 	}
 
 	private void writeDebugComment(String comment) {
@@ -312,8 +286,7 @@ public class JavaCodeOutput implements CompilerPlugin {
 		}
 	}
 
-	private void writeCall(Step step) {
-		var call = (Call) step;
+	public Void visitCall(@NotNull Call call) {
 		var function = call.getFunction().getName();
 		var argList = new ArrayList<>(call.getArgs());
 		boolean isVararg = !argList.isEmpty() && argList.get(argList.size() - 1).isVararg();
@@ -324,6 +297,7 @@ public class JavaCodeOutput implements CompilerPlugin {
 		var prefix = call.getOutput().isUnused() ? "" : ("Object[] " + call.getOutput().getName() + " = ");
 		var args = commaList(argList);
 		out.printLine(prefix, "FunctionOps.call(", function, argList.isEmpty() ? "" : ", ", args, ");");
+		return null;
 	}
 
 	private static CharSequence commaList(List<Register> args) {
@@ -346,31 +320,22 @@ public class JavaCodeOutput implements CompilerPlugin {
 		return r.status() == TypeStatus.NUMBER ? r.getName() : "StandardLibrary.toNumber(" + r.getName() + ")";
 	}
 
-	private void writeBranch(Step step) throws CompilationFailure {
-		var branch = (Branch) step;
+	public Void visitBranch(@NotNull Branch branch) throws CompilationFailure {
 		out.printLine("if(DynamicOps.isTrue(", branch.getCondition().getName(), ")) {");
 		out.addIndent();
-		for (Step s : branch.getBody().steps()) {
-			write(s);
-		}
+		visitAll(branch.getBody().steps());
 		out.removeIndent();
 		out.printLine("}");
+		return null;
 	}
 
-	private void writeBlock(Step step) throws CompilationFailure {
-		var block = (Block) step;
+	public Void visitBlock(@NotNull Block block) throws CompilationFailure {
 		out.printLine("{");
 		out.addIndent();
-		for (Step s : block.getSteps().steps()) {
-			write(s);
-		}
+		visitAll(block.getSteps().steps());
 		out.removeIndent();
 		out.printLine("}");
-	}
-
-	private void write(Step step) throws CompilationFailure {
-		assert Modifier.isFinal(step.getClass().getModifiers());
-		TABLE.get(step.getClass()).write(this, step);
+		return null;
 	}
 
 	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
@@ -391,9 +356,7 @@ public class JavaCodeOutput implements CompilerPlugin {
 		out.printLine("import optic.lua.runtime.*;");
 		out.printLine("static Object[] main(final UpValue _ENV, Object[] args) { if(1 == 1) {");
 		out.addIndent();
-		for (var step : block.steps()) {
-			write(step);
-		}
+		visitAll(block.steps());
 		out.removeIndent();
 		out.printLine("} return ListOps.empty(); }");
 		out.printLine("main(UpValue.create(EnvOps.createEnv()), new Object[0]);");
@@ -423,7 +386,8 @@ public class JavaCodeOutput implements CompilerPlugin {
 		return getClass().getName();
 	}
 
-	private interface WriterFunction {
-		void write(JavaCodeOutput self, Step step) throws CompilationFailure;
+	@Override
+	public Void defaultValue(@NotNull Step x) {
+		return null;
 	}
 }
