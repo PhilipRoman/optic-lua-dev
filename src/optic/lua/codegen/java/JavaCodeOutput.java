@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
+import java.util.stream.*;
 
 /**
  * Creates Java source code from given {@link AsmBlock}.
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin  {
+public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin {
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final Context context;
@@ -97,6 +97,9 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		String typeName = c.getClass().getSimpleName();
 		if (c.getClass() == Double.class) {
 			typeName = "double";
+		}
+		if (c.getClass() == Boolean.class) {
+			typeName = "boolean";
 		}
 		out.printLine(typeName, " ", target, " = ", c, ";");
 		return null;
@@ -320,12 +323,29 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		return r.status() == TypeStatus.NUMBER ? r.getName() : "StandardLibrary.toNumber(" + r.getName() + ")";
 	}
 
-	public Void visitBranch(@NotNull Branch branch) throws CompilationFailure {
-		out.printLine("if(DynamicOps.isTrue(", branch.getCondition().getName(), ")) {");
-		out.addIndent();
-		visitAll(branch.getBody().steps());
-		out.removeIndent();
-		out.printLine("}");
+	public Void visitIfElseChain(@NotNull IfElseChain ifElseChain) throws CompilationFailure {
+		int size = ifElseChain.getClauses().size();
+		int i = 0;
+		for (var entry : ifElseChain.getClauses().entrySet()) {
+			boolean isLast = ++i == size;
+			FlatExpr condition = entry.getKey();
+			AsmBlock value = entry.getValue();
+
+			visitAll(condition.block());
+			out.printLine("if(DynamicOps.isTrue(", condition.value().getName(), ")) {");
+			out.addIndent();
+			visitAll(value.steps());
+			out.removeIndent();
+			out.printLine("}", isLast ? "" : " else {");
+			if(!isLast) {
+				out.addIndent();
+			}
+		}
+		for (int j = 0; j < size - 1; j++) {
+			out.removeIndent();
+			out.printLine("}");
+		}
+//		out.printLine(String.join("", Collections.nCopies(size - 1, "}")));
 		return null;
 	}
 

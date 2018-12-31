@@ -28,23 +28,29 @@ public class SingleRegisterUseVerifier implements CompilerPlugin {
 
 	@Override
 	public AsmBlock apply() throws CompilationFailure {
-		if(!context.options().contains(Option.VERIFY)) {
+		if (!context.options().contains(Option.VERIFY)) {
 			return block;
 		}
-		Set<Register> unique = new HashSet<>(256);
-		List<Register> duplicates = new ArrayList<>();
+		IdentityHashMap<Register, Step> unique = new IdentityHashMap<>(256);
+		Map<Register, Step> duplicates = new HashMap<>(0);
 		block.forEachRecursive(step -> {
 			for (Register r : step.observed()) {
-				if (unique.contains(r)) {
-					duplicates.add(r);
+				if (unique.containsKey(r)) {
+					duplicates.put(r, step);
 				} else {
-					unique.add(r);
+					unique.put(r, step);
 				}
 			}
 		});
 		if (!duplicates.isEmpty()) {
-			var msg = Message.createError("Registers " + duplicates + " are observed more than once!");
-			context.reporter().report(msg);
+			for (var entry : duplicates.entrySet()) {
+				var register = entry.getKey();
+				var step = entry.getValue();
+				var msg = Message.createError(String.format(
+						"Register %s is observed again at [%s], (previously observed at [%s])",
+						register, step, unique.get(register)));
+				context.reporter().report(msg);
+			}
 			throw new CompilationFailure();
 		}
 		return block;

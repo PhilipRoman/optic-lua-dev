@@ -14,7 +14,7 @@ abstract class StepVisitor<R> {
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitBranch(x: Branch): R {
+    open fun visitIfElseChain(x: IfElseChain): R {
         return defaultValue(x)
     }
 
@@ -111,7 +111,7 @@ abstract class StepVisitor<R> {
     fun visit(x: Step): R {
         return when (x) {
             is Block -> visitBlock(x)
-            is Branch -> visitBranch(x)
+            is IfElseChain -> visitIfElseChain(x)
             is Call -> visitCall(x)
             is Comment -> visitComment(x)
             is Declare -> visitDeclare(x)

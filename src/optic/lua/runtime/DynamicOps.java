@@ -108,6 +108,25 @@ public class DynamicOps {
 	}
 
 	@RuntimeApi
+	public static Object operator(double a, String symbol, double b) {
+		switch (symbol) {
+			case "+":
+				return a + b;
+			case "-":
+				return a - b;
+			case "*":
+				return a * b;
+			case "/":
+				return a / b;
+			case "==":
+				return a == b;
+			case "..":
+				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
+		}
+		return null;
+	}
+
+	@RuntimeApi
 	public static Object index(Object obj, Object key) {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);

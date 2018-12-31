@@ -75,10 +75,6 @@ class StepFactory {
 		return new TableRead(table, key, out);
 	}
 
-	static Step ifThen(Register condition, AsmBlock body) {
-		return new Branch(condition, body);
-	}
-
 	static Step select(Register out, Register varargs, int n) {
 		checkVararg(false, out);
 		return new Select(out, varargs, n);
@@ -103,5 +99,13 @@ class StepFactory {
 		checkVararg(false, source);
 		checkVararg(false, target);
 		return new ToNumber(source, target);
+	}
+
+	public static Step constBool(Register register, boolean value) {
+		return new LoadConstant(register, value);
+	}
+
+	public static Step ifThenChain(Map<FlatExpr, AsmBlock> clauses) {
+		return new IfElseChain(clauses);
 	}
 }

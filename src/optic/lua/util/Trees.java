@@ -1,14 +1,18 @@
 package optic.lua.util;
 
+import nl.bigo.luaparser.Lua52Walker;
 import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-
-import static java.lang.String.format;
+import java.util.stream.Collectors;
 
 public final class Trees {
 	private Trees() {
+	}
+
+	private static AssertionError failExpect(Tree actual, int... expected) {
+		return new AssertionError("Expected " + reverseLookupAll(expected) + ", got " + actual.toStringTree());
 	}
 
 	@NotNull
@@ -16,11 +20,7 @@ public final class Trees {
 	public static Tree expect(int type, Tree tree) {
 		checkNull(tree);
 		if (tree.getType() != type) {
-			var msg = format("%s is of type %d, not %d",
-					tree.toString(),
-					tree.getType(),
-					type);
-			throw new AssertionError(msg);
+			throw failExpect(tree, type);
 		}
 		return tree;
 	}
@@ -30,12 +30,7 @@ public final class Trees {
 	public static Tree expectEither(int type1, int type2, Tree tree) {
 		checkNull(tree);
 		if (tree.getType() != type1 && tree.getType() != type2) {
-			var msg = format("%s is of type %d, not %d or %d",
-					tree.toString(),
-					tree.getType(),
-					type1,
-					type2);
-			throw new AssertionError(msg);
+			throw failExpect(tree, type1, type2);
 		}
 		return tree;
 	}
@@ -77,5 +72,50 @@ public final class Trees {
 	public static List<?> childrenOf(Tree t) {
 		checkNull(t);
 		return Objects.requireNonNullElse(((CommonTree) t).getChildren(), List.of());
+	}
+
+	public static int[] getChildTypes(Tree t) {
+		int[] types = new int[t.getChildCount()];
+		for (int i = 0; i < types.length; i++) {
+			types[i] = t.getChild(i).getType();
+		}
+		return types;
+	}
+
+	public static int matchRepeated(Tree tree, int[] start, int type, int[] end) {
+		if (start.length + end.length > tree.getChildCount()) {
+			throw new IllegalArgumentException("Prefix + postfix is longer than array itself");
+		}
+		int[] actual = getChildTypes(tree);
+		if (!Arrays.equals(actual, 0, start.length, start, 0, start.length)) {
+			throw new IllegalArgumentException(Arrays.toString(actual) + " doesn't start with " + Arrays.toString(start));
+		}
+		if (!Arrays.equals(actual, actual.length - end.length, actual.length, end, 0, end.length)) {
+			throw new IllegalArgumentException(Arrays.toString(actual) + " doesn't end with " + Arrays.toString(end));
+		}
+		for (int i = start.length; i < actual.length - end.length; i++) {
+			if (actual[i] != type) {
+				throw new IllegalArgumentException("Expected " + type + " got " + actual[i]);
+			}
+		}
+		return actual.length - start.length - end.length;
+	}
+
+	public static String reverseLookupName(int type) {
+		var fields = Lua52Walker.class.getFields();
+		for (var field : fields) {
+			try {
+				if (field.getType() == Integer.TYPE && field.getInt(null) == type) {
+					return field.getName();
+				}
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return null;
+	}
+
+	public static List<String> reverseLookupAll(int[] types) {
+		return Arrays.stream(types).mapToObj(Trees::reverseLookupName).map(Objects::toString).collect(Collectors.toList());
 	}
 }

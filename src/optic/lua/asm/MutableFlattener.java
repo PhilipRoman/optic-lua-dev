@@ -46,6 +46,23 @@ public class MutableFlattener {
 		this.steps = steps;
 	}
 
+	public Flattener getInterface() {
+		return new Flattener() {
+			@Override
+			public AsmBlock flatten(CommonTree tree, boolean boundary, List<VariableInfo> locals) throws CompilationFailure {
+				return MutableFlattener.flatten(tree, context, MutableFlattener.this, boundary, locals);
+			}
+
+			@Override
+			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
+				List<Step> steps = new ArrayList<>();
+				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context);
+				Register result = flattener.flattenExpression(tree);
+				return new FlatExpr(flattener.steps, result);
+			}
+		};
+	}
+
 	public static AsmBlock flatten(CommonTree tree, Context context) throws CompilationFailure {
 		return flatten(tree, context, null, false, List.of());
 	}
@@ -166,17 +183,11 @@ public class MutableFlattener {
 				return;
 			}
 			case If: {
-				Register condition = flattenExpression(t.getChild(0).getChild(0));
-				AsmBlock then = flattenBlock((CommonTree) t.getChild(0).getChild(1));
-				steps.add(StepFactory.ifThen(condition, then));
-				if (t.getChildCount() > 1) {
-					var children = Trees.childrenOf(t);
-					var remaining = children.subList(1, children.size());
-					var msg = "Not implemented yet: " + remaining;
-					steps.add(StepFactory.comment(msg));
-					emit(Level.WARNING, msg, t);
-					return;
+				var builder = new IfElseChainBuilder(getInterface());
+				for(var x : Trees.childrenOf(t)) {
+					builder.add((Tree) x);
 				}
+				steps.add(StepFactory.ifThenChain(builder.build()));
 				return;
 			}
 		}
@@ -255,9 +266,21 @@ public class MutableFlattener {
 			case Nil: {
 				return nil();
 			}
+			case True: {
+				return constant(true);
+			}
+			case False: {
+				return constant(false);
+			}
 		}
-		emit(Level.ERROR, "Unknown expression: " + t, t);
+		emit(Level.ERROR, "Unknown expression: " + t + " in " + t.getParent().toStringTree(), t);
 		throw new CompilationFailure();
+	}
+
+	private Register constant(boolean value) {
+		var r = RegisterFactory.create();
+		steps.add(StepFactory.constBool(r, value));
+		return r;
 	}
 
 	private Register createTableLiteral(Tree tree) throws CompilationFailure {

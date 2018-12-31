@@ -19,7 +19,7 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		var codeSource = CodeSource.ofFile("samples/spectral-norm.lua");
+		var codeSource = CodeSource.ofFile("samples/if-else-chain.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var pipeline = new Pipeline(
 				Set.of(KEEP_COMMENTS, DEBUG_COMMENTS, PARALLEL, VERIFY),
@@ -33,9 +33,10 @@ public class Main {
 			pipeline.run();
 		} catch (CompilationFailure e) {
 			System.err.print("Failed!");
+			e.printStackTrace();
 			System.exit(1);
 		}
-//		Files.copy(temp, System.err);
+		Files.copy(temp, System.err);
 		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(Files.newInputStream(temp), 20);
 	}
 
