@@ -203,7 +203,7 @@ public class MutableFlattener {
 			var b = discardRemaining(flattenExpression(t.getChild(1)));
 			if (Operators.isMathOp(t)) {
 				register.addStatusDependency(a::status);
-				if(!context.options().contains(Option.FIRST_NUM_OPERATORS)) {
+				if(!context.options().get(StandardFlags.FIRST_NUM_OPERATORS)) {
 					register.addStatusDependency(b::status);
 				}
 			} else {

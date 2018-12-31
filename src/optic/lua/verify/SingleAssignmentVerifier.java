@@ -28,7 +28,7 @@ public class SingleAssignmentVerifier implements CompilerPlugin {
 
 	@Override
 	public AsmBlock apply() throws CompilationFailure {
-		if (!context.options().contains(Option.VERIFY)) {
+		if (!context.options().get(StandardFlags.VERIFY)) {
 			return block;
 		}
 		Set<Register> unique = new HashSet<>(256);

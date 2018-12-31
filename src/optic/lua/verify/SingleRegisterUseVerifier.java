@@ -28,7 +28,7 @@ public class SingleRegisterUseVerifier implements CompilerPlugin {
 
 	@Override
 	public AsmBlock apply() throws CompilationFailure {
-		if (!context.options().contains(Option.VERIFY)) {
+		if (!context.options().get(StandardFlags.VERIFY)) {
 			return block;
 		}
 		IdentityHashMap<Register, Step> unique = new IdentityHashMap<>(256);

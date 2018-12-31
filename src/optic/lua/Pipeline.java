@@ -16,9 +16,9 @@ public final class Pipeline {
 	private final List<CompilerPlugin.Factory> pluginFactories = new ArrayList<>();
 	private final EnumMap<Moment, Long> timing = new EnumMap<>(Moment.class);
 
-	public Pipeline(Set<Option> options, MessageReporter reporter, CodeSource source) {
+	public Pipeline(Options options, MessageReporter reporter, CodeSource source) {
 		this.source = source;
-		this.context = new Context(Set.copyOf(options), reporter.withSource(source));
+		this.context = new Context(options, reporter.withSource(source));
 	}
 
 	public void run() throws CompilationFailure {
@@ -41,7 +41,7 @@ public final class Pipeline {
 		for (var factory : pluginFactories) {
 			long startTime = System.nanoTime();
 			var plugin = factory.create(steps, context.withPhase(Phase.COMPILING));
-			if(context.options().contains(Option.PARALLEL) && plugin.concurrent()) {
+			if(context.options().get(StandardFlags.PARALLEL) && plugin.concurrent()) {
 				reporter.report(Message.createInfo("Applying plugin " + plugin + " in background"));
 				var future = background.submit(() -> {
 					plugin.apply();

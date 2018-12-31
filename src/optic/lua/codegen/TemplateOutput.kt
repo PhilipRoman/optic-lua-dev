@@ -1,17 +1,19 @@
 package optic.lua.codegen
 
+import optic.lua.messages.Context
+import optic.lua.messages.StandardFlags
 import java.io.PrintStream
 
-class TemplateOutput(private val out: PrintStream) {
-    private var indent = 0
+class TemplateOutput(private val context: Context, private val out: PrintStream) {
+    private var depth = 0
 
     fun addIndent() {
-        indent++
+        depth++
     }
 
     fun removeIndent() {
-        if (indent <= 0) throw IllegalStateException()
-        indent--
+        if (depth <= 0) throw IllegalStateException()
+        depth--
     }
 
     fun printLine() {
@@ -108,9 +110,9 @@ class TemplateOutput(private val out: PrintStream) {
     }
 
     private fun printIndent() {
-        for (i in 0 until indent) {
-            out.print('\t')
-        }
+        @Suppress("INACCESSIBLE_TYPE") // I believe this is a bug in Kotlin, remove the @Suppress(...) once fixed
+        val indent = context.options().get(StandardFlags.INDENT)!!
+        out.print(indent.repeat(depth))
     }
 
     fun flush() = out.flush()

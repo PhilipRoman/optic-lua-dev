@@ -8,12 +8,11 @@ import optic.lua.verify.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
-import java.io.*;
+import java.io.PrintStream;
 import java.nio.file.Files;
-import java.util.Set;
 import java.util.stream.*;
 
-import static optic.lua.messages.Option.*;
+import static optic.lua.messages.StandardFlags.*;
 
 public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
@@ -21,8 +20,14 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		var codeSource = CodeSource.ofFile("samples/if-else-chain.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
+		var options = new Options();
+		options.enable(KEEP_COMMENTS);
+		options.enable(DEBUG_COMMENTS);
+		options.enable(PARALLEL);
+		options.enable(VERIFY);
+		options.set(INDENT, "\t");
 		var pipeline = new Pipeline(
-				Set.of(KEEP_COMMENTS, DEBUG_COMMENTS, PARALLEL, VERIFY),
+				options,
 				new LogMessageReporter(log, new SimpleMessageFormat()),
 				codeSource
 		);

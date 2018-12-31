@@ -277,14 +277,14 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	}
 
 	public Void visitComment(@NotNull Comment comment) {
-		if (context.options().contains(Option.KEEP_COMMENTS)) {
+		if (context.options().get(StandardFlags.KEEP_COMMENTS)) {
 			out.printLine("// ", comment.getText());
 		}
 		return null;
 	}
 
 	private void writeDebugComment(String comment) {
-		if (context.options().contains(Option.DEBUG_COMMENTS)) {
+		if (context.options().get(StandardFlags.DEBUG_COMMENTS)) {
 			out.printLine("// ", comment);
 		}
 	}
@@ -359,7 +359,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	}
 
 	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
-		this.out = new TemplateOutput(out);
+		this.out = new TemplateOutput(context, out);
 		this.block = block;
 		this.context = context;
 	}
