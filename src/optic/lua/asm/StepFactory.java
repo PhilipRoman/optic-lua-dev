@@ -1,6 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.asm.instructions.*;
+import optic.lua.optimization.LuaOperator;
 
 import java.util.*;
 
@@ -22,12 +23,12 @@ class StepFactory {
 		return new LoadConstant(register, string);
 	}
 
-	static Step binaryOperator(Register a, Register b, String op, Register register) {
-		return new Operator(a, b, register, op);
+	static Step binaryOperator(Register a, Register b, LuaOperator op, Register register) {
+		return new Operation(a, b, register, op);
 	}
 
-	static Step unaryOperator(Register param, String op, Register register) {
-		return new Operator(param, register, op);
+	static Step unaryOperator(Register param, LuaOperator op, Register register) {
+		return new Operation(param, register, op);
 	}
 
 	static Step forRange(VariableInfo counter, Register from, Register to, AsmBlock block) {

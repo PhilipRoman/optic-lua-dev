@@ -1,7 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.asm.instructions.VariableMode;
-import optic.lua.optimization.TypeStatus;
+import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.NotNull;
 
 import static optic.lua.asm.instructions.VariableMode.*;
@@ -11,7 +11,7 @@ public class VariableInfo {
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
 	private final String name;
-	private TypeStatus status = TypeStatus.UNKNOWN;
+	private ProvenType status = ProvenType.UNKNOWN;
 
 	VariableInfo(String name) {
 		this.name = name;
@@ -56,19 +56,19 @@ public class VariableInfo {
 		return name;
 	}
 
-	public TypeStatus status() {
-		return isUpvalue ? TypeStatus.OBJECT : status;
+	public ProvenType status() {
+		return isUpvalue ? ProvenType.OBJECT : status;
 	}
 
 	void enableObjects() {
-		status = status.and(TypeStatus.OBJECT);
+		status = status.and(ProvenType.OBJECT);
 	}
 
 	void enableNumbers() {
-		status = status.and(TypeStatus.NUMBER);
+		status = status.and(ProvenType.NUMBER);
 	}
 
-	void update(TypeStatus other) {
+	void update(ProvenType other) {
 		status = status.and(other);
 	}
 
@@ -98,8 +98,8 @@ public class VariableInfo {
 		}
 
 		@Override
-		public TypeStatus status() {
-			return TypeStatus.OBJECT;
+		public ProvenType status() {
+			return ProvenType.OBJECT;
 		}
 
 		@Override

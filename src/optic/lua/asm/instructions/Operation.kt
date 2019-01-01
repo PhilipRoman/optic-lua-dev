@@ -2,30 +2,31 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
+import optic.lua.optimization.LuaOperator
 import java.util.function.Consumer
 
-class Operator : Step {
+class Operation : Step {
     val a: Register?
     val b: Register
     val target: Register
-    val symbol: String
+    val operator: LuaOperator
 
-    constructor(a: Register, b: Register, target: Register, symbol: String) {
+    constructor(a: Register, b: Register, target: Register, operator: LuaOperator) {
         this.a = a
         this.b = b
         this.target = target
-        this.symbol = symbol
+        this.operator = operator
     }
 
-    constructor(b: Register, target: Register, symbol: String) {
+    constructor(b: Register, target: Register, operator: LuaOperator) {
         this.a = null
         this.b = b
         this.target = target
-        this.symbol = symbol
+        this.operator = operator
     }
 
     override fun toString(): String {
-        return "op $target = ${a ?: ""} $symbol $b"
+        return "op $target = ${a ?: ""} $operator $b"
     }
 
     override fun modified(): Register? = target

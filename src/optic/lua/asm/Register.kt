@@ -1,7 +1,7 @@
 package optic.lua.asm
 
-import optic.lua.optimization.CombinedTypeStatus
-import optic.lua.optimization.TypeStatus
+import optic.lua.optimization.CombinedCommonType
+import optic.lua.optimization.ProvenType
 import optic.lua.util.UniqueNames
 import java.util.function.Supplier
 
@@ -16,7 +16,7 @@ import java.util.function.Supplier
 class Register constructor(val name: String, val isVararg: Boolean) {
     constructor(isVararg: Boolean) : this(UniqueNames.next(), isVararg)
 
-    private val statusDependencies: CombinedTypeStatus = CombinedTypeStatus()
+    private val statusDependencies: CombinedCommonType = CombinedCommonType()
     override fun toString(): String {
         return name + if (isVararg) "@" else ""
     }
@@ -25,16 +25,16 @@ class Register constructor(val name: String, val isVararg: Boolean) {
         return name == "_"
     }
 
-    fun status(): TypeStatus {
+    fun status(): ProvenType {
         return statusDependencies.get()
     }
 
-    fun updateStatus(type: TypeStatus) {
-        statusDependencies.add(type)
+    fun updateStatus(provenType: ProvenType) {
+        statusDependencies.add(provenType)
     }
 
-    fun addStatusDependency(type: Supplier<TypeStatus>) {
-        statusDependencies.add(type)
+    fun addStatusDependency(provenType: Supplier<ProvenType>) {
+        statusDependencies.add(provenType)
     }
 
     fun toDebugString(): String {

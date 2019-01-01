@@ -3,7 +3,7 @@ package optic.lua.asm;
 import optic.lua.asm.LValue.Name;
 import optic.lua.asm.LValue.*;
 import optic.lua.messages.*;
-import optic.lua.optimization.TypeStatus;
+import optic.lua.optimization.*;
 import optic.lua.util.*;
 import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
@@ -184,7 +184,7 @@ public class MutableFlattener {
 			}
 			case If: {
 				var builder = new IfElseChainBuilder(getInterface());
-				for(var x : Trees.childrenOf(t)) {
+				for (var x : Trees.childrenOf(t)) {
 					builder.add((Tree) x);
 				}
 				steps.add(StepFactory.ifThenChain(builder.build()));
@@ -199,23 +199,19 @@ public class MutableFlattener {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			var register = RegisterFactory.create();
-			var a = discardRemaining(flattenExpression(t.getChild(0)));
-			var b = discardRemaining(flattenExpression(t.getChild(1)));
-			if (Operators.isMathOp(t)) {
-				register.addStatusDependency(a::status);
-				if(!context.options().get(StandardFlags.FIRST_NUM_OPERATORS)) {
-					register.addStatusDependency(b::status);
-				}
-			} else {
-				register.updateStatus(TypeStatus.OBJECT);
-			}
-			String op = t.getText();
+			// Lua does not have methods for >= and >
+			// instead we reverse the arguments and use < and <= respectively
+			boolean reverse = t.getType() == GT || t.getType() == GTEq;
+			LuaOperator op = LuaOperator.forTokenType(t.getType());
+			var a = discardRemaining(flattenExpression(t.getChild(reverse ? 1 : 0)));
+			var b = discardRemaining(flattenExpression(t.getChild(reverse ? 0 : 1)));
+			register.addStatusDependency(() -> op.resultType(a.status(), b.status()));
 			steps.add(StepFactory.binaryOperator(a, b, op, register));
 			return register;
 		}
 		if (Operators.isUnary(t)) {
 			var register = RegisterFactory.create();
-			String op = Operators.getUnarySymbol(t);
+			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			Register param = discardRemaining(flattenExpression(t.getChild(0)));
 			steps.add(StepFactory.unaryOperator(param, op, register));
 			return register;
@@ -228,7 +224,7 @@ public class MutableFlattener {
 				var register = RegisterFactory.create();
 				String value = (t.getText());
 				steps.add(StepFactory.constString(register, value));
-				register.updateStatus(TypeStatus.OBJECT);
+				register.updateStatus(ProvenType.OBJECT);
 				return register;
 			}
 			case Name: {
@@ -317,7 +313,7 @@ public class MutableFlattener {
 	private Register toNumber(Register a) {
 		var b = RegisterFactory.create();
 		steps.add(StepFactory.toNumber(a, b));
-		b.updateStatus(TypeStatus.NUMBER);
+		b.updateStatus(ProvenType.NUMBER);
 		return b;
 	}
 
@@ -377,7 +373,7 @@ public class MutableFlattener {
 	private Register nil() {
 		var nil = RegisterFactory.create();
 		steps.add(StepFactory.constNil(nil));
-		nil.updateStatus(TypeStatus.OBJECT);
+		nil.updateStatus(ProvenType.OBJECT);
 		return nil;
 	}
 
@@ -385,7 +381,7 @@ public class MutableFlattener {
 	private Register constant(double d) {
 		var num = RegisterFactory.create();
 		steps.add(StepFactory.constNumber(num, d));
-		num.updateStatus(TypeStatus.NUMBER);
+		num.updateStatus(ProvenType.NUMBER);
 		return num;
 	}
 

@@ -54,6 +54,36 @@ public class DynamicOps {
 		return a / b;
 	}
 
+	public static boolean eq(double a, double b) {
+		return a == b;
+	}
+
+	public static boolean eq(Object a, Object b) {
+		if (a instanceof Number && b instanceof Number) {
+			return ((Number) a).doubleValue() == ((Number) b).doubleValue();
+		}
+		if (a instanceof CharSequence && b instanceof CharSequence) {
+			return a.toString().contentEquals((CharSequence) b);
+		}
+		return Objects.equals(a, b);
+	}
+
+	public static boolean le(double a, double b) {
+		return a <= b;
+	}
+
+	public static boolean le(Object a, Object b) {
+		return (double) a <= (double) b;
+	}
+
+	public static boolean lt(double a, double b) {
+		return a < b;
+	}
+
+	public static boolean lt(Object a, Object b) {
+		return (double) a < (double) b;
+	}
+
 	@RuntimeApi
 	public static Object operator(Object a, String symbol, Object b) {
 		switch (symbol) {
@@ -66,13 +96,7 @@ public class DynamicOps {
 			case "/":
 				return toNumber(a) / toNumber(b);
 			case "==":
-				if (a instanceof Number && b instanceof Number) {
-					return ((Number) a).doubleValue() == ((Number) b).doubleValue();
-				}
-				if (a instanceof CharSequence && b instanceof CharSequence) {
-					return a.toString().contentEquals((CharSequence) b);
-				}
-				return Objects.equals(a, b);
+				return eq(a, b);
 			case "..":
 				Objects.requireNonNull(a);
 				Objects.requireNonNull(b);

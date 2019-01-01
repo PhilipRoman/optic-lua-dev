@@ -59,7 +59,7 @@ abstract class StepVisitor<R> {
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitOperator(x: Operator): R {
+    open fun visitOperation(x: Operation): R {
         return defaultValue(x)
     }
 
@@ -120,7 +120,7 @@ abstract class StepVisitor<R> {
             is GetVarargs -> visitGetVarargs(x)
             is LoadConstant -> visitLoadConstant(x)
             is MakeTable -> visitMakeTable(x)
-            is Operator -> visitOperator(x)
+            is Operation -> visitOperation(x)
             is Read -> visitRead(x)
             is Return -> visitReturn(x)
             is Select -> visitSelect(x)

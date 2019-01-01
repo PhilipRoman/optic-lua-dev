@@ -69,6 +69,16 @@ public interface Message {
 	}
 
 	/**
+	 * @return mutable message with the given text and {@link Level#ERROR} level
+	 */
+	static MessageBuilder createError(String message, Throwable cause) {
+		var msg = create(message);
+		msg.setLevel(Level.ERROR);
+		msg.setCause(cause);
+		return msg;
+	}
+
+	/**
 	 * @return mutable message with the given text and {@link Level#INFO} level
 	 */
 	static Message createInfo(String message) {

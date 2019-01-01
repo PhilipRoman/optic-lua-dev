@@ -62,6 +62,8 @@ public final class Pipeline {
 			} catch (InterruptedException e) {
 				throw new RuntimeException("Concurrent plugins should not be interrupted!");
 			} catch (ExecutionException e) {
+				var msg = Message.createError("Plugin failed!", e.getCause());
+				reporter.report(msg);
 				throw new CompilationFailure();
 			}
 		}
