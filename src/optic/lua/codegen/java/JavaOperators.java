@@ -39,7 +39,7 @@ final class JavaOperators {
 			case LT:
 				return a == NUMBER || b == NUMBER;
 			default:
-				throw new IllegalArgumentException(operator.name());
+				return false;
 		}
 	}
 
