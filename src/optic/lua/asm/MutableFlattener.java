@@ -143,12 +143,18 @@ public class MutableFlattener {
 				return;
 			}
 			case VAR: {
-				if (t.getChild(1).getType() == CALL) {
-					createFunctionCall(t, false);
+				var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
+				int i = 1;
+				while (i < t.getChildCount() && t.getChild(i).getType() == INDEX) {
+					builder.add(t.getChild(i++));
+				}
+				if (t.getChild(i) != null && t.getChild(i).getType() == CALL) {
+					var result = builder.readableResult();
+					steps.addAll(result.block());
+					createFunctionCall(result.value(), t.getChild(i), false);
 				} else {
-					var msg = "Not implemented yet: " + t.toStringTree();
-					steps.add(StepFactory.comment(msg));
-					emit(Level.WARNING, msg, t);
+					var result = builder.readableResult();
+					steps.addAll(result.block());
 				}
 				return;
 			}
@@ -234,15 +240,19 @@ public class MutableFlattener {
 				return register;
 			}
 			case VAR: {
-				if (t.getChild(1).getType() == CALL) {
-					return createFunctionCall(t, true);
+				var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
+				int i = 1;
+				while (i < t.getChildCount() && t.getChild(i).getType() == INDEX) {
+					builder.add(t.getChild(i++));
+				}
+				if (t.getChild(i) != null && t.getChild(i).getType() == CALL) {
+					var result = builder.readableResult();
+					steps.addAll(result.block());
+					return createFunctionCall(result.value(), t.getChild(i), true);
 				} else {
-					Trees.expectChild(INDEX, t, 1);
-					var table = flattenExpression(t.getChild(0));
-					var key = flattenExpression(t.getChild(1).getChild(0));
-					var out = RegisterFactory.create();
-					steps.add(StepFactory.tableIndex(table, key, out));
-					return out;
+					var result = builder.readableResult();
+					steps.addAll(result.block());
+					return result.value();
 				}
 			}
 			case FUNCTION: {
@@ -358,11 +368,17 @@ public class MutableFlattener {
 	private LValue createLValue(Object name) throws CompilationFailure {
 		if (name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
 			// table assignment
-			var assignment = ((CommonTree) name);
-			var table = flattenExpression(assignment.getChild(0));
-			Trees.expectChild(INDEX, assignment, 1);
-			var key = flattenExpression(assignment.getChild(1).getChild(0));
-			return new LValue.TableField(table, key);
+			var t = (CommonTree) name;
+			var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
+			int i = 1;
+			while (i < t.getChildCount() - 1 && t.getChild(i).getType() == INDEX) {
+				builder.add(t.getChild(i++));
+			}
+			var result = builder.readableResult();
+			steps.addAll(result.block());
+			Trees.expect(INDEX, t.getChild(t.getChildCount() - 1));
+			Register key = flattenExpression(t.getChild(t.getChildCount() - 1).getChild(0));
+			return new LValue.TableField(result.value(), key);
 		} else {
 			// variable assignment;
 			return new LValue.Name(name.toString());
@@ -457,11 +473,11 @@ public class MutableFlattener {
 	}
 
 	@Nullable
-	@Contract(value = "_, true -> !null; _, false -> null", mutates = "this")
-	private Register createFunctionCall(Tree t, boolean expression) throws CompilationFailure {
-		Objects.requireNonNull(t);
-		var function = flattenExpression(t.getChild(0));
-		var call = Trees.expect(CALL, t.getChild(1));
+	@Contract(value = "_, _, true -> !null; _, _, false -> null", mutates = "this")
+	private Register createFunctionCall(Register function, Tree call, boolean expression) throws CompilationFailure {
+		Objects.requireNonNull(function);
+		Objects.requireNonNull(call);
+		Trees.expect(CALL, call);
 		List<Register> arguments = normalizeValueList(flattenAll(Trees.childrenOf(call)));
 		if (expression) {
 			Register register = RegisterFactory.createVararg();
