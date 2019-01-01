@@ -2,8 +2,6 @@ package optic.lua.runtime;
 
 import java.util.Objects;
 
-import static optic.lua.runtime.StandardLibrary.toNumber;
-
 @RuntimeApi
 public class DynamicOps {
 	public static Object add(Object a, Object b) {
@@ -84,70 +82,8 @@ public class DynamicOps {
 		return (double) a < (double) b;
 	}
 
-	@RuntimeApi
-	public static Object operator(Object a, String symbol, Object b) {
-		switch (symbol) {
-			case "+":
-				return toNumber(a) + toNumber(b);
-			case "-":
-				return toNumber(a) - toNumber(b);
-			case "*":
-				return toNumber(a) * toNumber(b);
-			case "/":
-				return toNumber(a) / toNumber(b);
-			case "==":
-				return eq(a, b);
-			case "..":
-				Objects.requireNonNull(a);
-				Objects.requireNonNull(b);
-				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
-		}
-		return null;
-	}
-
-	@RuntimeApi
-	public static Object operator(double a, String symbol, Object b) {
-		switch (symbol) {
-			case "+":
-				return a + toNumber(b);
-			case "-":
-				return a - toNumber(b);
-			case "*":
-				return a * toNumber(b);
-			case "/":
-				return a / toNumber(b);
-			case "==":
-				if (b instanceof Number) {
-					return a == ((Number) b).doubleValue();
-				}
-				if (b instanceof CharSequence) {
-					return false;
-				}
-				return false;
-			case "..":
-				Objects.requireNonNull(b);
-				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
-		}
-		return null;
-	}
-
-	@RuntimeApi
-	public static Object operator(double a, String symbol, double b) {
-		switch (symbol) {
-			case "+":
-				return a + b;
-			case "-":
-				return a - b;
-			case "*":
-				return a * b;
-			case "/":
-				return a / b;
-			case "==":
-				return a == b;
-			case "..":
-				return StandardLibrary.toString(a) + StandardLibrary.toString(b);
-		}
-		return null;
+	public static String concat(Object a, Object b) {
+		return a.toString() + b;
 	}
 
 	@RuntimeApi
