@@ -133,27 +133,29 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 			// binary operator
 			Objects.requireNonNull(a);
 			var resultType = op.resultType(a.status(), b.status());
+			var resultTypeName = JavaTypes.getTypeName(resultType);
 			if (JavaOperators.canApplyJavaSymbol(op, a.status(), b.status())) {
 				writeDebugComment("Inline operation with " + a.toDebugString() + " and " + b.toDebugString());
 				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
-				out.printLine(JavaTypes.getTypeName(resultType), " ", targetName, " = ", a.getName(), " ", javaOp, " ", b.getName(), ";");
+				out.printLine(resultTypeName, " ", targetName, " = ", a.getName(), " ", javaOp, " ", b.getName(), ";");
 				return null;
 			}
 			// if there is no corresponding Java operator, call the runtime API
 			String function = op.name().toLowerCase();
-			out.printLine(" ", targetName, " = DynamicOps.", function, "(", a.getName(), ", ", b.getName(), ");");
+			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", a.getName(), ", ", b.getName(), ");");
 		} else {
 			// unary operator
 			var resultType = op.resultType(null, b.status());
+			var resultTypeName = JavaTypes.getTypeName(resultType);
 			if (JavaOperators.canApplyJavaSymbol(op, null, b.status())) {
 				writeDebugComment("Inline operation with " + b.toDebugString());
 				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
-				out.printLine(JavaTypes.getTypeName(resultType), " ", targetName, " = ", javaOp, b.getName(), ";");
+				out.printLine(resultTypeName, " ", targetName, " = ", javaOp, b.getName(), ";");
 				return null;
 			}
 			// if there is no corresponding Java operator, call the runtime API
 			String function = op.name().toLowerCase();
-			out.printLine(" ", targetName, " = DynamicOps.", function, "(", b.getName(), ");");
+			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", b.getName(), ");");
 		}
 		return null;
 	}
