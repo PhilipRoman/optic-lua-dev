@@ -20,4 +20,8 @@ public final class Options {
 	public <T> T get(Option<T> key) {
 		return (T) table.getOrDefault(key, key.defaultValue());
 	}
+
+	public void disable(Option<Boolean> key) {
+		table.put(key, false);
+	}
 }

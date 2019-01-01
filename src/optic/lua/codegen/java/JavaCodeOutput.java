@@ -97,8 +97,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		String typeName = c.getClass().getSimpleName();
 		if (c.getClass() == Double.class) {
 			typeName = "double";
-		}
-		if (c.getClass() == Boolean.class) {
+		} else if (c.getClass() == Boolean.class) {
 			typeName = "boolean";
 		}
 		out.printLine(typeName, " ", target, " = ", c, ";");
@@ -129,12 +128,13 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		LuaOperator op = operation.getOperator();
 		@Nullable Register a = operation.getA();
 		Register b = operation.getB();
-		if(op.arity() == 2) {
+		boolean unbox = context.options().get(StandardFlags.UNBOX);
+		if (op.arity() == 2) {
 			// binary operator
 			Objects.requireNonNull(a);
 			var resultType = op.resultType(a.status(), b.status());
-			var resultTypeName = JavaTypes.getTypeName(resultType);
-			if (JavaOperators.canApplyJavaSymbol(op, a.status(), b.status())) {
+			var resultTypeName = typeName(resultType);
+			if (unbox && JavaOperators.canApplyJavaSymbol(op, a.status(), b.status())) {
 				writeDebugComment("Inline operation with " + a.toDebugString() + " and " + b.toDebugString());
 				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
 				out.printLine(resultTypeName, " ", targetName, " = ", a.getName(), " ", javaOp, " ", b.getName(), ";");
@@ -146,8 +146,8 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		} else {
 			// unary operator
 			var resultType = op.resultType(null, b.status());
-			var resultTypeName = JavaTypes.getTypeName(resultType);
-			if (JavaOperators.canApplyJavaSymbol(op, null, b.status())) {
+			var resultTypeName = typeName(resultType);
+			if (unbox && JavaOperators.canApplyJavaSymbol(op, null, b.status())) {
 				writeDebugComment("Inline operation with " + b.toDebugString());
 				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
 				out.printLine(resultTypeName, " ", targetName, " = ", javaOp, b.getName(), ";");
@@ -164,11 +164,8 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		writeDebugComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
 		switch (read.getSourceInfo().getMode()) {
 			case LOCAL: {
-				if (read.getSourceInfo().status() == ProvenType.NUMBER && read.getRegister().status() == ProvenType.NUMBER) {
-					out.printLine("double ", read.getRegister(), " = ", read.getName(), ";");
-				} else {
-					out.printLine("Object ", read.getRegister(), " = ", read.getName(), ";");
-				}
+				var typeName = typeName(read.getRegister());
+				out.printLine(typeName, " ", read.getRegister(), " = ", read.getName(), ";");
 				break;
 			}
 			case UPVALUE: {
@@ -257,7 +254,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		var counterName = "i_" + counter.getName();
 		out.printLine("for(double ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
 		out.addIndent();
-		String counterTypeName = loop.getCounter().status() == ProvenType.NUMBER ? "double" : "Object";
+		String counterTypeName = typeName(loop.getCounter());
 		out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
 		for (Step s : loop.getBlock().steps()) {
 			visit(s);
@@ -271,11 +268,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
 		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
 			String finalPrefix = declare.getVariable().isFinal() ? "final " : "";
-			if (declare.getVariable().status() == ProvenType.NUMBER) {
-				out.printLine(finalPrefix, "double ", declare.getName(), ";");
-			} else {
-				out.printLine(finalPrefix, "Object ", declare.getName(), ";");
-			}
+			out.printLine(finalPrefix, typeName(declare.getVariable()), " ", declare.getName(), ";");
 		} else {
 			out.printLine("final UpValue ", declare.getName(), " = UpValue.create();");
 		}
@@ -405,6 +398,27 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	@Override
 	public boolean concurrent() {
 		return true;
+	}
+
+	private String typeName(ProvenType t) {
+		if (context.options().get(StandardFlags.UNBOX)) {
+			return JavaTypes.getTypeName(t);
+		}
+		return "Object";
+	}
+
+	private String typeName(Register r) {
+		if (context.options().get(StandardFlags.UNBOX)) {
+			return JavaTypes.getTypeName(r.status());
+		}
+		return "Object";
+	}
+
+	private String typeName(VariableInfo i) {
+		if (context.options().get(StandardFlags.UNBOX)) {
+			return JavaTypes.getTypeName(i.status());
+		}
+		return "Object";
 	}
 
 	@Override
