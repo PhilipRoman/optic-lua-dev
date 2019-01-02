@@ -222,7 +222,8 @@ public class MutableFlattener implements VariableResolver {
 		}
 		switch (t.getType()) {
 			case Number: {
-				return constant(Double.parseDouble(t.getText()));
+				double value = Double.parseDouble(t.getText());
+				return applyRecipe(RegisterFactory.constant(value));
 			}
 			case String: {
 				var register = RegisterFactory.create();
@@ -268,23 +269,17 @@ public class MutableFlattener implements VariableResolver {
 				return flattenExpression(t.getChild(0));
 			}
 			case Nil: {
-				return nil();
+				return applyRecipe(RegisterFactory.nil());
 			}
 			case True: {
-				return constant(true);
+				return applyRecipe(RegisterFactory.constant(false));
 			}
 			case False: {
-				return constant(false);
+				return applyRecipe(RegisterFactory.constant(false));
 			}
 		}
 		emit(Level.ERROR, "Unknown expression: " + t + " in " + t.getParent().toStringTree(), t);
 		throw new CompilationFailure();
-	}
-
-	private Register constant(boolean value) {
-		var r = RegisterFactory.create();
-		steps.add(StepFactory.constBool(r, value));
-		return r;
 	}
 
 	private Register createTableLiteral(Tree tree) throws CompilationFailure {
@@ -305,7 +300,7 @@ public class MutableFlattener implements VariableResolver {
 				var value = flattenExpression(field.getChild(1));
 				table.put(key, value);
 			} else {
-				var key = constant(arrayFieldIndex++);
+				var key = applyRecipe(RegisterFactory.constant(arrayFieldIndex++));
 				var value = flattenExpression(field.getChild(0));
 				boolean isLastField = fieldIndex == fieldCount - 1;
 				table.put(key, isLastField ? value : discardRemaining(value));
@@ -383,23 +378,6 @@ public class MutableFlattener implements VariableResolver {
 		}
 	}
 
-	@Contract(mutates = "this")
-	private Register nil() {
-		var nil = RegisterFactory.create();
-		steps.add(StepFactory.constNil(nil));
-		nil.updateStatus(ProvenType.OBJECT);
-		return nil;
-	}
-
-	@Contract(mutates = "this")
-	private Register constant(double d) {
-		var num = RegisterFactory.create();
-		steps.add(StepFactory.constNumber(num, d));
-		num.updateStatus(ProvenType.NUMBER);
-		return num;
-	}
-
-	@Contract(mutates = "this")
 	private Step createReadStep(String name, Register out) {
 		VariableInfo info = resolve(name);
 		if (info == null) {
@@ -468,6 +446,12 @@ public class MutableFlattener implements VariableResolver {
 		Register out = RegisterFactory.create();
 		steps.add(StepFactory.functionLiteral(body, out, params));
 		return out;
+	}
+
+	@Contract(mutates = "this")
+	private Register applyRecipe(FlatExpr expr) {
+		steps.addAll(expr.block());
+		return expr.value();
 	}
 
 	private void emit(Level level, String msg, Tree location) {
