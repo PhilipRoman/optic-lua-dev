@@ -41,4 +41,12 @@ class Register constructor(val name: String, val isVararg: Boolean) {
         val varargSuffix = if (isVararg) "..." else ""
         return "register(\"$name$varargSuffix\" ${status()})"
     }
+
+    fun discardRemaining(): FlatExpr {
+        if (!isVararg) {
+            return FlatExpr(listOf(), this)
+        }
+        val first = RegisterFactory.create()
+        return FlatExpr(listOf(StepFactory.select(first, this, 0)), first);
+    }
 }

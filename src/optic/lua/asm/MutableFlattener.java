@@ -284,31 +284,14 @@ public class MutableFlattener implements VariableResolver {
 
 	private Register createTableLiteral(Tree tree) throws CompilationFailure {
 		Trees.expect(TABLE, tree);
-		int arrayFieldIndex = 1;
-		Map<Register, Register> table = new HashMap<>();
 		List<?> fields = Trees.childrenOf(tree);
-		int fieldCount = fields.size();
-		int fieldIndex = 0;
+		var builder = new TableLiteralBuilder(this.getInterface(), fields.size());
 		for (Object obj : fields) {
-			var field = Trees.expect(FIELD, (CommonTree) obj);
-			boolean hasKey = field.getChildCount() == 2;
-			if (!(field.getChildCount() == 1 || field.getChildCount() == 2)) {
-				emit(Level.ERROR, "Expected 1 or 2 children in " + tree.toStringTree(), tree);
-			}
-			if (hasKey) {
-				var key = flattenExpression(field.getChild(0));
-				var value = flattenExpression(field.getChild(1));
-				table.put(key, value);
-			} else {
-				var key = applyRecipe(RegisterFactory.constant(arrayFieldIndex++));
-				var value = flattenExpression(field.getChild(0));
-				boolean isLastField = fieldIndex == fieldCount - 1;
-				table.put(key, isLastField ? value : discardRemaining(value));
-			}
-			fieldIndex++;
+			builder.addEntry((Tree) obj);
 		}
 		Register result = RegisterFactory.create();
-		steps.add(StepFactory.createTable(table, result));
+		steps.addAll(builder.getSteps());
+		steps.add(StepFactory.createTable(builder.getTable(), result));
 		return result;
 	}
 
@@ -322,12 +305,7 @@ public class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private Register discardRemaining(Register vararg) {
-		if (!vararg.isVararg()) {
-			return vararg;
-		}
-		Register first = RegisterFactory.create();
-		steps.add(StepFactory.select(first, vararg, 0));
-		return first;
+		return vararg.discardRemaining().applyTo(steps);
 	}
 
 	@Contract(mutates = "this")
