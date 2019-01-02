@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.*;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class RegisterFactory {
 		var r = create();
 		var steps = new ArrayList<Step>(1);
 		steps.add(StepFactory.constString(r, string));
+		r.updateStatus(ProvenType.OBJECT);
 		return new FlatExpr(steps, r);
 	}
 
@@ -35,6 +37,7 @@ public class RegisterFactory {
 		var r = create();
 		var steps = new ArrayList<Step>(1);
 		steps.add(StepFactory.constNumber(r, number));
+		r.updateStatus(ProvenType.NUMBER);
 		return new FlatExpr(steps, r);
 	}
 
@@ -42,6 +45,7 @@ public class RegisterFactory {
 		var r = create();
 		var steps = new ArrayList<Step>(1);
 		steps.add(StepFactory.constBool(r, bool));
+		r.updateStatus(ProvenType.OBJECT);
 		return new FlatExpr(steps, r);
 	}
 
@@ -49,6 +53,7 @@ public class RegisterFactory {
 		var r = create();
 		var steps = new ArrayList<Step>(1);
 		steps.add(StepFactory.constNil(r));
+		r.updateStatus(ProvenType.OBJECT);
 		return new FlatExpr(steps, r);
 	}
 }

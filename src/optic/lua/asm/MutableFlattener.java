@@ -297,6 +297,10 @@ public class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private Register toNumber(Register a) {
+		a = discardRemaining(a);
+		if(a.status() == ProvenType.NUMBER) {
+			return a;
+		}
 		var b = RegisterFactory.create();
 		steps.add(StepFactory.toNumber(a, b));
 		b.updateStatus(ProvenType.NUMBER);
