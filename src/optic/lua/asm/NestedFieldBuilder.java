@@ -23,7 +23,7 @@ final class NestedFieldBuilder {
 		keys.add(expr);
 	}
 
-	public FlatExpr readableResult() {
+	public FlatExpr build() {
 		List<Step> steps = new ArrayList<>();
 		Register table = start;
 		for(var key : keys) {

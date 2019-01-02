@@ -1,7 +1,5 @@
 package optic.lua.asm;
 
-import optic.lua.asm.LValue.Name;
-import optic.lua.asm.LValue.*;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;
@@ -12,7 +10,6 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
-import static nl.bigo.luaparser.Lua52Walker.Name;
 import static nl.bigo.luaparser.Lua52Walker.Number;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
@@ -21,7 +18,7 @@ import static nl.bigo.luaparser.Lua52Walker.*;
  * Mutable implementation of tree flattener. Good startup performance.
  * Need to investigate parallelism capabilities.
  */
-public class MutableFlattener {
+public class MutableFlattener implements VariableResolver {
 	private static final Logger log = LoggerFactory.getLogger(MutableFlattener.class);
 	private final List<Step> steps;
 	// local variable info
@@ -109,7 +106,8 @@ public class MutableFlattener {
 	}
 
 	@Nullable
-	private VariableInfo resolve(String name) {
+	@Override
+	public VariableInfo resolve(String name) {
 		var localVar = locals.get(name);
 		if (localVar != null) {
 			return localVar;
@@ -149,11 +147,11 @@ public class MutableFlattener {
 					builder.add(t.getChild(i++));
 				}
 				if (t.getChild(i) != null && t.getChild(i).getType() == CALL) {
-					var result = builder.readableResult();
+					var result = builder.build();
 					steps.addAll(result.block());
 					createFunctionCall(result.value(), t.getChild(i), false);
 				} else {
-					var result = builder.readableResult();
+					var result = builder.build();
 					steps.addAll(result.block());
 				}
 				return;
@@ -246,11 +244,11 @@ public class MutableFlattener {
 					builder.add(t.getChild(i++));
 				}
 				if (t.getChild(i) != null && t.getChild(i).getType() == CALL) {
-					var result = builder.readableResult();
+					var result = builder.build();
 					steps.addAll(result.block());
 					return createFunctionCall(result.value(), t.getChild(i), true);
 				} else {
-					var result = builder.readableResult();
+					var result = builder.build();
 					steps.addAll(result.block());
 					return result.value();
 				}
@@ -374,7 +372,7 @@ public class MutableFlattener {
 			while (i < t.getChildCount() - 1 && t.getChild(i).getType() == INDEX) {
 				builder.add(t.getChild(i++));
 			}
-			var result = builder.readableResult();
+			var result = builder.build();
 			steps.addAll(result.block());
 			Trees.expect(INDEX, t.getChild(t.getChildCount() - 1));
 			Register key = flattenExpression(t.getChild(t.getChildCount() - 1).getChild(0));
@@ -402,23 +400,6 @@ public class MutableFlattener {
 	}
 
 	@Contract(mutates = "this")
-	private Step createWriteStep(LValue left, Register value) {
-		if (left instanceof LValue.TableField) {
-			return StepFactory.tableWrite((TableField) left, value);
-		} else if (left instanceof LValue.Name) {
-			var name = ((Name) left);
-			VariableInfo info = resolve(name.name());
-			if (info == null) {
-				return StepFactory.write(VariableInfo.global(name.name()), value);
-			}
-			info.update(value.status());
-			info.markAsWritten();
-			return StepFactory.write(info, value);
-		}
-		throw new AssertionError();
-	}
-
-	@Contract(mutates = "this")
 	private Step createReadStep(String name, Register out) {
 		VariableInfo info = resolve(name);
 		if (info == null) {
@@ -433,43 +414,31 @@ public class MutableFlattener {
 	private void createAssignment(CommonTree t, boolean local) throws CompilationFailure {
 		var nameList = t.getChild(0);
 		Trees.expect(local ? NAME_LIST : VAR_LIST, nameList);
+
+		var builder = new AssignmentBuilder(this);
 		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
 		List<Register> values = normalizeValueList(flattenAll(Trees.childrenOf(valueList)));
+		builder.addValues(values);
 		List<?> names = Trees.childrenOf(nameList);
+
+		// if the assignment starts with local, no need to worry about table assignments
+		// this code is illegal: "local a, tb[k] = 4, 2"
 		if (local) {
-			// if the assignment starts with local, no need to worry about table assignments
-			// this code is illegal: "local a, tb[k] = 4, 2"
 			for (var name : names) {
-				locals.put(name.toString(), new VariableInfo(name.toString()));
-				Step step = StepFactory.declareLocal(resolve(name.toString()));
-				steps.add(step);
+				declare(name.toString());
 			}
 		}
-		List<LValue> variables = new ArrayList<>(names.size());
 		for (var name : names) {
-			variables.add(createLValue(name));
+			builder.addVariable(createLValue(name));
 		}
-		boolean endsWithVararg = !values.isEmpty() && values.get(values.size() - 1).isVararg();
-		Register vararg = endsWithVararg ? values.get(values.size() - 1) : null;
-		if (endsWithVararg) {
-			Objects.requireNonNull(vararg);
-		}
-		int nonVarargRegisters = values.size() - (endsWithVararg ? 1 : 0);
-		int overflow = 0;
-		for (int i = 0; i < variables.size(); i++) {
-			LValue variable = variables.get(i);
-			if (i < nonVarargRegisters) {
-				Register value = values.get(i);
-				steps.add(createWriteStep(variable, value));
-			} else if (vararg == null) {
-				steps.add(createWriteStep(variable, nil()));
-			} else {
-				Register selected = RegisterFactory.create();
-				steps.add(StepFactory.select(selected, vararg, overflow));
-				steps.add(createWriteStep(variable, selected));
-				overflow++;
-			}
-		}
+		steps.addAll(builder.build());
+	}
+
+	@Contract(mutates = "this")
+	private void declare(String name) {
+		locals.put(name, new VariableInfo(name));
+		Step step = StepFactory.declareLocal(resolve(name));
+		steps.add(step);
 	}
 
 	@Nullable

@@ -4,7 +4,6 @@ import nl.bigo.luaparser.Lua52Walker;
 import optic.lua.messages.CompilationFailure;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -21,13 +20,7 @@ class IfElseChainBuilder {
 		assert tree.getChildCount() == 2 || tree.getChildCount() == 3;
 		FlatExpr condition = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		AsmBlock body = flattener.flattenBlock((CommonTree) Trees.expectChild(Lua52Walker.CHUNK, tree, 1));
-		final AsmBlock elseBlock;
-		if (tree.getChildCount() == 3) {
-			elseBlock = flattener.flattenBlock((CommonTree) Trees.expectChild(Lua52Walker.CHUNK, tree, 2));
-		} else {
-			elseBlock = null;
-		}
-		chain.add(new Conditional(condition, body, elseBlock));
+		chain.add(new Conditional(condition, body));
 	}
 
 	Map<FlatExpr, AsmBlock> build() {
@@ -41,12 +34,10 @@ class IfElseChainBuilder {
 	private static class Conditional {
 		private final FlatExpr condition;
 		private final AsmBlock thenBlock;
-		private final AsmBlock elseBlock;
 
-		private Conditional(FlatExpr condition, AsmBlock thenBlock, @Nullable AsmBlock elseBlock) {
+		private Conditional(FlatExpr condition, AsmBlock thenBlock) {
 			this.condition = condition;
 			this.thenBlock = thenBlock;
-			this.elseBlock = elseBlock;
 		}
 	}
 
