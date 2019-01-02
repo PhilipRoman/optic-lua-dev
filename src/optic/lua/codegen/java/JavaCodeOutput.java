@@ -215,12 +215,12 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	}
 
 	public Void visitTableRead(@NotNull TableRead tableRead) {
-		out.printLine("Object ", tableRead.getOut(), " = DynamicOps.index(", tableRead.getTable(), ", ", tableRead.getKey(), ");");
+		out.printLine("Object ", tableRead.getOut(), " = TableOps.index(", tableRead.getTable(), ", ", tableRead.getKey(), ");");
 		return null;
 	}
 
 	public Void visitTableWrite(@NotNull TableWrite tableWrite) {
-		out.printLine("DynamicOps.setIndex(", tableWrite.getField().getTable(), ", ", tableWrite.getField().getKey(), ", ", tableWrite.getValue(), ");");
+		out.printLine("TableOps.setIndex(", tableWrite.getField().getTable(), ", ", tableWrite.getField().getKey(), ", ", tableWrite.getValue(), ");");
 		return null;
 	}
 

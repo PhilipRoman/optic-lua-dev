@@ -18,7 +18,7 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		var codeSource = CodeSource.ofFile("samples/recursive-type-dependency.lua");
+		var codeSource = CodeSource.ofFile("samples/table-concat.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var options = new Options();
 		options.enable(KEEP_COMMENTS);

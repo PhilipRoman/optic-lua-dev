@@ -44,12 +44,12 @@ public class EnvOps {
 			if (DynamicOps.isTrue(args[0])) {
 				return args;
 			} else {
-				String msg = args.length >= 2 ? StandardLibrary.toString(args[1]).toString() : "Assertion failed!";
+				String msg = args.length >= 2 ? StandardLibrary.toString(args[1]) : "Assertion failed!";
 				throw new AssertionError(msg);
 			}
 		}));
 		env.set("error", LuaFunction.of(args -> {
-			throw new RuntimeException(StandardLibrary.toString(ListOps.get(args, 0)).toString());
+			throw new RuntimeException(StandardLibrary.toString(ListOps.get(args, 0)));
 		}));
 		env.set("pcall", LuaFunction.of(args -> {
 			if (args.length == 0) {

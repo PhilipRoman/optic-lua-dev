@@ -87,23 +87,6 @@ public class DynamicOps {
 	}
 
 	@RuntimeApi
-	public static Object index(Object obj, Object key) {
-		if (obj instanceof LuaTable) {
-			return ((LuaTable) obj).get(key);
-		}
-		throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ")");
-	}
-
-	@RuntimeApi
-	public static void setIndex(Object obj, Object key, Object value) {
-		if (obj instanceof LuaTable) {
-			((LuaTable) obj).set(key, value);
-		} else {
-			throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ", value=" + value + ")");
-		}
-	}
-
-	@RuntimeApi
 	public static boolean isTrue(Object obj) {
 		return !(obj == null) && !(obj == Boolean.FALSE);
 	}
