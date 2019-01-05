@@ -21,12 +21,13 @@ public class Main {
 		var codeSource = CodeSource.ofFile("samples/sum-loop.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var options = new Options();
-		options.enable(KEEP_COMMENTS);
-		options.enable(DEBUG_COMMENTS);
+		options.disable(KEEP_COMMENTS);
+		options.disable(DEBUG_COMMENTS);
 		options.enable(PARALLEL);
 		options.enable(VERIFY);
-		options.enable(UNBOX);
 		options.enable(SSA_SPLIT);
+//		options.enable(FLOAT_32);
+//		options.enable(INT_32);
 		options.set(INDENT, "\t");
 		var pipeline = new Pipeline(
 				options,

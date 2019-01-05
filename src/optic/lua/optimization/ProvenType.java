@@ -1,16 +1,20 @@
 package optic.lua.optimization;
 
 public enum ProvenType {
-	UNKNOWN(0), NUMBER(1), OBJECT(3);
+	UNKNOWN(0), INTEGER(1), NUMBER(3), OBJECT(7);
 
 	private final int code;
-	private static final ProvenType[] statusByCode = {UNKNOWN, NUMBER, null, OBJECT};
+	private static final ProvenType[] table = {UNKNOWN, INTEGER, null, NUMBER, null, null, null, OBJECT};
 
 	ProvenType(int i) {
 		this.code = i;
 	}
 
 	public ProvenType and(ProvenType other) {
-		return statusByCode[this.code | other.code];
+		return table[this.code | other.code];
+	}
+
+	public boolean isNumeric() {
+		return this == INTEGER || this == NUMBER;
 	}
 }

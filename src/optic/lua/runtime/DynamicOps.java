@@ -5,35 +5,31 @@ import java.util.Objects;
 @RuntimeApi
 public class DynamicOps {
 	public static Object add(Object a, Object b) {
-		return (double) a + (double) b;
+		return StandardLibrary.toNumber(a) + StandardLibrary.toNumber(b);
 	}
 
 	public static Object mul(Object a, Object b) {
-		return (double) a * (double) b;
+		return StandardLibrary.toNumber(a) * StandardLibrary.toNumber(b);
 	}
 
 	public static Object sub(Object a, Object b) {
-		return (double) a - (double) b;
-	}
-
-	public static Object div(Object a, Object b) {
-		return (double) a / (double) b;
+		return StandardLibrary.toNumber(a) / StandardLibrary.toNumber(b);
 	}
 
 	public static double add(double a, Object b) {
-		return a + (double) b;
+		return a + StandardLibrary.toNumber(b);
 	}
 
 	public static double mul(double a, Object b) {
-		return a * (double) b;
+		return a * StandardLibrary.toNumber(b);
 	}
 
 	public static double sub(double a, Object b) {
-		return a - (double) b;
+		return a - StandardLibrary.toNumber(b);
 	}
 
 	public static double div(double a, Object b) {
-		return a / (double) b;
+		return a / StandardLibrary.toNumber(b);
 	}
 
 	public static double add(double a, double b) {
@@ -71,7 +67,7 @@ public class DynamicOps {
 	}
 
 	public static boolean le(Object a, Object b) {
-		return (double) a <= (double) b;
+		return StandardLibrary.toNumber(a) <= StandardLibrary.toNumber(b);
 	}
 
 	public static boolean lt(double a, double b) {
@@ -79,7 +75,7 @@ public class DynamicOps {
 	}
 
 	public static boolean lt(Object a, Object b) {
-		return (double) a < (double) b;
+		return StandardLibrary.toNumber(a) < StandardLibrary.toNumber(b);
 	}
 
 	public static String concat(Object a, Object b) {

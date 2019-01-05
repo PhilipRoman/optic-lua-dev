@@ -29,7 +29,7 @@ public enum LuaOperator {
 		Objects.requireNonNull(b);
 		switch (this) {
 			case UNM:
-				return b == NUMBER ? NUMBER : OBJECT;
+				return b;
 			case ADD:
 			case SUB:
 			case MUL:
@@ -37,17 +37,21 @@ public enum LuaOperator {
 			case IDIV:
 			case POW:
 			case MOD:
-				return (a == NUMBER && b == NUMBER) ? NUMBER : OBJECT;
+				return a.and(b);
 			case CONCAT:
 				return OBJECT;
 			case BNOT:
-				return b == NUMBER ? NUMBER : OBJECT;
+				return b;
 			case BAND:
 			case BOR:
 			case BXOR:
 			case SHL:
 			case SHR:
-				return (a == NUMBER || b == NUMBER) ? NUMBER : OBJECT;
+				if (a == INTEGER || b == INTEGER) {
+					return NUMBER;
+				} else {
+					return OBJECT;
+				}
 			case EQ:
 			case LT:
 			case LE:

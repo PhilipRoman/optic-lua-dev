@@ -1,6 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.optimization.ProvenType;
+import optic.lua.util.Numbers;
 import org.jetbrains.annotations.*;
 
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class RegisterFactory {
 		var r = create();
 		var steps = new ArrayList<Step>(1);
 		steps.add(StepFactory.constNumber(r, number));
-		r.updateStatus(ProvenType.NUMBER);
+		r.updateStatus(Numbers.isInt(number) ? ProvenType.INTEGER : ProvenType.NUMBER);
 		return new FlatExpr(steps, r);
 	}
 

@@ -5,8 +5,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-import static optic.lua.optimization.ProvenType.*;
-
 final class JavaOperators {
 	private JavaOperators() {
 	}
@@ -18,7 +16,7 @@ final class JavaOperators {
 		Objects.requireNonNull(b);
 		switch (operator) {
 			case UNM:
-				return b == NUMBER;
+				return b.isNumeric();
 			case ADD:
 			case SUB:
 			case MUL:
@@ -26,18 +24,20 @@ final class JavaOperators {
 			case IDIV:
 			case POW:
 			case MOD:
-				return a == NUMBER && b == NUMBER;
+				return a.isNumeric() && b.isNumeric();
 			case BNOT:
-				return b == NUMBER;
+				return b == ProvenType.INTEGER;
 			case BAND:
 			case BOR:
 			case BXOR:
 			case SHL:
 			case SHR:
+				return a == ProvenType.INTEGER || b == ProvenType.INTEGER;
+
 			case EQ:
 			case LE:
 			case LT:
-				return a == NUMBER || b == NUMBER;
+				return a.isNumeric() || b.isNumeric();
 			default:
 				return false;
 		}

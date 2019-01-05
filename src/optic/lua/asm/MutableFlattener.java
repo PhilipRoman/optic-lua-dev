@@ -91,9 +91,9 @@ public class MutableFlattener implements VariableResolver {
 		return flatten(tree, context, this, List.of(), BlockMeaning.DO_BLOCK);
 	}
 
-	private AsmBlock flattenForRangeBody(CommonTree tree, String name) throws CompilationFailure {
+	private AsmBlock flattenForRangeBody(CommonTree tree, ProvenType counterType, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
-		info.enableNumbers();
+		info.update(counterType);
 		return flatten(tree, context, this, List.of(info), BlockMeaning.LOOP_BODY);
 	}
 
@@ -164,7 +164,7 @@ public class MutableFlattener implements VariableResolver {
 				Register from = toNumber(flattenExpression(t.getChild(1)));
 				Register to = toNumber(flattenExpression(t.getChild(2)));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				AsmBlock body = flattenForRangeBody(block, varName);
+				AsmBlock body = flattenForRangeBody(block, from.status(), varName);
 				VariableInfo counter = body.locals().get(varName);
 				steps.add(StepFactory.forRange(counter, from, to, body));
 				return;
@@ -301,7 +301,7 @@ public class MutableFlattener implements VariableResolver {
 	@Contract(mutates = "this")
 	private Register toNumber(Register a) {
 		a = discardRemaining(a);
-		if (a.status() == ProvenType.NUMBER) {
+		if (a.status().isNumeric()) {
 			return a;
 		}
 		var b = RegisterFactory.create();

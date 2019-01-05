@@ -94,13 +94,11 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		} else if (c instanceof String) {
 			c = '"' + c.toString() + '"';
 		}
-		String typeName = c.getClass().getSimpleName();
-		if (c.getClass() == Double.class) {
-			typeName = "double";
-		} else if (c.getClass() == Boolean.class) {
+		String typeName = typeName(loadConstant.getTarget());
+		if (c.getClass() == Boolean.class) {
 			typeName = "boolean";
 		}
-		out.printLine(typeName, " ", target, " = ", c, ";");
+		out.printLine(typeName, " ", target, " = ", Numbers.normalize(c), ";");
 		return null;
 	}
 
@@ -128,13 +126,12 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		LuaOperator op = operation.getOperator();
 		@Nullable Register a = operation.getA();
 		Register b = operation.getB();
-		boolean unbox = context.options().get(StandardFlags.UNBOX);
 		if (op.arity() == 2) {
 			// binary operator
 			Objects.requireNonNull(a);
 			var resultType = op.resultType(a.status(), b.status());
 			var resultTypeName = typeName(resultType);
-			if (unbox && JavaOperators.canApplyJavaSymbol(op, a.status(), b.status())) {
+			if (JavaOperators.canApplyJavaSymbol(op, a.status(), b.status())) {
 				writeDebugComment("Inline operation with " + a.toDebugString() + " and " + b.toDebugString());
 				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
 				out.printLine(resultTypeName, " ", targetName, " = ", a.getName(), " ", javaOp, " ", b.getName(), ";");
@@ -147,7 +144,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 			// unary operator
 			var resultType = op.resultType(null, b.status());
 			var resultTypeName = typeName(resultType);
-			if (unbox && JavaOperators.canApplyJavaSymbol(op, null, b.status())) {
+			if (JavaOperators.canApplyJavaSymbol(op, null, b.status())) {
 				writeDebugComment("Inline operation with " + b.toDebugString());
 				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
 				out.printLine(resultTypeName, " ", targetName, " = ", javaOp, b.getName(), ";");
@@ -228,7 +225,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		writeDebugComment("writing " + write.getSource().toDebugString() + " to " + write.getTarget().toDebugString());
 		switch (write.getTarget().getMode()) {
 			case LOCAL: {
-				if (write.getTarget().status() == ProvenType.NUMBER && write.getSource().status() != ProvenType.NUMBER)
+				if (write.getTarget().status().isNumeric() && !write.getSource().status().isNumeric())
 					out.printLine(write.getTarget(), " = StandardLibrary.toNumber(", write.getSource().getName(), ");");
 				else
 					out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
@@ -252,7 +249,8 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		var to = loop.getTo().getName();
 		var counter = loop.getCounter();
 		var counterName = "i_" + counter.getName();
-		out.printLine("for(double ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
+		String counterType = typeName(loop.getFrom().status());
+		out.printLine("for(", counterType, " ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
 		out.addIndent();
 		String counterTypeName = typeName(loop.getCounter());
 		out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
@@ -315,11 +313,11 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	}
 
 	private static String toNumber(VariableInfo info) {
-		return info.status() == ProvenType.NUMBER ? info.getName() : "StandardLibrary.toNumber(" + info.getName() + ")";
+		return info.status().isNumeric() ? info.getName() : "StandardLibrary.toNumber(" + info.getName() + ")";
 	}
 
 	private static String toNumber(Register r) {
-		return r.status() == ProvenType.NUMBER ? r.getName() : "StandardLibrary.toNumber(" + r.getName() + ")";
+		return r.status().isNumeric() ? r.getName() : "StandardLibrary.toNumber(" + r.getName() + ")";
 	}
 
 	public Void visitIfElseChain(@NotNull IfElseChain ifElseChain) throws CompilationFailure {
@@ -400,25 +398,26 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		return true;
 	}
 
-	private String typeName(ProvenType t) {
-		if (context.options().get(StandardFlags.UNBOX)) {
-			return JavaTypes.getTypeName(t);
-		}
-		return "Object";
-	}
-
 	private String typeName(Register r) {
-		if (context.options().get(StandardFlags.UNBOX)) {
-			return JavaTypes.getTypeName(r.status());
-		}
-		return "Object";
+		return typeName(r.status());
 	}
 
 	private String typeName(VariableInfo i) {
-		if (context.options().get(StandardFlags.UNBOX)) {
-			return JavaTypes.getTypeName(i.status());
+		return typeName(i.status());
+	}
+
+	private String typeName(ProvenType type) {
+		switch (type) {
+			case UNKNOWN:
+			case OBJECT:
+				return "Object";
+			case NUMBER:
+				return context.options().get(StandardFlags.FLOAT_32) ? "float" : "double";
+			case INTEGER:
+				return context.options().get(StandardFlags.INT_32) ? "int" : "long";
+			default:
+				throw new AssertionError("should never reach here");
 		}
-		return "Object";
 	}
 
 	@Override
