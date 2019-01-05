@@ -5,7 +5,8 @@ public enum StandardFlags implements Option<Boolean> {
 	DEBUG_COMMENTS(false),
 	PARALLEL(Runtime.getRuntime().availableProcessors() > 2),
 	VERIFY(false),
-	UNBOX(true);
+	UNBOX(true),
+	SSA_SPLIT(true);
 	private final boolean defaultValue;
 
 	StandardFlags(boolean value) {

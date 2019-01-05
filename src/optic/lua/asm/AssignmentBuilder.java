@@ -5,12 +5,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public final class AssignmentBuilder {
+final class AssignmentBuilder {
 	private final List<LValue> variables = new ArrayList<>(1);
 	private final List<Register> values = new ArrayList<>(1);
 	private final VariableResolver resolver;
 
-	public AssignmentBuilder(VariableResolver resolver) {
+	AssignmentBuilder(VariableResolver resolver) {
 		this.resolver = resolver;
 	}
 
@@ -22,11 +22,11 @@ public final class AssignmentBuilder {
 		values.addAll(newValues);
 	}
 
-	public void addVariable(LValue info) {
+	void addVariable(LValue info) {
 		variables.add(info);
 	}
 
-	public List<Step> build() {
+	List<Step> build() {
 		List<Step> steps = new ArrayList<>(4);
 		int overflow = 0;
 		for (int i = 0; i < variables.size(); i++) {

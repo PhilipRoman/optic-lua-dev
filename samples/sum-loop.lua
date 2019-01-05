@@ -8,4 +8,5 @@ for i = 1, N do
     end
 end
 print(sum)
+sum = "foo"
 print("TIME: " .. (time() - start))

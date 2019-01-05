@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import optic.lua.asm.instructions.VariableMode;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;
@@ -29,14 +30,16 @@ public class MutableFlattener implements VariableResolver {
 	private final boolean lexicalBoundary;
 	private final VariableInfo _ENV = new VariableInfo("_ENV");
 	private final Context context;
+	private final BlockMeaning meaning;
 
 	{
 		_ENV.markAsUpvalue();
 	}
 
-	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Context context) {
+	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Context context, BlockMeaning meaning) {
 		this.parent = parent;
 		lexicalBoundary = boundary;
+		this.meaning = meaning;
 		Objects.requireNonNull(steps);
 		Objects.requireNonNull(context);
 		this.context = context;
@@ -46,14 +49,14 @@ public class MutableFlattener implements VariableResolver {
 	public Flattener getInterface() {
 		return new Flattener() {
 			@Override
-			public AsmBlock flatten(CommonTree tree, boolean boundary, List<VariableInfo> locals) throws CompilationFailure {
-				return MutableFlattener.flatten(tree, context, MutableFlattener.this, boundary, locals);
+			public AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure {
+				return MutableFlattener.flatten(tree, context, MutableFlattener.this, locals, meaning);
 			}
 
 			@Override
 			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
 				List<Step> steps = new ArrayList<>();
-				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context);
+				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context, meaning);
 				Register result = flattener.flattenExpression(tree);
 				return new FlatExpr(flattener.steps, result);
 			}
@@ -61,14 +64,14 @@ public class MutableFlattener implements VariableResolver {
 	}
 
 	public static AsmBlock flatten(CommonTree tree, Context context) throws CompilationFailure {
-		return flatten(tree, context, null, false, List.of());
+		return flatten(tree, context, null, List.of(), BlockMeaning.MAIN_CHUNK);
 	}
 
-	private static AsmBlock flatten(CommonTree tree, Context context, MutableFlattener parent, boolean boundary, List<VariableInfo> locals) throws CompilationFailure {
+	private static AsmBlock flatten(CommonTree tree, Context context, MutableFlattener parent, List<VariableInfo> locals, BlockMeaning kind) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
-		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, boundary, context);
+		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, kind.hasLexicalBoundary(), context, kind);
 		for (var local : locals) {
 			f.locals.put(local.getName(), local);
 		}
@@ -84,14 +87,14 @@ public class MutableFlattener implements VariableResolver {
 		return new AsmBlock(f.steps, f.locals);
 	}
 
-	private AsmBlock flattenBlock(CommonTree tree) throws CompilationFailure {
-		return flatten(tree, context, this, false, List.of());
+	private AsmBlock flattenDoBlock(CommonTree tree) throws CompilationFailure {
+		return flatten(tree, context, this, List.of(), BlockMeaning.DO_BLOCK);
 	}
 
 	private AsmBlock flattenForRangeBody(CommonTree tree, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.enableNumbers();
-		return flatten(tree, context, this, false, List.of(info));
+		return flatten(tree, context, this, List.of(info), BlockMeaning.LOOP_BODY);
 	}
 
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
@@ -102,7 +105,7 @@ public class MutableFlattener implements VariableResolver {
 			info.enableNumbers();
 			infos.add(info);
 		}
-		return flatten(tree, context, this, true, infos);
+		return flatten(tree, context, this, infos, BlockMeaning.FUNCTION_BODY);
 	}
 
 	@Nullable
@@ -168,12 +171,12 @@ public class MutableFlattener implements VariableResolver {
 			}
 			case Do: {
 				CommonTree block = (CommonTree) t;
-				steps.add(StepFactory.doBlock(flattenBlock(block)));
+				steps.add(StepFactory.doBlock(flattenDoBlock(block)));
 				return;
 			}
 			case CHUNK: {
 				CommonTree block = (CommonTree) t;
-				steps.addAll(flattenBlock(block).steps());
+				steps.addAll(flattenDoBlock(block).steps());
 				return;
 			}
 			case Return: {
@@ -298,7 +301,7 @@ public class MutableFlattener implements VariableResolver {
 	@Contract(mutates = "this")
 	private Register toNumber(Register a) {
 		a = discardRemaining(a);
-		if(a.status() == ProvenType.NUMBER) {
+		if (a.status() == ProvenType.NUMBER) {
 			return a;
 		}
 		var b = RegisterFactory.create();
@@ -383,11 +386,22 @@ public class MutableFlattener implements VariableResolver {
 
 		// if the assignment starts with local, no need to worry about table assignments
 		// this code is illegal: "local a, tb[k] = 4, 2"
-		if (local) {
-			for (var name : names) {
-				declare(name.toString());
+		for (var name : names) {
+			var info = resolve(name.toString());
+			if (info == null || info.getMode() != VariableMode.LOCAL) {
+				// if variable doesn't exist yet
+				if (local) {
+					locals.put(name.toString(), new VariableInfo(name.toString()));
+					declare(name.toString());
+				}
+			} else if (!meaning.isConditional() && context.options().get(StandardFlags.SSA_SPLIT)) {
+				// if variable is already a local variable
+				var next = info.nextIncarnation();
+				locals.put(name.toString(), next);
+				declare(next.getName());
 			}
 		}
+
 		for (var name : names) {
 			builder.addVariable(createLValue(name));
 		}

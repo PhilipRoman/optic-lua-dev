@@ -18,7 +18,7 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		var codeSource = CodeSource.ofFile("samples/spectral-norm.lua");
+		var codeSource = CodeSource.ofFile("samples/sum-loop.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var options = new Options();
 		options.enable(KEEP_COMMENTS);
@@ -26,6 +26,7 @@ public class Main {
 		options.enable(PARALLEL);
 		options.enable(VERIFY);
 		options.enable(UNBOX);
+		options.enable(SSA_SPLIT);
 		options.set(INDENT, "\t");
 		var pipeline = new Pipeline(
 				options,

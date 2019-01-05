@@ -17,6 +17,13 @@ public class VariableInfo {
 		this.name = name;
 	}
 
+	VariableInfo nextIncarnation() {
+		if (isUpvalue) {
+			throw new UnsupportedOperationException();
+		}
+		return new VariableInfo(name + "__next");
+	}
+
 	void markAsUpvalue() {
 		isUpvalue = true;
 	}
@@ -27,7 +34,7 @@ public class VariableInfo {
 	}
 
 	void markAsWritten() {
-		if(initialized) {
+		if (initialized) {
 			isFinal = false;
 		} else {
 			initialized = true;
@@ -75,6 +82,11 @@ public class VariableInfo {
 	private static final class GlobalVariableInfo extends VariableInfo {
 		private GlobalVariableInfo(String name) {
 			super(name);
+		}
+
+		@Override
+		VariableInfo nextIncarnation() {
+			throw new UnsupportedOperationException();
 		}
 
 		@Override
