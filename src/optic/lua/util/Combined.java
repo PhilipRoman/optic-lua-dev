@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 public abstract class Combined<T> {
 	private final Collection<@NotNull Supplier<@NotNull T>> sources = new ArrayList<>();
+	private volatile boolean recursionDetector = false;
 
 	protected abstract T reduce(T a, T b);
 
@@ -15,9 +16,14 @@ public abstract class Combined<T> {
 	protected abstract T emptyValue();
 
 	public T get() {
+		if (recursionDetector) {
+			return emptyValue();
+		}
 		T accumulator = emptyValue();
 		for (Supplier<T> source : sources) {
+			recursionDetector = true;
 			T value = source.get();
+			recursionDetector = false;
 			accumulator = reduce(accumulator, value);
 			// shortcut
 			if (isAlreadyMax(accumulator)) {

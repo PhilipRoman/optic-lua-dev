@@ -1,6 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.asm.LValue.*;
+import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -35,12 +36,11 @@ final class AssignmentBuilder {
 				Register value = values.get(i);
 				steps.add(createWriteStep(variable, value));
 			} else if (vararg() == null) {
-				var nil = RegisterFactory.create();
-				steps.add(StepFactory.constNil(nil));
-				steps.add(createWriteStep(variable, nil));
+				steps.add(createWriteStep(variable, RegisterFactory.nil().applyTo(steps)));
 			} else {
 				Register selected = RegisterFactory.create();
 				steps.add(StepFactory.select(selected, vararg(), overflow));
+				selected.updateStatus(ProvenType.OBJECT);
 				steps.add(createWriteStep(variable, selected));
 				overflow++;
 			}
@@ -61,7 +61,7 @@ final class AssignmentBuilder {
 			if (info == null) {
 				return StepFactory.write(VariableInfo.global(name.name()), value);
 			}
-			info.update(value.status());
+			info.addTypeDependency(value::status);
 			info.markAsWritten();
 			return StepFactory.write(info, value);
 		}

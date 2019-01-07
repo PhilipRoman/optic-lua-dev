@@ -254,6 +254,7 @@ public class MutableFlattener implements VariableResolver {
 				} else {
 					var result = builder.build();
 					steps.addAll(result.block());
+					result.value().updateStatus(ProvenType.OBJECT);
 					return result.value();
 				}
 			}
@@ -367,6 +368,7 @@ public class MutableFlattener implements VariableResolver {
 		VariableInfo info = resolve(name);
 		if (info == null) {
 			var global = VariableInfo.global(name);
+			out.updateStatus(ProvenType.OBJECT);
 			return StepFactory.read(global, out);
 		}
 		out.addStatusDependency(info::status);

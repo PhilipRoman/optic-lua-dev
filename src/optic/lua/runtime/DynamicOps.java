@@ -13,6 +13,10 @@ public class DynamicOps {
 	}
 
 	public static Object sub(Object a, Object b) {
+		return StandardLibrary.toNumber(a) - StandardLibrary.toNumber(b);
+	}
+
+	public static Object div(Object a, Object b) {
 		return StandardLibrary.toNumber(a) / StandardLibrary.toNumber(b);
 	}
 
@@ -30,6 +34,22 @@ public class DynamicOps {
 
 	public static double div(double a, Object b) {
 		return a / StandardLibrary.toNumber(b);
+	}
+
+	public static long add(long a, long b) {
+		return a + b;
+	}
+
+	public static long mul(long a, long b) {
+		return a * b;
+	}
+
+	public static long sub(long a, long b) {
+		return a - b;
+	}
+
+	public static double div(long a, long b) {
+		return a / (double)b;
 	}
 
 	public static double add(double a, double b) {

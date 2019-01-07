@@ -1,8 +1,10 @@
 package optic.lua.asm;
 
 import optic.lua.asm.instructions.VariableMode;
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.*;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Supplier;
 
 import static optic.lua.asm.instructions.VariableMode.*;
 
@@ -11,7 +13,7 @@ public class VariableInfo {
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
 	private final String name;
-	private ProvenType status = ProvenType.UNKNOWN;
+	private CombinedCommonType type = new CombinedCommonType();
 
 	VariableInfo(String name) {
 		this.name = name;
@@ -51,7 +53,7 @@ public class VariableInfo {
 
 	public String toDebugString() {
 		String mode = getMode().toString().toLowerCase();
-		return "variable(" + (isFinal() ? "final " : "") + mode + " \"" + name + "\" " + status + ")";
+		return "variable(" + (isFinal() ? "final " : "") + mode + " \"" + name + "\" " + type + ")";
 	}
 
 	@Override
@@ -64,19 +66,23 @@ public class VariableInfo {
 	}
 
 	public ProvenType status() {
-		return isUpvalue ? ProvenType.OBJECT : status;
+		return isUpvalue ? ProvenType.OBJECT : type.get();
 	}
 
 	void enableObjects() {
-		status = status.and(ProvenType.OBJECT);
+		type.add(ProvenType.OBJECT);
 	}
 
 	void enableNumbers() {
-		status = status.and(ProvenType.NUMBER);
+		type.add(ProvenType.NUMBER);
 	}
 
 	void update(ProvenType other) {
-		status = status.and(other);
+		type.add(other);
+	}
+
+	void addTypeDependency(Supplier<ProvenType> source) {
+		type.add(source);
 	}
 
 	private static final class GlobalVariableInfo extends VariableInfo {

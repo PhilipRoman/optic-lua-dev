@@ -33,11 +33,12 @@ public enum LuaOperator {
 			case ADD:
 			case SUB:
 			case MUL:
-			case DIV:
 			case IDIV:
 			case POW:
 			case MOD:
 				return a.and(b);
+			case DIV:
+				return a.isNumeric() && b.isNumeric() ? NUMBER : OBJECT;
 			case CONCAT:
 				return OBJECT;
 			case BNOT:

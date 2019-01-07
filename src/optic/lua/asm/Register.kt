@@ -47,6 +47,7 @@ class Register constructor(val name: String, val isVararg: Boolean) {
             return FlatExpr(listOf(), this)
         }
         val first = RegisterFactory.create()
+        first.updateStatus(ProvenType.OBJECT)
         return FlatExpr(listOf(StepFactory.select(first, this, 0)), first);
     }
 }
