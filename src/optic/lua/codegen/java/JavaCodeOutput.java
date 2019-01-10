@@ -272,42 +272,30 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		String counterType = typeName(loop.getFrom().status());
 		String counterTypeName = typeName(loop.getCounter());
 		if (counterTypeName.equals("long") && context.options().get(StandardFlags.LOOP_SPLIT)) {
-			// we optimize integer loops by splitting them in two - one with int counter and one with long
+			// we optimize integer loops at runtime by checking if the range is within int bounds
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
-			String loopMaxName = "loop_max_" + UniqueNames.next();
-			String loopMinName = "loop_min_" + UniqueNames.next();
 			// int loop
-			out.printLine("int ", loopMaxName, " = (int) Math.min(", to, ", Integer.MAX_VALUE - 1);");
-			out.printLine("int ", loopMinName, " = (int) Math.min(", from, ", Integer.MAX_VALUE - 1);");
-			out.printLine("for(int ", counterName, " = ", loopMinName, "; ", counterName, " <= ", loopMaxName, "; ", counterName, "++) {");
+			out.printLine("if(", from, " >= Integer.MIN_VALUE && ", to, " <= Integer.MAX_VALUE)");
+			out.printLine("for(int ", counterName, " = (int)", from, "; ", counterName, " <= (int)", to, "; ", counterName, "++) {");
 			out.addIndent();
-			out.printLine("int ", counter.getName(), " = ", counterName, ";");
+			out.printLine("long ", counter.getName(), " = ", counterName, ";");
 			for (Step s : loop.getBlock().steps()) {
 				visit(s);
 			}
 			out.removeIndent();
 			out.printLine("}");
-			// long loop
-			out.printLine("for(long ", counterName, " = Integer.MAX_VALUE; ", counterName, " <= ", to, "; ", counterName, "++) {");
-			out.addIndent();
-			out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
-			for (Step s : loop.getBlock().steps()) {
-				visit(s);
-			}
-			out.removeIndent();
-			out.printLine("}");
-		} else {
-			// regular for-loop
-			out.printLine("for(", counterType, " ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
-			out.addIndent();
-			out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
-			for (Step s : loop.getBlock().steps()) {
-				visit(s);
-			}
-			out.removeIndent();
-			out.printLine("}");
+			out.printLine("else");
 		}
+		// regular for-loop
+		out.printLine("for(", counterType, " ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
+		out.addIndent();
+		out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
+		for (Step s : loop.getBlock().steps()) {
+			visit(s);
+		}
+		out.removeIndent();
+		out.printLine("}");
 		return null;
 	}
 
