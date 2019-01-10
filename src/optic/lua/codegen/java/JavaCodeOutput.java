@@ -49,6 +49,10 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	private final Deque<Optional<String>> varargNamesInFunction = new ArrayDeque<>(List.of(
 			Optional.of("vararg" + UniqueNames.next()))
 	);
+	/**
+	 * @see #varargNamesInFunction
+	 */
+	private final Deque<String> contextNamesInFunction = new ArrayDeque<>();
 
 	public Void visitToNumber(@NotNull ToNumber toNumber) {
 		var from = toNumber.getSource();
@@ -61,7 +65,8 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		var target = function.getAssignTo().getName();
 		var params = function.getParams().list();
 		var argsName = "args" + UniqueNames.next();
-		out.printLine("LuaFunction ", target, " = new LuaFunction(){Object[] call(Object[] ", argsName, ") {");
+		var contextName = "context" + UniqueNames.next();
+		out.printLine("LuaFunction ", target, " = new LuaFunction(){ Object[] call(LuaContext ", contextName, ", Object[] ", argsName, ") {");
 		out.addIndent();
 		for (var p : params) {
 			if (p.equals("...")) {
@@ -73,6 +78,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 				out.printLine("Object ", p, " = ListOps.get(", argsName, ", ", params.indexOf(p), ");");
 			}
 		}
+		contextNamesInFunction.addLast(contextName);
 		if (!function.getParams().hasVarargs()) {
 			varargNamesInFunction.addLast(Optional.empty());
 		}
@@ -81,6 +87,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		out.printLine("}");
 		out.printLine("return ListOps.empty();");
 		varargNamesInFunction.removeLast();
+		contextNamesInFunction.removeLast();
 		out.removeIndent();
 		out.printLine("}};");
 		return null;
@@ -126,6 +133,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		LuaOperator op = operation.getOperator();
 		@Nullable Register a = operation.getA();
 		Register b = operation.getB();
+		var context = contextNamesInFunction.getLast();
 		if (op.arity() == 2) {
 			// binary operator
 			Objects.requireNonNull(a);
@@ -139,7 +147,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 			}
 			// if there is no corresponding Java operator, call the runtime API
 			String function = op.name().toLowerCase();
-			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", a.getName(), ", ", b.getName(), ");");
+			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", context, ", ", a.getName(), ", ", b.getName(), ");");
 		} else {
 			// unary operator
 			var resultType = op.resultType(null, b.status());
@@ -152,7 +160,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 			}
 			// if there is no corresponding Java operator, call the runtime API
 			String function = op.name().toLowerCase();
-			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", b.getName(), ");");
+			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", context, ", ", b.getName(), ");");
 		}
 		return null;
 	}
@@ -166,11 +174,17 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 				break;
 			}
 			case UPVALUE: {
-				out.printLine("Object ", read.getRegister(), " = ", read.getName(), ".get();");
+				if (read.getName().equals("_ENV")) {
+					var context = contextNamesInFunction.getLast();
+					out.printLine("Object ", read.getRegister(), " = ", context, "._ENV");
+				} else {
+					out.printLine("Object ", read.getRegister(), " = ", read.getName(), ".get();");
+				}
 				break;
 			}
 			case GLOBAL: {
-				out.printLine("Object ", read.getRegister(), " = EnvOps.get(_ENV, \"", read.getName(), "\");");
+				var context = contextNamesInFunction.getLast();
+				out.printLine("Object ", read.getRegister(), " = ", context, ".getGlobal(\"", read.getName(), "\");");
 				break;
 			}
 			default:
@@ -232,11 +246,17 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 				return null;
 			}
 			case UPVALUE: {
-				out.printLine(write.getTarget(), ".set(", write.getSource().getName(), ");");
+				if (write.getTarget().getName().equals("_ENV")) {
+					var context = contextNamesInFunction.getLast();
+					out.printLine(context, "._ENV = ", write.getSource().getName(), ";");
+				} else {
+					out.printLine(write.getTarget(), ".set(", write.getSource().getName(), ");");
+				}
 				return null;
 			}
 			case GLOBAL: {
-				out.printLine("EnvOps.set(_ENV, \"", write.getTarget(), "\", ", write.getSource().getName(), ");");
+				var context = contextNamesInFunction.getLast();
+				out.printLine(context, ".setGlobal(\"", write.getTarget().getName(), "\", ", write.getSource().getName(), ");");
 				return null;
 			}
 			default:
@@ -325,7 +345,8 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		}
 		var prefix = call.getOutput().isUnused() ? "" : ("Object[] " + call.getOutput().getName() + " = ");
 		var args = commaList(argList);
-		out.printLine(prefix, "FunctionOps.call(", function, argList.isEmpty() ? "" : ", ", args, ");");
+		var context = contextNamesInFunction.getLast();
+		out.printLine(prefix, "FunctionOps.call(", function, ", ", context, argList.isEmpty() ? "" : ", ", args, ");");
 		return null;
 	}
 
@@ -400,12 +421,14 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		msg.setLevel(Level.WARNING);
 		context.reporter().report(msg);
 		out.printLine("import optic.lua.runtime.*;");
-		out.printLine("static Object[] main(final UpValue _ENV, Object[] args) { if(1 == 1) {");
+		var contextName = "context" + UniqueNames.next();
+		contextNamesInFunction.addLast(contextName);
+		out.printLine("static Object[] main(final LuaContext ", contextName, ", Object[] args) { if(1 == 1) {");
 		out.addIndent();
 		visitAll(block.steps());
 		out.removeIndent();
 		out.printLine("} return ListOps.empty(); }");
-		out.printLine("main(UpValue.create(EnvOps.createEnv()), new Object[0]);");
+		out.printLine("main(LuaContext.create(), new Object[0]);");
 		out.flush();
 	}
 

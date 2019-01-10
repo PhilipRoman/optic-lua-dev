@@ -51,14 +51,14 @@ public class EnvOps {
 		env.set("error", LuaFunction.of(args -> {
 			throw new RuntimeException(StandardLibrary.toString(ListOps.get(args, 0)));
 		}));
-		env.set("pcall", LuaFunction.of(args -> {
+		env.set("pcall", LuaFunction.of((ctx, args) -> {
 			if (args.length == 0) {
 				throw new IllegalArgumentException("Bad argument #1, expected value");
 			}
 			Object f = args[0];
 			Object[] params = ListOps.sublist(args, 1);
 			try {
-				Object[] result = FunctionOps.call(f, params);
+				Object[] result = FunctionOps.call(f, ctx, params);
 				return ListOps.concat(result, true);
 			} catch (RuntimeException e) {
 				String msg = e.getMessage();
