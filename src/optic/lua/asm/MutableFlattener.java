@@ -28,13 +28,9 @@ public class MutableFlattener implements VariableResolver {
 	private final MutableFlattener parent;
 	// whether or not local variables from parent are accessed as upvalues
 	private final boolean lexicalBoundary;
-	private final VariableInfo _ENV = new VariableInfo("_ENV");
+	private final VariableInfo _ENV = VariableInfo.createEnv();
 	private final Context context;
 	private final BlockMeaning meaning;
-
-	{
-		_ENV.markAsUpvalue();
-	}
 
 	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Context context, BlockMeaning meaning) {
 		this.parent = parent;
@@ -115,7 +111,7 @@ public class MutableFlattener implements VariableResolver {
 		if (localVar != null) {
 			return localVar;
 		}
-		if (name.equals("_ENV")) {
+		if (name.equals("_ENV") && meaning == BlockMeaning.MAIN_CHUNK) {
 			return _ENV;
 		}
 		if (parent == null) {

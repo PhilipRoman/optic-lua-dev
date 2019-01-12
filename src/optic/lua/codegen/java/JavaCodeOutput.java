@@ -66,7 +66,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		var params = function.getParams().list();
 		var argsName = "args" + UniqueNames.next();
 		var contextName = "context" + UniqueNames.next();
-		out.printLine("LuaFunction ", target, " = new LuaFunction(){ Object[] call(LuaContext ", contextName, ", Object[] ", argsName, ") {");
+		out.printLine("LuaFunction ", target, " = new LuaFunction(){ Object[] call(LuaContext ", contextName, ", Object[] ", argsName, ") { if(1==1) {");
 		out.addIndent();
 		for (var p : params) {
 			if (p.equals("...")) {
@@ -82,14 +82,11 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		if (!function.getParams().hasVarargs()) {
 			varargNamesInFunction.addLast(Optional.empty());
 		}
-		out.printLine("if(1 == 1) {");
 		visitAll(function.getBody().steps());
-		out.printLine("}");
-		out.printLine("return ListOps.empty();");
+		out.removeIndent();
+		out.printLine("} return ListOps.empty(); }};");
 		varargNamesInFunction.removeLast();
 		contextNamesInFunction.removeLast();
-		out.removeIndent();
-		out.printLine("}};");
 		return null;
 	}
 
@@ -246,7 +243,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 				return null;
 			}
 			case UPVALUE: {
-				if (write.getTarget().getName().equals("_ENV")) {
+				if (write.getTarget().isEnv()) {
 					var context = contextNamesInFunction.getLast();
 					out.printLine(context, "._ENV = ", write.getSource().getName(), ";");
 				} else {

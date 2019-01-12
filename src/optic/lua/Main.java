@@ -18,7 +18,7 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		var codeSource = CodeSource.ofFile("samples/sum-loop.lua");
+		var codeSource = CodeSource.ofFile("samples/set-env.lua");
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var options = new Options();
 		options.disable(KEEP_COMMENTS);

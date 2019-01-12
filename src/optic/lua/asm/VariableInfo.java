@@ -12,11 +12,19 @@ public class VariableInfo {
 	private boolean isFinal = true;
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
+	private boolean isEnv = false;
 	private final String name;
 	private CombinedCommonType type = new CombinedCommonType();
 
 	VariableInfo(String name) {
 		this.name = name;
+	}
+
+	static VariableInfo createEnv() {
+		var v = new VariableInfo("_ENV");
+		v.markAsUpvalue();
+		v.isEnv = true;
+		return v;
 	}
 
 	VariableInfo nextIncarnation() {
@@ -83,6 +91,10 @@ public class VariableInfo {
 
 	void addTypeDependency(Supplier<ProvenType> source) {
 		type.add(source);
+	}
+
+	public boolean isEnv() {
+		return isEnv;
 	}
 
 	private static final class GlobalVariableInfo extends VariableInfo {
