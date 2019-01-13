@@ -49,7 +49,7 @@ public enum LuaOperator {
 			case SHL:
 			case SHR:
 				if (a == INTEGER || b == INTEGER) {
-					return NUMBER;
+					return INTEGER;
 				} else {
 					return OBJECT;
 				}
@@ -104,6 +104,8 @@ public enum LuaOperator {
 				return SHR;
 			case Eq:
 				return EQ;
+			case Length:
+				return LEN;
 			case LTEq:
 			case GT:
 				return LE;

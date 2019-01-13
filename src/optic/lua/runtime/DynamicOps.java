@@ -1,39 +1,56 @@
 package optic.lua.runtime;
 
+import optic.lua.util.Numbers;
+
 import java.util.Objects;
 
 @RuntimeApi
 public class DynamicOps {
+	private static double toNum(Object x) {
+		return StandardLibrary.strictToNumber(x);
+	}
+
+	private static long toInt(Object a) {
+		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
+			return ((Number) a).longValue();
+		}
+		double d = StandardLibrary.strictToNumber(a);
+		if (Numbers.isInt(d)) {
+			return (long) d;
+		}
+		throw new IllegalArgumentException("value " + StandardLibrary.toString(a) + " has no integer representation");
+	}
+
 	public static Object add(LuaContext ctx, Object a, Object b) {
-		return StandardLibrary.toNumber(a) + StandardLibrary.toNumber(b);
+		return toNum(a) + toNum(b);
 	}
 
 	public static Object mul(LuaContext ctx, Object a, Object b) {
-		return StandardLibrary.toNumber(a) * StandardLibrary.toNumber(b);
+		return toNum(a) * toNum(b);
 	}
 
 	public static Object sub(LuaContext ctx, Object a, Object b) {
-		return StandardLibrary.toNumber(a) - StandardLibrary.toNumber(b);
+		return toNum(a) - toNum(b);
 	}
 
 	public static Object div(LuaContext ctx, Object a, Object b) {
-		return StandardLibrary.toNumber(a) / StandardLibrary.toNumber(b);
+		return toNum(a) / toNum(b);
 	}
 
 	public static double add(LuaContext ctx, double a, Object b) {
-		return a + StandardLibrary.toNumber(b);
+		return a + toNum(b);
 	}
 
 	public static double mul(LuaContext ctx, double a, Object b) {
-		return a * StandardLibrary.toNumber(b);
+		return a * toNum(b);
 	}
 
 	public static double sub(LuaContext ctx, double a, Object b) {
-		return a - StandardLibrary.toNumber(b);
+		return a - toNum(b);
 	}
 
 	public static double div(LuaContext ctx, double a, Object b) {
-		return a / StandardLibrary.toNumber(b);
+		return a / toNum(b);
 	}
 
 	public static long add(LuaContext ctx, long a, long b) {
@@ -68,6 +85,90 @@ public class DynamicOps {
 		return a / b;
 	}
 
+	public static Object mod(LuaContext ctx, Object a, Object b) {
+		return toNum(a) % toNum(b);
+	}
+
+	public static double mod(LuaContext ctx, Object a, double b) {
+		return toNum(a) % b;
+	}
+
+	public static double mod(LuaContext ctx, Object a, long b) {
+		return toNum(a) % b;
+	}
+
+	public static Object pow(LuaContext ctx, Object a, Object b) {
+		return Math.pow(toNum(a), toNum(b));
+	}
+
+	public static double pow(LuaContext ctx, Object a, double b) {
+		return Math.pow(toNum(a), b);
+	}
+
+	public static double pow(LuaContext ctx, double a, Object b) {
+		return Math.pow(a, toNum(b));
+	}
+
+	public static long pow(LuaContext ctx, long a, long b) {
+		long x = 1;
+		for (long i = 0; i < b; i++) {
+			x *= a;
+		}
+		return x;
+	}
+
+	public static double pow(LuaContext ctx, double a, double b) {
+		return Math.pow(a, b);
+	}
+
+	public static long pow(LuaContext ctx, int a, int b) {
+		long x = 1;
+		for (int i = 0; i < b; i++) {
+			x *= a;
+		}
+		return x;
+	}
+
+	public static long bor(LuaContext ctx, long a, long b) {
+		return a | b;
+	}
+
+	public static long bxor(LuaContext ctx, long a, long b) {
+		return a ^ b;
+	}
+
+	public static long band(LuaContext ctx, long a, long b) {
+		return a & b;
+	}
+
+	public static long shl(LuaContext ctx, long a, long b) {
+		return a << b;
+	}
+
+	public static long shr(LuaContext ctx, long a, long b) {
+		return a >> b;
+	}
+
+	public static long bor(LuaContext ctx, Object a, Object b) {
+		return toInt(a) | toInt(b);
+	}
+
+	public static long bxor(LuaContext ctx, Object a, Object b) {
+		return toInt(a) ^ toInt(b);
+	}
+
+	public static long band(LuaContext ctx, Object a, Object b) {
+		return toInt(a) & toInt(b);
+	}
+
+	public static long shl(LuaContext ctx, Object a, Object b) {
+		return toInt(a) << toInt(b);
+	}
+
+	public static long shr(LuaContext ctx, Object a, Object b) {
+		return toInt(a) >> toInt(b);
+	}
+
 	public static boolean eq(LuaContext ctx, double a, double b) {
 		return a == b;
 	}
@@ -87,7 +188,7 @@ public class DynamicOps {
 	}
 
 	public static boolean le(LuaContext ctx, Object a, Object b) {
-		return StandardLibrary.toNumber(a) <= StandardLibrary.toNumber(b);
+		return toNum(a) <= toNum(b);
 	}
 
 	public static boolean lt(LuaContext ctx, double a, double b) {
@@ -95,11 +196,15 @@ public class DynamicOps {
 	}
 
 	public static boolean lt(LuaContext ctx, Object a, Object b) {
-		return StandardLibrary.toNumber(a) < StandardLibrary.toNumber(b);
+		return toNum(a) < toNum(b);
+	}
+
+	public static int len(LuaContext ctx, Object table) {
+		return ((LuaTable) table).length();
 	}
 
 	public static String concat(LuaContext ctx, Object a, Object b) {
-		return a.toString() + b;
+		return StandardLibrary.strictToString(a) + StandardLibrary.strictToString(b);
 	}
 
 	@RuntimeApi

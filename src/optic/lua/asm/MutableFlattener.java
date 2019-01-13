@@ -272,7 +272,7 @@ public class MutableFlattener implements VariableResolver {
 				return applyRecipe(RegisterFactory.nil());
 			}
 			case True: {
-				return applyRecipe(RegisterFactory.constant(false));
+				return applyRecipe(RegisterFactory.constant(true));
 			}
 			case False: {
 				return applyRecipe(RegisterFactory.constant(false));

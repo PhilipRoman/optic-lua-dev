@@ -18,7 +18,7 @@ class IfElseChainBuilder {
 	public void add(Tree tree) throws CompilationFailure {
 		Trees.expect(Lua52Walker.CONDITION, tree);
 		assert tree.getChildCount() == 2 || tree.getChildCount() == 3;
-		FlatExpr condition = flattener.flattenExpression((CommonTree) tree.getChild(0));
+		FlatExpr condition = flattener.flattenExpression((CommonTree) tree.getChild(0)).discardRemaining();
 		AsmBlock body = flattener.flattenBlock((CommonTree) Trees.expectChild(Lua52Walker.CHUNK, tree, 1), BlockMeaning.IF_BODY);
 		chain.add(new Conditional(condition, body));
 	}

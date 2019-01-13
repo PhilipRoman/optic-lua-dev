@@ -1,17 +1,12 @@
 package optic.lua.runtime;
 
+import optic.lua.util.Numbers;
+
 import java.io.*;
 import java.util.*;
 
 public class StandardLibrary {
-	private static final boolean USE_CLASS_PREDICTION = true;
-
 	public static double toNumber(double d) {
-		return d;
-	}
-
-	public static double toNumber(Double d) {
-		Objects.requireNonNull(d);
 		return d;
 	}
 
@@ -28,12 +23,6 @@ public class StandardLibrary {
 		if (o == null) {
 			return null;
 		}
-		if (USE_CLASS_PREDICTION && o.getClass() == Double.class) {
-			return (double) o;
-		}
-		if (USE_CLASS_PREDICTION && o.getClass() == String.class) {
-			return toNumber((String) o);
-		}
 		if (o instanceof Number) {
 			return ((Number) o).doubleValue();
 		}
@@ -43,7 +32,28 @@ public class StandardLibrary {
 		return null;
 	}
 
+	static double strictToNumber(Object o) {
+		if (o == null) {
+			throw new IllegalArgumentException(toString(o));
+		}
+		if (o instanceof Number) {
+			return ((Number) o).doubleValue();
+		}
+		if (o instanceof CharSequence) {
+			try {
+				return Double.parseDouble(o.toString());
+			} catch (NumberFormatException e) {
+				throw new IllegalArgumentException("\"" + o + "\" is not a valid number: " + e.getMessage());
+			}
+		}
+		throw new IllegalArgumentException(toString(o));
+	}
+
 	public static String toString(Object o) {
+		if (o instanceof Number) {
+			double d = ((Number) o).doubleValue();
+			return Numbers.isInt(d) ? Long.toString((long) d) : Double.toString(d);
+		}
 		return Objects.toString(o, "nil");
 	}
 
@@ -54,10 +64,11 @@ public class StandardLibrary {
 	public static void print(PrintWriter out, Object... o) {
 		int lim = o.length - 1;
 		for (int i = 0; i < lim; i++) {
-			out.print(toString(o));
+			out.print(toString(o[i]));
 			out.write('\t');
 		}
-		out.println(o[lim]);
+		out.println(toString(o[lim]));
+		out.flush();
 	}
 
 	public static CharSequence tableConcat(Object arg) {
@@ -89,6 +100,7 @@ public class StandardLibrary {
 	}
 
 	public static String type(Object x) {
+		System.err.println(x);
 		if (x == null) {
 			return "nil";
 		}
@@ -108,5 +120,12 @@ public class StandardLibrary {
 			return "bool";
 		}
 		return "userdata";
+	}
+
+	public static String strictToString(Object x) {
+		if (x instanceof CharSequence || x instanceof Number) {
+			return x.toString();
+		}
+		throw new IllegalArgumentException(toString(x));
 	}
 }

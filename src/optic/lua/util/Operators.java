@@ -16,6 +16,8 @@ public final class Operators {
 				Lua52Walker.Div,
 				Lua52Walker.FloorDiv,
 				Lua52Walker.Mult,
+				Lua52Walker.Mod,
+				Lua52Walker.Pow,
 				Lua52Walker.BitAnd,
 				Lua52Walker.BitOr,
 				Lua52Walker.Tilde,
@@ -34,7 +36,8 @@ public final class Operators {
 		).forEach(binaryOperators::set);
 		Set.of(
 				Lua52Walker.BIT_NOT,
-				Lua52Walker.UNARY_MINUS
+				Lua52Walker.UNARY_MINUS,
+				Lua52Walker.Length
 		).forEach(unaryOperators::set);
 	}
 

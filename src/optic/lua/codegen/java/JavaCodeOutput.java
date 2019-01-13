@@ -79,14 +79,24 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 				int offset = params.size() - 1;
 				out.printLine("Object[] ", varargName, " = ListOps.sublist(", argsName, ", ", offset, ");");
 			} else {
-				out.printLine("Object ", p, " = ListOps.get(", argsName, ", ", params.indexOf(p), ");");
+				var param = function.getBody().locals().get(p);
+				Objects.requireNonNull(param);
+				boolean isUpValue = param.getMode() == VariableMode.UPVALUE;
+				var paramTypeName = (isUpValue && !param.isFinal()) ? "UpValue" : "Object";
+				String finalPrefix = param.isFinal() ? "final " : "";
+				out.printLine(finalPrefix, paramTypeName, " ", p, " = ListOps.get(", argsName, ", ", params.indexOf(p), ");");
 			}
 		}
 		contextNamesInFunction.addLast(contextName);
-		if (!function.getParams().hasVarargs()) {
+		if (!function.getParams().
+
+				hasVarargs()) {
 			varargNamesInFunction.addLast(Optional.empty());
 		}
-		visitAll(function.getBody().steps());
+
+		visitAll(function.getBody().
+
+				steps());
 		out.removeIndent();
 		out.printLine("} return ListOps.empty(); }};");
 		varargNamesInFunction.removeLast();
@@ -169,18 +179,20 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	public Void visitRead(@NotNull Read read) {
 		writeDebugComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
 		switch (read.getSourceInfo().getMode()) {
-			case LOCAL: {
-				var typeName = typeName(read.getRegister());
-				out.printLine(typeName, " ", read.getRegister(), " = ", read.getName(), ";");
-				break;
-			}
 			case UPVALUE: {
 				if (read.getName().equals("_ENV")) {
 					var context = contextNamesInFunction.getLast();
 					out.printLine("Object ", read.getRegister(), " = ", context, "._ENV");
-				} else {
+					break;
+				} else if (!read.getSourceInfo().isFinal()) {
 					out.printLine("Object ", read.getRegister(), " = ", read.getName(), ".get();");
+					break;
+					// if upvalue is final, fall through to LOCAL branch
 				}
+			}
+			case LOCAL: {
+				var typeName = typeName(read.getRegister());
+				out.printLine(typeName, " ", read.getRegister(), " = ", read.getName(), ";");
 				break;
 			}
 			case GLOBAL: {
@@ -200,7 +212,7 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 			var varargs = regs.get(regs.size() - 1).getName();
 			var values = new ArrayList<>(regs);
 			values.remove(values.size() - 1);
-			out.printLine("return ListOps.concat(", varargs, ", ", commaList(values), ");");
+			out.printLine("return ListOps.concat(", varargs, values.isEmpty() ? "" : ", ", commaList(values), ");");
 		} else {
 			out.printLine("return ListOps.create(", commaList(regs), ");");
 		}
@@ -239,20 +251,22 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	public Void visitWrite(@NotNull Write write) {
 		writeDebugComment("writing " + write.getSource().toDebugString() + " to " + write.getTarget().toDebugString());
 		switch (write.getTarget().getMode()) {
+			case UPVALUE: {
+				if (write.getTarget().isEnv()) {
+					var context = contextNamesInFunction.getLast();
+					out.printLine(context, "._ENV = ", write.getSource().getName(), ";");
+					return null;
+				} else if (!write.getTarget().isFinal()) {
+					out.printLine(write.getTarget(), ".set(", write.getSource().getName(), ");");
+					return null;
+				}
+				// if upvalue is final, fall through to LOCAL branch
+			}
 			case LOCAL: {
 				if (write.getTarget().status().isNumeric() && !write.getSource().status().isNumeric())
 					out.printLine(write.getTarget(), " = StandardLibrary.toNumber(", write.getSource().getName(), ");");
 				else
 					out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
-				return null;
-			}
-			case UPVALUE: {
-				if (write.getTarget().isEnv()) {
-					var context = contextNamesInFunction.getLast();
-					out.printLine(context, "._ENV = ", write.getSource().getName(), ";");
-				} else {
-					out.printLine(write.getTarget(), ".set(", write.getSource().getName(), ");");
-				}
 				return null;
 			}
 			case GLOBAL: {
@@ -301,12 +315,19 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	}
 
 	public Void visitDeclare(@NotNull Declare declare) {
-		assert declare.getVariable().getMode() != VariableMode.GLOBAL;
-		if (declare.getVariable().getMode() == VariableMode.LOCAL) {
-			String finalPrefix = declare.getVariable().isFinal() ? "final " : "";
-			out.printLine(finalPrefix, typeName(declare.getVariable()), " ", declare.getName(), ";");
+		VariableInfo variable = declare.getVariable();
+		String name = declare.getName();
+		assert variable.getMode() != VariableMode.GLOBAL;
+		if (variable.getMode() == VariableMode.LOCAL) {
+			// local variable
+			String finalPrefix = variable.isFinal() ? "final " : "";
+			out.printLine(finalPrefix, typeName(variable), " ", name, ";");
+		} else if (variable.isFinal()) {
+			// final upvalue
+			out.printLine("final ", typeName(variable), " ", name, ";");
 		} else {
-			out.printLine("final UpValue ", declare.getName(), " = UpValue.create();");
+			// upvalue
+			out.printLine("final UpValue ", name, " = UpValue.create();");
 		}
 		return null;
 	}
@@ -441,15 +462,15 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		return true;
 	}
 
-	private String typeName(Register r) {
+	private static String typeName(Register r) {
 		return typeName(r.status());
 	}
 
-	private String typeName(VariableInfo i) {
+	private static String typeName(VariableInfo i) {
 		return typeName(i.status());
 	}
 
-	private String typeName(ProvenType type) {
+	private static String typeName(ProvenType type) {
 		switch (type) {
 			case UNKNOWN:
 			case OBJECT:

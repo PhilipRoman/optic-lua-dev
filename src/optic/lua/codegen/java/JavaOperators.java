@@ -32,12 +32,12 @@ final class JavaOperators {
 			case BXOR:
 			case SHL:
 			case SHR:
-				return a == ProvenType.INTEGER || b == ProvenType.INTEGER;
+				return a == ProvenType.INTEGER && b == ProvenType.INTEGER;
 
 			case EQ:
 			case LE:
 			case LT:
-				return a.isNumeric() || b.isNumeric();
+				return a.isNumeric() && b.isNumeric();
 			default:
 				return false;
 		}

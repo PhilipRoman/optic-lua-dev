@@ -7,7 +7,8 @@ public class FunctionOps {
 		if (func instanceof LuaFunction) {
 			return ((LuaFunction) func).call(context, ListOps.empty());
 		}
-		throw new IllegalArgumentException("attempt to call a " + StandardLibrary.type(func) + " value");
+		Errors.attemptToCall(func);
+		return null;
 	}
 
 	@RuntimeApi
@@ -15,14 +16,30 @@ public class FunctionOps {
 		if (func instanceof LuaFunction) {
 			return ((LuaFunction) func).call(context, args);
 		}
-		throw new IllegalArgumentException("attempt to call a " + StandardLibrary.type(func) + " value");
+		Errors.attemptToCall(func);
+		return null;
 	}
 
 	@RuntimeApi
-	public static Object[] call(Object func, LuaContext contex, Object[] trailing, Object... args) {
+	public static Object[] call(Object func, LuaContext context, Object[] trailing, Object... args) {
 		if (func instanceof LuaFunction) {
-			return ((LuaFunction) func).call(contex, ListOps.concat(trailing, args));
+			return ((LuaFunction) func).call(context, ListOps.concat(trailing, args));
 		}
-		throw new IllegalArgumentException("attempt to call a " + StandardLibrary.type(func) + " value");
+		Errors.attemptToCall(func);
+		return null;
+	}
+	@RuntimeApi
+	public static Object[] call(UpValue u, LuaContext context) {
+		return call(u.value, context);
+	}
+
+	@RuntimeApi
+	public static Object[] call(UpValue u, LuaContext context, Object... args) {
+		return call(u.value, context, args);
+	}
+
+	@RuntimeApi
+	public static Object[] call(UpValue u, LuaContext context, Object[] trailing, Object... args) {
+		return call(u.value, context, trailing, args);
 	}
 }

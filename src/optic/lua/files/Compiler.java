@@ -50,7 +50,7 @@ public class Compiler {
 		try {
 			evaluator.evaluate(new Object[]{context, args.toArray()});
 		} catch (InvocationTargetException e) {
-			throw new RuntimeException(e.getCause().getMessage());
+			throw new RuntimeException(e.getCause());
 		}
 		reporter.report(durationInfo(System.nanoTime() - start));
 	}
