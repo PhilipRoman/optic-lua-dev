@@ -1,5 +1,3 @@
-local time = os.time
-local start = time()
 local N = 10000
 local sum = 0
 for i = 1, N do
@@ -9,4 +7,3 @@ for i = 1, N do
 end
 print(sum)
 sum = "foo"
-print("TIME: " .. (time() - start))

@@ -36,6 +36,10 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 	private final TemplateOutput out;
 	private final AsmBlock block;
 	private final Context context;
+	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
+	private static final boolean USE_INJECTED_CONTEXT = true;
+	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
+	private static final boolean USE_INJECTED_ARGS = true;
 	/**
 	 * <p>
 	 * Stack containing names of varargs variables in nested functions.
@@ -413,7 +417,9 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		visitAll(block.steps());
 		out.removeIndent();
 		out.printLine("} return ListOps.empty(); }");
-		out.printLine("main(LuaContext.create(), new Object[0]);");
+		String context = USE_INJECTED_CONTEXT ? INJECTED_CONTEXT_PARAM_NAME : "LuaContext.create()";
+		String args = USE_INJECTED_ARGS ? INJECTED_ARGS_PARAM_NAME : "new Object[0]";
+		out.printLine("main(", context, ", ", args, ");");
 		out.flush();
 	}
 

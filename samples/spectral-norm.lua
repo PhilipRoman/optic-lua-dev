@@ -31,7 +31,7 @@ local function AtAv(x, y, t, p_N)
     Atv(t, y, N)
 end
 
-local N = 100
+local N = 500
 local u, v, t = {}, {}, {}
 for i=1,N do u[i] = 1 end
 

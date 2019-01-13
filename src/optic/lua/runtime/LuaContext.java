@@ -3,9 +3,9 @@ package optic.lua.runtime;
 import java.io.*;
 
 public class LuaContext {
-	InputStream in = System.in;
-	PrintStream out = System.out;
-	PrintStream err = System.err;
+	public Reader in = new InputStreamReader(System.in);
+	public PrintWriter out = new PrintWriter(System.out);
+	public PrintWriter err = new PrintWriter(System.err);
 	@RuntimeApi
 	public Object _ENV;
 

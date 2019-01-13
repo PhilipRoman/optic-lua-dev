@@ -8,6 +8,14 @@ public final class Options {
 	public Options() {
 	}
 
+	public Options(Map<? extends Option<?>, ?> options) {
+		table.putAll(options);
+	}
+
+	public Options(Options src) {
+		table.putAll(src.table);
+	}
+
 	public <T> void set(Option<T> key, T value) {
 		table.put(key, value);
 	}

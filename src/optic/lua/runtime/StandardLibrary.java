@@ -1,5 +1,6 @@
 package optic.lua.runtime;
 
+import java.io.*;
 import java.util.*;
 
 public class StandardLibrary {
@@ -50,29 +51,13 @@ public class StandardLibrary {
 		return Double.toString(d);
 	}
 
-	public static void print(Object... o) {
+	public static void print(PrintWriter out, Object... o) {
 		int lim = o.length - 1;
 		for (int i = 0; i < lim; i++) {
-			System.out.print(o[i]);
-			System.out.write('\t');
+			out.print(toString(o));
+			out.write('\t');
 		}
-		System.out.println(o[lim]);
-	}
-
-	public static void print(double d) {
-		System.out.println(d);
-	}
-
-	public static void print(CharSequence s) {
-		System.out.println(s == null ? "nil" : s);
-	}
-
-	public static void print(String s) {
-		System.out.println(s == null ? "nil" : s);
-	}
-
-	public static void print(Object s) {
-		System.out.println(s == null ? "nil" : s);
+		out.println(o[lim]);
 	}
 
 	public static CharSequence tableConcat(Object arg) {

@@ -22,6 +22,7 @@ sourceSets {
     test {
         groovy {
             srcDir 'test'
+            srcDir 'integration-test'
         }
     }
 }

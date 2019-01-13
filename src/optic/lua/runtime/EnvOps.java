@@ -17,8 +17,8 @@ public class EnvOps {
 	@RuntimeApi
 	public static LuaTable createEnv() {
 		LuaTable env = LuaTable.allocate(64);
-		env.set("print", LuaFunction.of(objects -> {
-			StandardLibrary.print(objects);
+		env.set("print", LuaFunction.of((context, objects) -> {
+			StandardLibrary.print(context.out, objects);
 			return ListOps.empty();
 		}));
 		env.set("type", LuaFunction.of(args -> {
