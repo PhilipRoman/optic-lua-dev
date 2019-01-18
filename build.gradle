@@ -1,8 +1,3 @@
-apply plugin: 'java'
-apply plugin: 'kotlin'
-apply plugin: 'application'
-apply plugin: 'groovy'
-
 buildscript {
     ext.kotlin_version = "1.3.10"
     repositories {
@@ -12,6 +7,16 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
+
+plugins {
+    id "me.champeau.gradle.jmh" version "0.4.8"
+}
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'application'
+apply plugin: 'groovy'
+apply plugin: 'me.champeau.gradle.jmh'
 
 sourceSets {
     main {
@@ -23,6 +28,11 @@ sourceSets {
         groovy {
             srcDir 'test'
             srcDir 'integration-test'
+        }
+    }
+    jmh {
+        java {
+            srcDir 'jmh-benchmarks'
         }
     }
 }
@@ -39,6 +49,10 @@ jar {
 }
 
 dependencies {
+    // At the start I ran into some issues (see https://github.com/melix/jmh-gradle-plugin/issues/111)
+    // Currently it works fine for me, but just in case if it ever happens again, try uncommenting this:
+    // compile group: 'org.openjdk.jmh', name: 'jmh-generator-reflection', version: '1.18'
+    // Also, try running on a fresh gradle daemon!
     compile 'com.google.code.gson:gson:2.8.5'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.8.0-beta2'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.3.0-alpha4'
