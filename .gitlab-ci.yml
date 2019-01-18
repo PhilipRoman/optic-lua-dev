@@ -7,4 +7,7 @@ build:
   script:
     - java -version
     # - chmod +x gradlew
-    - gradle build
+    - gradle build jmh
+  artifacts:
+    paths:
+      - build/reports/
