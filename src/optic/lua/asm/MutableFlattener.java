@@ -226,7 +226,7 @@ public class MutableFlattener implements VariableResolver {
 			}
 			case String: {
 				var register = RegisterFactory.create();
-				String value = (t.getText());
+				String value = (StringUtils.escape(t.getText()));
 				steps.add(StepFactory.constString(register, value));
 				register.updateStatus(ProvenType.OBJECT);
 				return register;
