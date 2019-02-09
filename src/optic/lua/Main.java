@@ -14,15 +14,19 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		var codeSource = CodeSource.ofFile("samples/anon-functions.lua");
+		String fileName = System.getProperty("optic.source", "samples/n-body.lua");
+		int nTimes = Integer.parseInt(System.getProperty("optic.n", "10"));
+		boolean useSSA = Boolean.valueOf(System.getProperty("optic.ssa", "true"));
+		boolean useLoopSplit = Boolean.valueOf(System.getProperty("optic.loops", "true"));
+		var codeSource = CodeSource.ofFile(fileName);
 		var temp = Files.createTempFile("optic_lua_", ".java");
 		var options = new Options();
+		options.set(SSA_SPLIT, useSSA);
+		options.set(LOOP_SPLIT, useLoopSplit);
 		options.disable(KEEP_COMMENTS);
 		options.disable(DEBUG_COMMENTS);
 		options.enable(PARALLEL);
 		options.enable(VERIFY);
-		options.enable(SSA_SPLIT);
-		options.enable(LOOP_SPLIT);
 		options.set(INDENT, "\t");
 		var pipeline = new Pipeline(
 				options,
@@ -39,7 +43,7 @@ public class Main {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		Files.copy(temp, System.err);
-		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(Files.newInputStream(temp), 20);
+		// Files.copy(temp, System.err);
+		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(Files.newInputStream(temp), nTimes);
 	}
 }
