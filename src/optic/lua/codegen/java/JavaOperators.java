@@ -22,7 +22,6 @@ final class JavaOperators {
 			case MUL:
 			case DIV:
 			case IDIV:
-			case POW:
 			case MOD:
 				return a.isNumeric() && b.isNumeric();
 			case BNOT:
