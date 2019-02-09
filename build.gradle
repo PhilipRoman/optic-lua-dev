@@ -48,6 +48,13 @@ jar {
     }
 }
 
+tasks.withType(JavaExec) {
+	systemProperties(System.getProperties())
+	jvmArgs(["-XX:+UnlockExperimentalVMOptions"])
+	jvmArgs(["-XX:+UnlockDiagnosticVMOptions"])
+	jvmArgs(System.getProperty("jvmflags", "").split(";"))
+}
+
 dependencies {
     // At the start I ran into some issues (see https://github.com/melix/jmh-gradle-plugin/issues/111)
     // Currently it works fine for me, but just in case if it ever happens again, try uncommenting this:
