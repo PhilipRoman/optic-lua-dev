@@ -109,24 +109,30 @@ public class DynamicOps {
 		return Math.pow(a, toNum(b));
 	}
 
-	public static long pow(LuaContext ctx, long a, long b) {
-		long x = 1;
-		for (long i = 0; i < b; i++) {
-			x *= a;
+	public static long pow(LuaContext ctx, long base, long exp) {
+		long result = 1;
+		while (exp != 0) {
+			if ((exp & 1) == 1)
+				result *= base;
+			exp >>= 1;
+			base *= base;
 		}
-		return x;
+		return result;
 	}
 
 	public static double pow(LuaContext ctx, double a, double b) {
 		return Math.pow(a, b);
 	}
 
-	public static long pow(LuaContext ctx, int a, int b) {
-		long x = 1;
-		for (int i = 0; i < b; i++) {
-			x *= a;
+	public static long pow(LuaContext ctx, int base, int exp) {
+		long result = 1;
+		while (exp != 0) {
+			if ((exp & 1) == 1)
+				result *= base;
+			exp >>= 1;
+			base *= base;
 		}
-		return x;
+		return result;
 	}
 
 	public static long bor(LuaContext ctx, long a, long b) {
