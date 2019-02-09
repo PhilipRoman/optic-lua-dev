@@ -3,7 +3,7 @@ stages:
 
 build:
   stage: build
-  image: gradle:jdk10-slim
+  image: gradle5.1:jre11-slim
   script:
     - java -version
     # - chmod +x gradlew
