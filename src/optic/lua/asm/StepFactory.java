@@ -15,16 +15,6 @@ class StepFactory {
 		return new Declare(info);
 	}
 
-	@Deprecated
-	static Step constNumber(Register register, double num) {
-		return new LoadConstant(register, num);
-	}
-
-	@Deprecated
-	static Step constString(Register register, String string) {
-		return new LoadConstant(register, string);
-	}
-
 	static Step binaryOperator(RValue a, RValue b, LuaOperator op, Register target) {
 		return new Invoke(target, a, op.invocationTarget(), List.of(b));
 	}
@@ -67,18 +57,8 @@ class StepFactory {
 		return new GetVarargs(to);
 	}
 
-	@Deprecated
-	static Step createTable(LinkedHashMap<RValue, RValue> table, Register result) {
-		return assign(result, RValue.table(table));
-	}
-
 	static Step assign(Register result, RValue value) {
 		return new Assign(result, value);
-	}
-
-	@Deprecated
-	static Step constNil(Register register) {
-		return new LoadConstant(register, null);
 	}
 
 	static Step tableIndex(RValue table, RValue key, Register out) {
@@ -109,11 +89,6 @@ class StepFactory {
 		checkVararg(false, source);
 		checkVararg(false, target);
 		return new ToNumber(source, target);
-	}
-
-	@Deprecated
-	public static Step constBool(Register register, boolean value) {
-		return new LoadConstant(register, value);
 	}
 
 	static Step ifThenChain(Map<FlatExpr, AsmBlock> clauses) {
