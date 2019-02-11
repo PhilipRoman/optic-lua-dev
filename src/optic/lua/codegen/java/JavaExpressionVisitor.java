@@ -58,9 +58,9 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 			var v = vararg.get();
 			var offset = v.getKey();
 			var value = v.getValue().accept(this);
-			return "TableOps.createWithVararg(" + offset + ", " + value + ", " + list + ");";
+			return "TableOps.createWithVararg(" + offset + ", " + value + ", " + list + ")";
 		} else {
-			return "TableOps.create(" + list + ");";
+			return "TableOps.create(" + list + ")";
 		}
 	}
 
@@ -90,7 +90,7 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 		}
 
 		buffer.addBlock(statementVisitor.visitAll(t.body().steps()));
-		buffer.add("} return ListOps.empty(); }};");
+		buffer.add("} return ListOps.empty(); }}");
 		nestedData.popLastContextName();
 		nestedData.popLastVarargName();
 		var out = new ByteArrayOutputStream(256);
@@ -101,7 +101,7 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 	@Override
 	public String visitRegister(Register r) {
 		if (statementVisitor.context.options().get(StandardFlags.DEBUG_COMMENTS)) {
-			return r.getName() + "/* " + r.toDebugString() + " */";
+			return r.getName() + " /* " + r.toDebugString() + " */";
 		} else {
 			return r.getName();
 		}

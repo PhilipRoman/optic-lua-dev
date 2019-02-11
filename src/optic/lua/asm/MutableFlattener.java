@@ -277,17 +277,16 @@ public class MutableFlattener implements VariableResolver {
 		throw new CompilationFailure();
 	}
 
-	private Register createTableLiteral(Tree tree) throws CompilationFailure {
+	@Contract(mutates = "this")
+	private RValue createTableLiteral(Tree tree) throws CompilationFailure {
 		Trees.expect(TABLE, tree);
 		List<?> fields = Trees.childrenOf(tree);
 		var builder = new TableLiteralBuilder(this.getInterface(), fields.size());
 		for (Object obj : fields) {
 			builder.addEntry((Tree) obj);
 		}
-		Register result = RegisterFactory.create();
 		steps.addAll(builder.getSteps());
-		steps.add(StepFactory.assign(result, RValue.table(builder.getTable())));
-		return result;
+		return RValue.table(builder.getTable());
 	}
 
 	@Contract(mutates = "this")
@@ -428,22 +427,14 @@ public class MutableFlattener implements VariableResolver {
 		}
 	}
 
-	@Contract(mutates = "this")
-	private Register createFunctionLiteral(Tree t) throws CompilationFailure {
+	@Contract(pure = true)
+	private RValue createFunctionLiteral(Tree t) throws CompilationFailure {
 		Trees.expect(FUNCTION, t);
 		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
 		Tree chunk = Trees.expectChild(CHUNK, t, 1);
 		AsmBlock body = flattenFunctionBody((CommonTree) chunk, params);
-		Register out = RegisterFactory.create();
-		steps.add(StepFactory.functionLiteral(body, out, params));
-		return out;
-	}
-
-	@Contract(mutates = "this")
-	private RValue applyRecipe(FlatExpr expr) {
-		steps.addAll(expr.block());
-		return expr.value();
+		return RValue.function(params, body);
 	}
 
 	private void emit(Level level, String msg, Tree location) {
