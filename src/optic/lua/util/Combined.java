@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public abstract class Combined<T> {
-	private final Collection<@NotNull Supplier<@NotNull T>> sources = new ArrayList<>();
+	private final List<@NotNull Supplier<@NotNull T>> sources = new ArrayList<>();
 	private volatile boolean recursionDetector = false;
 
 	protected abstract T reduce(T a, T b);
@@ -19,11 +19,13 @@ public abstract class Combined<T> {
 		if (recursionDetector) {
 			return emptyValue();
 		}
-		T accumulator = emptyValue();
-		for (Supplier<T> source : sources) {
-			recursionDetector = true;
-			T value = source.get();
-			recursionDetector = false;
+		if(sources.isEmpty()) {
+			return emptyValue();
+		}
+		Iterator<Supplier<T>> iterator = sources.iterator();
+		T accumulator = callWithoutRecursion(iterator.next());
+		while (iterator.hasNext()) {
+			T value = callWithoutRecursion(iterator.next());
 			accumulator = reduce(accumulator, value);
 			// shortcut
 			if (isAlreadyMax(accumulator)) {
@@ -31,6 +33,13 @@ public abstract class Combined<T> {
 			}
 		}
 		return accumulator;
+	}
+
+	private T callWithoutRecursion(Supplier<T> function) {
+		recursionDetector = true;
+		T value = function.get();
+		recursionDetector = false;
+		return value;
 	}
 
 	public void add(Supplier<T> supplier) {

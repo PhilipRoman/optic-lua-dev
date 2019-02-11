@@ -53,7 +53,7 @@ public class MutableFlattener implements VariableResolver {
 			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
 				List<Step> steps = new ArrayList<>();
 				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context, meaning);
-				Register result = flattener.flattenExpression(tree);
+				RValue result = flattener.flattenExpression(tree);
 				return new FlatExpr(flattener.steps, result);
 			}
 		};
@@ -157,10 +157,10 @@ public class MutableFlattener implements VariableResolver {
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
-				Register from = toNumber(flattenExpression(t.getChild(1)));
-				Register to = toNumber(flattenExpression(t.getChild(2)));
+				RValue from = toNumber(flattenExpression(t.getChild(1)));
+				RValue to = toNumber(flattenExpression(t.getChild(2)));
 				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				AsmBlock body = flattenForRangeBody(block, from.status(), varName);
+				AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
 				VariableInfo counter = body.locals().get(varName);
 				steps.add(StepFactory.forRange(counter, from, to, body));
 				return;
@@ -176,13 +176,13 @@ public class MutableFlattener implements VariableResolver {
 				return;
 			}
 			case Return: {
-				List<Register> registers = new ArrayList<>(t.getChildCount());
+				List<RValue> values = new ArrayList<>(t.getChildCount());
 				for (Object o : Trees.childrenOf(t)) {
 					Tree tree = (Tree) o;
-					Register register = flattenExpression(tree);
-					registers.add(register);
+					RValue value = flattenExpression(tree);
+					values.add(value);
 				}
-				steps.add(StepFactory.returnFromFunction(normalizeValueList(registers)));
+				steps.add(StepFactory.returnFromFunction(normalizeValueList(values)));
 				return;
 			}
 			case If: {
@@ -198,7 +198,7 @@ public class MutableFlattener implements VariableResolver {
 		throw new CompilationFailure();
 	}
 
-	private Register flattenExpression(Tree t) throws CompilationFailure {
+	private RValue flattenExpression(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			var register = RegisterFactory.create();
@@ -208,28 +208,24 @@ public class MutableFlattener implements VariableResolver {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			var a = discardRemaining(flattenExpression(t.getChild(reverse ? 1 : 0)));
 			var b = discardRemaining(flattenExpression(t.getChild(reverse ? 0 : 1)));
-			register.addStatusDependency(() -> op.resultType(a.status(), b.status()));
+			register.addTypeDependency(() -> op.resultType(a.typeInfo(), b.typeInfo()));
 			steps.add(StepFactory.binaryOperator(a, b, op, register));
 			return register;
 		}
 		if (Operators.isUnary(t)) {
 			var register = RegisterFactory.create();
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
-			Register param = discardRemaining(flattenExpression(t.getChild(0)));
+			RValue param = discardRemaining(flattenExpression(t.getChild(0)));
+			register.addTypeDependency(() -> op.resultType(null, param.typeInfo()));
 			steps.add(StepFactory.unaryOperator(param, op, register));
 			return register;
 		}
 		switch (t.getType()) {
 			case Number: {
-				double value = Double.parseDouble(t.getText());
-				return applyRecipe(RegisterFactory.constant(value));
+				return RValue.number(Double.parseDouble(t.getText()));
 			}
 			case String: {
-				var register = RegisterFactory.create();
-				String value = (StringUtils.escape(t.getText()));
-				steps.add(StepFactory.constString(register, value));
-				register.updateStatus(ProvenType.OBJECT);
-				return register;
+				return RValue.string(t.getText());
 			}
 			case Name: {
 				var register = RegisterFactory.create();
@@ -250,7 +246,6 @@ public class MutableFlattener implements VariableResolver {
 				} else {
 					var result = builder.build();
 					steps.addAll(result.block());
-					result.value().updateStatus(ProvenType.OBJECT);
 					return result.value();
 				}
 			}
@@ -269,13 +264,13 @@ public class MutableFlattener implements VariableResolver {
 				return flattenExpression(t.getChild(0));
 			}
 			case Nil: {
-				return applyRecipe(RegisterFactory.nil());
+				return RValue.nil();
 			}
 			case True: {
-				return applyRecipe(RegisterFactory.constant(true));
+				return RValue.bool(true);
 			}
 			case False: {
-				return applyRecipe(RegisterFactory.constant(false));
+				return RValue.bool(false);
 			}
 		}
 		emit(Level.ERROR, "Unknown expression: " + t + " in " + t.getParent().toStringTree(), t);
@@ -291,14 +286,14 @@ public class MutableFlattener implements VariableResolver {
 		}
 		Register result = RegisterFactory.create();
 		steps.addAll(builder.getSteps());
-		steps.add(StepFactory.createTable(builder.getTable(), result));
+		steps.add(StepFactory.assign(result, RValue.table(builder.getTable())));
 		return result;
 	}
 
 	@Contract(mutates = "this")
-	private Register toNumber(Register a) {
+	private RValue toNumber(RValue a) {
 		a = discardRemaining(a);
-		if (a.status().isNumeric()) {
+		if (a.typeInfo().isNumeric()) {
 			return a;
 		}
 		var b = RegisterFactory.create();
@@ -308,13 +303,16 @@ public class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private Register discardRemaining(Register vararg) {
-		return vararg.discardRemaining().applyTo(steps);
+	private RValue discardRemaining(RValue vararg) {
+		if(vararg instanceof Register) {
+			return ((Register) vararg).discardRemaining().applyTo(steps);
+		}
+		return vararg;
 	}
 
 	@Contract(mutates = "this")
-	private List<Register> normalizeValueList(List<Register> registers) {
-		var values = new ArrayList<Register>(registers.size());
+	private List<RValue> normalizeValueList(List<RValue> registers) {
+		var values = new ArrayList<RValue>(registers.size());
 		int valueIndex = 0;
 		int valueCount = registers.size();
 		for (var register : registers) {
@@ -330,9 +328,9 @@ public class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private List<Register> flattenAll(List<?> trees) throws CompilationFailure {
+	private List<RValue> flattenAll(List<?> trees) throws CompilationFailure {
 		int size = trees.size();
-		var registers = new ArrayList<Register>(size);
+		var registers = new ArrayList<RValue>(size);
 		for (Object tree : trees) {
 			registers.add(flattenExpression((Tree) tree));
 		}
@@ -352,7 +350,7 @@ public class MutableFlattener implements VariableResolver {
 			var result = builder.build();
 			steps.addAll(result.block());
 			Trees.expect(INDEX, t.getChild(t.getChildCount() - 1));
-			Register key = flattenExpression(t.getChild(t.getChildCount() - 1).getChild(0));
+			var key = flattenExpression(t.getChild(t.getChildCount() - 1).getChild(0));
 			return new LValue.TableField(result.value(), key);
 		} else {
 			// variable assignment;
@@ -367,7 +365,7 @@ public class MutableFlattener implements VariableResolver {
 			out.updateStatus(ProvenType.OBJECT);
 			return StepFactory.read(global, out);
 		}
-		out.addStatusDependency(info::status);
+		out.addTypeDependency(info::status);
 		return StepFactory.read(info, out);
 	}
 
@@ -378,7 +376,7 @@ public class MutableFlattener implements VariableResolver {
 
 		var builder = new AssignmentBuilder(this);
 		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
-		List<Register> values = normalizeValueList(flattenAll(Trees.childrenOf(valueList)));
+		List<RValue> values = normalizeValueList(flattenAll(Trees.childrenOf(valueList)));
 		builder.addValues(values);
 		List<?> names = Trees.childrenOf(nameList);
 
@@ -415,11 +413,11 @@ public class MutableFlattener implements VariableResolver {
 
 	@Nullable
 	@Contract(value = "_, _, true -> !null; _, _, false -> null", mutates = "this")
-	private Register createFunctionCall(Register function, Tree call, boolean expression) throws CompilationFailure {
+	private Register createFunctionCall(RValue function, Tree call, boolean expression) throws CompilationFailure {
 		Objects.requireNonNull(function);
 		Objects.requireNonNull(call);
 		Trees.expect(CALL, call);
-		List<Register> arguments = normalizeValueList(flattenAll(Trees.childrenOf(call)));
+		List<RValue> arguments = normalizeValueList(flattenAll(Trees.childrenOf(call)));
 		if (expression) {
 			Register register = RegisterFactory.createVararg();
 			steps.add(StepFactory.call(function, arguments, register));
@@ -443,7 +441,7 @@ public class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private Register applyRecipe(FlatExpr expr) {
+	private RValue applyRecipe(FlatExpr expr) {
 		steps.addAll(expr.block());
 		return expr.value();
 	}

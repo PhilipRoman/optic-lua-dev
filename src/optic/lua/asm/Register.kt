@@ -13,19 +13,23 @@ import java.util.function.Supplier
  *
  * Use [RegisterFactory] to obtain instances of this class.
  */
-class Register constructor(val name: String, val isVararg: Boolean) {
+class Register constructor(val name: String, val vararg: Boolean) : RValue {
+    override fun <T : Any, X : Throwable> accept(visitor: RValueVisitor<T, X>): T = visitor.visitRegister(this)
+
     constructor(isVararg: Boolean) : this(UniqueNames.next(), isVararg)
 
     private val statusDependencies: CombinedCommonType = CombinedCommonType()
     override fun toString(): String {
-        return name + if (isVararg) "@" else ""
+        return name + if (vararg) "@" else ""
     }
 
     fun isUnused(): Boolean {
         return name == "_"
     }
 
-    fun status(): ProvenType {
+    override fun isVararg(): Boolean = vararg;
+
+    override fun typeInfo(): ProvenType {
         return statusDependencies.get()
     }
 
@@ -33,21 +37,21 @@ class Register constructor(val name: String, val isVararg: Boolean) {
         statusDependencies.add(provenType)
     }
 
-    fun addStatusDependency(provenType: Supplier<ProvenType>) {
+    fun addTypeDependency(provenType: Supplier<ProvenType>) {
         statusDependencies.add(provenType)
     }
 
     fun toDebugString(): String {
-        val varargSuffix = if (isVararg) "..." else ""
-        return "register(\"$name$varargSuffix\" ${status()})"
+        val varargSuffix = if (vararg) "..." else ""
+        return "(${typeInfo()}$varargSuffix \"$name\")"
     }
 
-    fun discardRemaining(): FlatExpr {
-        if (!isVararg) {
+    override fun discardRemaining(): FlatExpr {
+        if (!vararg) {
             return FlatExpr(listOf(), this)
         }
         val first = RegisterFactory.create()
         first.updateStatus(ProvenType.OBJECT)
-        return FlatExpr(listOf(StepFactory.select(first, this, 0)), first);
+        return FlatExpr(listOf(StepFactory.select(first, this, 0)), first)
     }
 }

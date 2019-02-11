@@ -19,12 +19,12 @@ public interface Step {
 	}
 
 	@NotNull
-	default Collection<Register> observed() {
-		List<Register> list = new ArrayList<>(4);
+	default Collection<RValue> observed() {
+		List<RValue> list = new ArrayList<>(4);
 		forEachObserved(list::add);
 		return list;
 	}
 
-	default void forEachObserved(Consumer<Register> action) {
+	default void forEachObserved(Consumer<RValue> action) {
 	}
 }

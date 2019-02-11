@@ -1,10 +1,12 @@
 package optic.lua.asm.instructions
 
+import optic.lua.asm.RValue
 import optic.lua.asm.Register
 import optic.lua.asm.Step
 import optic.lua.optimization.LuaOperator
 import java.util.function.Consumer
 
+@Deprecated("Use Invoke in future")
 class Operation : Step {
     val a: Register?
     val b: Register
@@ -31,7 +33,7 @@ class Operation : Step {
 
     override fun modified(): Register? = target
 
-    override fun forEachObserved(action: Consumer<Register>) {
+    override fun forEachObserved(action: Consumer<RValue>) {
         if (a != null) {
             action.accept(a)
         }

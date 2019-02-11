@@ -1,15 +1,15 @@
 package optic.lua.asm.instructions
 
 import optic.lua.asm.AsmBlock
-import optic.lua.asm.Register
+import optic.lua.asm.RValue
 import optic.lua.asm.Step
 import optic.lua.asm.VariableInfo
 import java.util.function.Consumer
 
 class ForRangeLoop(
         val counter: VariableInfo,
-        val from: Register,
-        val to: Register,
+        val from: RValue,
+        val to: RValue,
         val block: AsmBlock) : Step {
 
     override fun toString(): String {
@@ -20,7 +20,7 @@ class ForRangeLoop(
         return block.steps()
     }
 
-    override fun forEachObserved(action: Consumer<Register>) {
+    override fun forEachObserved(action: Consumer<RValue>) {
         action.accept(from)
         action.accept(to)
     }

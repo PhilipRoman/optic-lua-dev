@@ -3,8 +3,8 @@ package optic.lua.asm.instructions
 
 import optic.lua.asm.Register
 import optic.lua.asm.Step
-import java.util.*
 
+@Deprecated("Use RValue.(Type)Constant in future")
 class LoadConstant(val target: Register, val constant: Any?) : Step {
     init {
         if(constant != null && constant !is Boolean && constant !is Double && constant !is String) {

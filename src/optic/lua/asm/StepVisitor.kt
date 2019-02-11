@@ -1,8 +1,8 @@
-package optic.lua.util
+package optic.lua.asm
 
-import optic.lua.asm.Step
 import optic.lua.asm.instructions.*
 import optic.lua.messages.CompilationFailure
+import org.jetbrains.annotations.Contract
 import java.util.*
 
 abstract class StepVisitor<R> {
@@ -15,11 +15,6 @@ abstract class StepVisitor<R> {
 
     @Throws(CompilationFailure::class)
     open fun visitIfElseChain(x: IfElseChain): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
-    open fun visitCall(x: Call): R {
         return defaultValue(x)
     }
 
@@ -39,27 +34,7 @@ abstract class StepVisitor<R> {
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitFunctionLiteral(x: FunctionLiteral): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
     open fun visitGetVarargs(x: GetVarargs): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
-    open fun visitLoadConstant(x: LoadConstant): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
-    open fun visitMakeTable(x: MakeTable): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
-    open fun visitOperation(x: Operation): R {
         return defaultValue(x)
     }
 
@@ -79,22 +54,22 @@ abstract class StepVisitor<R> {
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitTableRead(x: TableRead): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
-    open fun visitTableWrite(x: TableWrite): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
     open fun visitToNumber(x: ToNumber): R {
         return defaultValue(x)
     }
 
     @Throws(CompilationFailure::class)
     open fun visitWrite(x: Write): R {
+        return defaultValue(x)
+    }
+
+    @Throws(CompilationFailure::class)
+    open fun visitInvoke(x: Invoke): R {
+        return defaultValue(x)
+    }
+
+    @Throws(CompilationFailure::class)
+    open fun visitAssign(x: Assign): R {
         return defaultValue(x)
     }
 
@@ -112,23 +87,19 @@ abstract class StepVisitor<R> {
         return when (x) {
             is Block -> visitBlock(x)
             is IfElseChain -> visitIfElseChain(x)
-            is Call -> visitCall(x)
             is Comment -> visitComment(x)
             is Declare -> visitDeclare(x)
             is ForRangeLoop -> visitForRangeLoop(x)
-            is FunctionLiteral -> visitFunctionLiteral(x)
             is GetVarargs -> visitGetVarargs(x)
-            is LoadConstant -> visitLoadConstant(x)
-            is MakeTable -> visitMakeTable(x)
-            is Operation -> visitOperation(x)
             is Read -> visitRead(x)
             is Return -> visitReturn(x)
             is Select -> visitSelect(x)
-            is TableRead -> visitTableRead(x)
-            is TableWrite -> visitTableWrite(x)
             is ToNumber -> visitToNumber(x)
             is Write -> visitWrite(x)
+            is Invoke -> visitInvoke(x)
+            is Assign -> visitAssign(x)
             else -> throw IllegalArgumentException(x.javaClass.name)
         }
     }
+
 }

@@ -34,11 +34,13 @@ public class SingleRegisterUseVerifier implements CompilerPlugin {
 		IdentityHashMap<Register, Step> unique = new IdentityHashMap<>(256);
 		Map<Register, Step> duplicates = new HashMap<>(0);
 		block.forEachRecursive(step -> {
-			for (Register r : step.observed()) {
-				if (unique.containsKey(r)) {
-					duplicates.put(r, step);
-				} else {
-					unique.put(r, step);
+			for (RValue r : step.observed()) {
+				if(r instanceof Register) {
+					if (unique.containsKey(r)) {
+						duplicates.put((Register) r, step);
+					} else {
+						unique.put((Register) r, step);
+					}
 				}
 			}
 		});

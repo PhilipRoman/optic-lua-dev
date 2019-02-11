@@ -6,7 +6,7 @@ import optic.lua.messages.*;
 import optic.lua.verify.*;
 import org.slf4j.*;
 
-import java.nio.file.Files;
+import java.nio.file.*;
 
 import static optic.lua.messages.StandardFlags.*;
 
@@ -24,13 +24,14 @@ public class Main {
 		options.set(SSA_SPLIT, useSSA);
 		options.set(LOOP_SPLIT, useLoopSplit);
 		options.disable(KEEP_COMMENTS);
-		options.disable(DEBUG_COMMENTS);
+		options.enable(DEBUG_COMMENTS);
 		options.enable(PARALLEL);
 		options.enable(VERIFY);
 		options.set(INDENT, "\t");
+		MessageReporter reporter = new LogMessageReporter(log, new SimpleMessageFormat());
 		var pipeline = new Pipeline(
 				options,
-				new LogMessageReporter(log, new SimpleMessageFormat()),
+				reporter,
 				codeSource
 		);
 		pipeline.registerPlugin(SingleAssignmentVerifier::new);
@@ -43,7 +44,7 @@ public class Main {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		// Files.copy(temp, System.err);
-		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(Files.newInputStream(temp), nTimes);
+		Files.copy(temp, Paths.get("out.java"), StandardCopyOption.REPLACE_EXISTING);
+		new Compiler(new Context(options, reporter)).run(Files.newInputStream(temp), nTimes);
 	}
 }

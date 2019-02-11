@@ -34,7 +34,7 @@ public class StandardLibrary {
 
 	static double strictToNumber(Object o) {
 		if (o == null) {
-			throw new IllegalArgumentException(toString(o));
+			throw new NullPointerException();
 		}
 		if (o instanceof Number) {
 			return ((Number) o).doubleValue();
@@ -62,6 +62,9 @@ public class StandardLibrary {
 	}
 
 	public static void print(PrintWriter out, Object... o) {
+		if(o.length == 0) {
+			return;
+		}
 		int lim = o.length - 1;
 		for (int i = 0; i < lim; i++) {
 			out.print(toString(o[i]));

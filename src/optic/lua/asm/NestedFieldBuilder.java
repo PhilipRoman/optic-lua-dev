@@ -8,11 +8,11 @@ import org.antlr.runtime.tree.*;
 import java.util.*;
 
 final class NestedFieldBuilder {
-	private final Register start;
+	private final RValue start;
 	private final List<FlatExpr> keys = new ArrayList<>(4);
 	private final Flattener flattener;
 
-	NestedFieldBuilder(Flattener flattener, Register start) {
+	NestedFieldBuilder(Flattener flattener, RValue start) {
 		this.flattener = flattener;
 		this.start = start;
 	}
@@ -25,7 +25,7 @@ final class NestedFieldBuilder {
 
 	public FlatExpr build() {
 		List<Step> steps = new ArrayList<>();
-		Register table = start;
+		RValue table = start;
 		for(var key : keys) {
 			steps.addAll(key.block());
 			Register next = RegisterFactory.create();

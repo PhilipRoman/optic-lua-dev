@@ -1,6 +1,7 @@
 package optic.lua.optimization;
 
 import nl.bigo.luaparser.Lua52Walker;
+import optic.lua.asm.instructions.InvocationMethod;
 import optic.lua.util.Trees;
 
 import java.util.Objects;
@@ -115,5 +116,9 @@ public enum LuaOperator {
 			default:
 				throw new IllegalArgumentException(Trees.reverseLookupName(type));
 		}
+	}
+
+	public InvocationMethod invocationTarget() {
+		return InvocationMethod.valueOf(this.name());
 	}
 }

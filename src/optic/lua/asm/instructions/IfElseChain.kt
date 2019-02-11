@@ -1,9 +1,6 @@
 package optic.lua.asm.instructions
 
-import optic.lua.asm.AsmBlock
-import optic.lua.asm.FlatExpr
-import optic.lua.asm.Register
-import optic.lua.asm.Step
+import optic.lua.asm.*
 import java.util.function.Consumer
 
 class IfElseChain(val clauses: Map<FlatExpr, AsmBlock>) : Step {
@@ -15,7 +12,7 @@ class IfElseChain(val clauses: Map<FlatExpr, AsmBlock>) : Step {
         return clauses.values.flatMap { it.steps() } + clauses.keys.flatMap { it.block() }
     }
 
-    override fun forEachObserved(action: Consumer<Register>) {
+    override fun forEachObserved(action: Consumer<RValue>) {
         clauses.keys.map { condition -> condition.value() }.forEach(action)
     }
 }
