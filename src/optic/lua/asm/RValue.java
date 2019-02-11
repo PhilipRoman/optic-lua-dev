@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import optic.lua.asm.instructions.VariableMode;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.Numbers;
 
@@ -30,6 +31,18 @@ public interface RValue {
 
 	static RValue function(ParameterList parameters, AsmBlock body) {
 		return new FunctionLiteral(parameters, body);
+	}
+
+	static RValue variableName(VariableInfo variableInfo) {
+		switch (variableInfo.getMode()) {
+			case LOCAL:
+				return new LocalName(variableInfo);
+			case UPVALUE:
+				return new UpValueName(variableInfo);
+			case GLOBAL:
+				return new GlobalName(variableInfo);
+		}
+		throw new AssertionError("Should never reach here!");
 	}
 
 	default boolean isVararg() {
@@ -137,10 +150,58 @@ public interface RValue {
 		}
 	}
 
+	class LocalName implements RValue {
+		private final VariableInfo variable;
+
+		private LocalName(VariableInfo variable) {
+			if (variable.getMode() != VariableMode.LOCAL) {
+				throw new IllegalArgumentException(variable.toDebugString() + " is not local!");
+			}
+			this.variable = variable;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitLocalName(variable);
+		}
+	}
+
+	class UpValueName implements RValue {
+		private final VariableInfo variable;
+
+		private UpValueName(VariableInfo variable) {
+			if (variable.getMode() != VariableMode.UPVALUE) {
+				throw new IllegalArgumentException(variable.toDebugString() + " is not an upvalue!");
+			}
+			this.variable = variable;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitUpValueName(variable);
+		}
+	}
+
+	class GlobalName implements RValue {
+		private final VariableInfo variable;
+
+		private GlobalName(VariableInfo variable) {
+			if (variable.getMode() != VariableMode.GLOBAL) {
+				throw new IllegalArgumentException(variable.toDebugString() + " is not global!");
+			}
+			this.variable = variable;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitGlobalName(variable);
+		}
+	}
+
 	abstract class Constant<T> implements RValue {
 		protected final T value;
 
-		protected Constant(T value) {
+		private Constant(T value) {
 			this.value = value;
 		}
 

@@ -2,7 +2,6 @@ package optic.lua.asm
 
 import optic.lua.asm.instructions.*
 import optic.lua.messages.CompilationFailure
-import org.jetbrains.annotations.Contract
 import java.util.*
 
 abstract class StepVisitor<R> {
@@ -35,11 +34,6 @@ abstract class StepVisitor<R> {
 
     @Throws(CompilationFailure::class)
     open fun visitGetVarargs(x: GetVarargs): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
-    open fun visitRead(x: Read): R {
         return defaultValue(x)
     }
 
@@ -91,7 +85,6 @@ abstract class StepVisitor<R> {
             is Declare -> visitDeclare(x)
             is ForRangeLoop -> visitForRangeLoop(x)
             is GetVarargs -> visitGetVarargs(x)
-            is Read -> visitRead(x)
             is Return -> visitReturn(x)
             is Select -> visitSelect(x)
             is ToNumber -> visitToNumber(x)

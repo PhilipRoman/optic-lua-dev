@@ -61,7 +61,7 @@ public class VariableInfo {
 
 	public String toDebugString() {
 		String mode = getMode().toString().toLowerCase();
-		return "variable(" + (isFinal() ? "final " : "") + mode + " \"" + name + "\" " + type + ")";
+		return (isFinal() ? "final " : "") + type.get() + " " + mode + " " + name + " ";
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public class VariableInfo {
 		return name;
 	}
 
-	public ProvenType status() {
+	public ProvenType typeInfo() {
 		return isUpvalue ? ProvenType.OBJECT : type.get();
 	}
 
@@ -128,7 +128,7 @@ public class VariableInfo {
 		}
 
 		@Override
-		public ProvenType status() {
+		public ProvenType typeInfo() {
 			return ProvenType.OBJECT;
 		}
 

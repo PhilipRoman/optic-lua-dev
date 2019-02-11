@@ -43,11 +43,6 @@ class StepFactory {
 		return new Block(block);
 	}
 
-	static Step functionLiteral(AsmBlock body, Register assignTo, ParameterList params) {
-		checkVararg(false, assignTo);
-		return new Assign(assignTo, RValue.function(params, body));
-	}
-
 	static Step returnFromFunction(List<RValue> registers) {
 		return new Return(registers);
 	}
@@ -79,10 +74,6 @@ class StepFactory {
 
 	static Step write(VariableInfo target, RValue value) {
 		return new Write(target, value);
-	}
-
-	static Step read(VariableInfo source, Register target) {
-		return new Read(target, source);
 	}
 
 	static Step toNumber(RValue source, Register target) {

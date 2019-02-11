@@ -228,10 +228,13 @@ public class MutableFlattener implements VariableResolver {
 				return RValue.string(t.getText());
 			}
 			case Name: {
-				var register = RegisterFactory.create();
 				String name = t.getText();
-				steps.add(createReadStep(name, register));
-				return register;
+				VariableInfo info = resolve(name);
+				if (info == null) {
+					var global = VariableInfo.global(name);
+					return RValue.variableName(global);
+				}
+				return RValue.variableName(info);
 			}
 			case VAR: {
 				var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
@@ -303,7 +306,7 @@ public class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private RValue discardRemaining(RValue vararg) {
-		if(vararg instanceof Register) {
+		if (vararg instanceof Register) {
 			return ((Register) vararg).discardRemaining().applyTo(steps);
 		}
 		return vararg;
@@ -355,17 +358,6 @@ public class MutableFlattener implements VariableResolver {
 			// variable assignment;
 			return new LValue.Name(name.toString());
 		}
-	}
-
-	private Step createReadStep(String name, Register out) {
-		VariableInfo info = resolve(name);
-		if (info == null) {
-			var global = VariableInfo.global(name);
-			out.updateStatus(ProvenType.OBJECT);
-			return StepFactory.read(global, out);
-		}
-		out.addTypeDependency(info::status);
-		return StepFactory.read(info, out);
 	}
 
 	@Contract(mutates = "this")

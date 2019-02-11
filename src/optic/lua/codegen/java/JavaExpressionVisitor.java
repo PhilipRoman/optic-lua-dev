@@ -15,6 +15,10 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
 
+	private Options options() {
+		return statementVisitor.context.options();
+	}
+
 	public JavaExpressionVisitor(NestedData data, JavaCodeOutput visitor) {
 		nestedData = Objects.requireNonNull(data);
 		statementVisitor = visitor;
@@ -94,16 +98,44 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 		nestedData.popLastContextName();
 		nestedData.popLastVarargName();
 		var out = new ByteArrayOutputStream(256);
-		buffer.writeTo(new PrintStream(out), statementVisitor.context.options().get(Option.INDENT));
+		buffer.writeTo(new PrintStream(out), options().get(Option.INDENT));
 		return out.toString();
 	}
 
 	@Override
 	public String visitRegister(Register r) {
-		if (statementVisitor.context.options().get(StandardFlags.DEBUG_COMMENTS)) {
+		if (options().get(StandardFlags.DEBUG_COMMENTS)) {
 			return r.getName() + " /* " + r.toDebugString() + " */";
 		} else {
 			return r.getName();
 		}
+	}
+
+	@Override
+	public String visitLocalName(VariableInfo variable) {
+		if (options().get(StandardFlags.DEBUG_COMMENTS)) {
+			return variable.getName() + " /* " + variable.toDebugString() + " */";
+		} else {
+			return variable.getName();
+		}
+	}
+
+	@Override
+	public String visitUpValueName(VariableInfo upvalue) {
+		String debugComment = options().get(StandardFlags.DEBUG_COMMENTS) ? " /* " + upvalue.toDebugString() + " */" : "";
+		if (upvalue.isEnv()) {
+			return nestedData.contextName() + "._ENV" + debugComment;
+		}
+		if (upvalue.isFinal()) {
+			return upvalue.getName() + debugComment;
+		}
+		return upvalue.getName() + ".get()" + debugComment;
+	}
+
+	@Override
+	public String visitGlobalName(VariableInfo global) {
+		String debugComment = options().get(StandardFlags.DEBUG_COMMENTS) ? " /* " + global.toDebugString() + " */" : "";
+		String contextName = nestedData.contextName();
+		return contextName + ".getGlobal(\"" + global.getName() + "\")" + debugComment;
 	}
 }

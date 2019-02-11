@@ -17,4 +17,9 @@ public interface RValueVisitor<T, X extends Throwable> {
 
 	T visitRegister(Register r) throws X;
 
+	T visitLocalName(VariableInfo variable) throws X;
+
+	T visitUpValueName(VariableInfo upvalue) throws X;
+
+	T visitGlobalName(VariableInfo global) throws X;
 }

@@ -40,11 +40,11 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
 
-	public ResultBuffer visitToNumber(@NotNull ToNumber toNumber) {
+	public ResultBuffer visitToNumber(@NotNull ToNumber toNumber) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		var from = toNumber.getSource();
 		var to = toNumber.getTarget();
-		buffer.add("double ", to, " = StandardLibrary.toNumber(", from, ");");
+		buffer.add("double ", to.getName(), " = StandardLibrary.toNumber(", expression(from), ");");
 		return buffer;
 	}
 
@@ -78,37 +78,6 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 			// if there is no corresponding Java operator, call the runtime API
 			String function = op.name().toLowerCase();
 			buffer.add(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", context, ", ", expression(b), ");");
-		}
-		return buffer;
-	}
-
-	public ResultBuffer visitRead(@NotNull Read read) {
-		var buffer = new ResultBuffer();
-		writeDebugComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
-		switch (read.getSourceInfo().getMode()) {
-			case UPVALUE: {
-				if (read.getName().equals("_ENV")) {
-					var context = nestedData.contextName();
-					buffer.add("Object ", read.getRegister(), " = ", context, "._ENV");
-					break;
-				} else if (!read.getSourceInfo().isFinal()) {
-					buffer.add("Object ", read.getRegister(), " = ", read.getName(), ".get();");
-					break;
-					// if upvalue is final, fall through to LOCAL branch
-				}
-			}
-			case LOCAL: {
-				var typeName = typeName(read.getRegister());
-				buffer.add(typeName, " ", read.getRegister(), " = ", read.getName(), ";");
-				break;
-			}
-			case GLOBAL: {
-				var context = nestedData.contextName();
-				buffer.add("Object ", read.getRegister(), " = ", context, ".getGlobal(\"", read.getName(), "\");");
-				break;
-			}
-			default:
-				throw new AssertionError();
 		}
 		return buffer;
 	}
@@ -175,7 +144,7 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 				// if upvalue is final, fall through to LOCAL branch
 			}
 			case LOCAL: {
-				if (write.getTarget().status().isNumeric() && !write.getSource().typeInfo().isNumeric())
+				if (write.getTarget().typeInfo().isNumeric() && !write.getSource().typeInfo().isNumeric())
 					buffer.add(write.getTarget(), " = StandardLibrary.toNumber(", expression(write.getSource()), ");");
 				else
 					buffer.add(write.getTarget(), " = ", expression(write.getSource()), ";");
@@ -245,13 +214,6 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 			buffer.add("// ", comment.getText());
 		}
 		return buffer;
-	}
-
-	private void writeDebugComment(String comment) {
-		var buffer = new ResultBuffer();
-		if (context.options().get(StandardFlags.DEBUG_COMMENTS)) {
-			buffer.add("// ", comment);
-		}
 	}
 
 	private ResultBuffer visitCall(Register output, RValue function, List<RValue> arguments) throws CompilationFailure {
@@ -400,7 +362,7 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 	}
 
 	private static String typeName(VariableInfo i) {
-		return typeName(i.status());
+		return typeName(i.typeInfo());
 	}
 
 	private static String typeName(ProvenType type) {
