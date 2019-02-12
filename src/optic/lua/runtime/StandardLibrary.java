@@ -1,9 +1,7 @@
 package optic.lua.runtime;
 
-import optic.lua.util.Numbers;
-
-import java.io.*;
-import java.util.*;
+import java.io.PrintWriter;
+import java.util.Objects;
 
 public class StandardLibrary {
 	public static double toNumber(double d) {
@@ -50,10 +48,6 @@ public class StandardLibrary {
 	}
 
 	public static String toString(Object o) {
-		if (o instanceof Number) {
-			double d = ((Number) o).doubleValue();
-			return Numbers.isInt(d) ? Long.toString((long) d) : Double.toString(d);
-		}
 		return Objects.toString(o, "nil");
 	}
 
@@ -63,6 +57,8 @@ public class StandardLibrary {
 
 	public static void print(PrintWriter out, Object... o) {
 		if(o.length == 0) {
+			out.println();
+			out.flush();
 			return;
 		}
 		int lim = o.length - 1;
@@ -103,7 +99,6 @@ public class StandardLibrary {
 	}
 
 	public static String type(Object x) {
-		System.err.println(x);
 		if (x == null) {
 			return "nil";
 		}
@@ -120,7 +115,7 @@ public class StandardLibrary {
 			return "table";
 		}
 		if (x.getClass() == Boolean.class) {
-			return "bool";
+			return "boolean";
 		}
 		return "userdata";
 	}
