@@ -28,4 +28,9 @@ public abstract class LuaFunction {
 			}
 		};
 	}
+
+	@Override
+	public String toString() {
+		return "function 0x" + Integer.toHexString(hashCode());
+	}
 }
