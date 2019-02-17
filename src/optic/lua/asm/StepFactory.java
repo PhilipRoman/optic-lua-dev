@@ -65,12 +65,6 @@ class StepFactory {
 		return new Void(invocation);
 	}
 
-	static Step toNumber(RValue source, Register target) {
-		checkVararg(false, source);
-		checkVararg(false, target);
-		return new ToNumber(source, target);
-	}
-
 	static Step ifThenChain(Map<FlatExpr, AsmBlock> clauses) {
 		return new IfElseChain(clauses);
 	}

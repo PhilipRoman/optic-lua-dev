@@ -28,6 +28,7 @@ public enum InvocationMethod {
 	SHL,
 	SHR,
 	SUB,
+	TO_NUMBER,
 	UNM;
 
 	private final ReturnCount returnCount;
@@ -50,6 +51,8 @@ public enum InvocationMethod {
 			case CALL:
 			case SET_INDEX:
 				return ProvenType.OBJECT;
+			case TO_NUMBER:
+				return ProvenType.NUMBER;
 			default:
 				var luaOp = LuaOperator.valueOf(name());
 				if (luaOp.arity() == 2) {

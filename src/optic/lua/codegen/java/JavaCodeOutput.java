@@ -40,14 +40,6 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
 
-	public ResultBuffer visitToNumber(@NotNull ToNumber toNumber) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		var from = toNumber.getSource();
-		var to = toNumber.getTarget();
-		buffer.add("double ", to.getName(), " = StandardLibrary.toNumber(", expression(from), ");");
-		return buffer;
-	}
-
 	public ResultBuffer visitReturn(@NotNull Return ret) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		var values = ret.getValues();

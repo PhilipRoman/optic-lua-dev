@@ -150,6 +150,8 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 				return compileTableRead(x.getObject(), x.getArguments().get(0));
 			case SET_INDEX:
 				return compileTableWrite(x.getObject(), x.getArguments().get(0), x.getArguments().get(1));
+			case TO_NUMBER:
+				return compileToNumber(x.getObject());
 			default:
 				var operator = LuaOperator.valueOf(x.getMethod().name());
 				var first = x.getObject();
@@ -160,6 +162,10 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 					return compileUnaryOperatorInvocation(operator, first);
 				}
 		}
+	}
+
+	private String compileToNumber(RValue value) throws CompilationFailure {
+		return "StandardLibrary.toNumber(" + value.accept(this) + ")";
 	}
 
 	private String compileBinaryOperatorInvocation(LuaOperator op, RValue a, RValue b) throws CompilationFailure {

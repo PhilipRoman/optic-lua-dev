@@ -48,11 +48,6 @@ abstract class StepVisitor<R> {
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitToNumber(x: ToNumber): R {
-        return defaultValue(x)
-    }
-
-    @Throws(CompilationFailure::class)
     open fun visitWrite(x: Write): R {
         return defaultValue(x)
     }
@@ -87,7 +82,6 @@ abstract class StepVisitor<R> {
             is GetVarargs -> visitGetVarargs(x)
             is Return -> visitReturn(x)
             is Select -> visitSelect(x)
-            is ToNumber -> visitToNumber(x)
             is Write -> visitWrite(x)
             is Assign -> visitAssign(x)
             is Void -> visitVoid(x)

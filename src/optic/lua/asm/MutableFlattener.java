@@ -295,10 +295,7 @@ public class MutableFlattener implements VariableResolver {
 		if (a.typeInfo().isNumeric()) {
 			return a;
 		}
-		var b = RegisterFactory.create();
-		steps.add(StepFactory.toNumber(a, b));
-		b.updateStatus(ProvenType.NUMBER);
-		return b;
+		return RValue.invocation(a, InvocationMethod.TO_NUMBER, List.of());
 	}
 
 	@Contract(mutates = "this")
