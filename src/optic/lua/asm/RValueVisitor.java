@@ -22,4 +22,6 @@ public interface RValueVisitor<T, X extends Throwable> {
 	T visitUpValueName(VariableInfo upvalue) throws X;
 
 	T visitGlobalName(VariableInfo global) throws X;
+
+	T visitInvocation(RValue.Invocation invocation) throws X;
 }

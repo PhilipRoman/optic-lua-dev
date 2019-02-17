@@ -4,10 +4,10 @@ import optic.lua.asm.RValue
 import optic.lua.asm.Step
 import java.util.function.Consumer
 
-class Return(val registers: List<RValue>) : Step {
+class Return(val values: List<RValue>) : Step {
     override fun toString(): String {
-        return "return $registers"
+        return "return $values"
     }
 
-    override fun forEachObserved(action: Consumer<RValue>) = registers.forEach(action)
+    override fun forEachObserved(action: Consumer<RValue>) = values.forEach(action)
 }

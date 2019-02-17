@@ -5,13 +5,15 @@ import optic.lua.asm.RValue.*;
 import optic.lua.asm.instructions.VariableMode;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
+import optic.lua.optimization.*;
 import optic.lua.util.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
+class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
 
@@ -19,7 +21,7 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 		return statementVisitor.context.options();
 	}
 
-	public JavaExpressionVisitor(NestedData data, JavaCodeOutput visitor) {
+	JavaExpressionVisitor(NestedData data, JavaCodeOutput visitor) {
 		nestedData = Objects.requireNonNull(data);
 		statementVisitor = visitor;
 	}
@@ -137,5 +139,84 @@ public class JavaExpressionVisitor implements RValueVisitor<String, CompilationF
 		String debugComment = options().get(StandardFlags.DEBUG_COMMENTS) ? " /* " + global.toDebugString() + " */" : "";
 		String contextName = nestedData.contextName();
 		return contextName + ".getGlobal(\"" + global.getName() + "\")" + debugComment;
+	}
+
+	@Override
+	public String visitInvocation(@NotNull Invocation x) throws CompilationFailure {
+		switch (x.getMethod()) {
+			case CALL:
+				return compileFunctionCall(x.getObject(), x.getArguments());
+			case INDEX:
+				return compileTableRead(x.getObject(), x.getArguments().get(0));
+			case SET_INDEX:
+				return compileTableWrite(x.getObject(), x.getArguments().get(0), x.getArguments().get(1));
+			default:
+				var operator = LuaOperator.valueOf(x.getMethod().name());
+				var first = x.getObject();
+				if (operator.arity() == 2) {
+					var second = x.getArguments().get(0);
+					return compileBinaryOperatorInvocation(operator, first, second);
+				} else {
+					return compileUnaryOperatorInvocation(operator, first);
+				}
+		}
+	}
+
+	private String compileBinaryOperatorInvocation(LuaOperator op, RValue a, RValue b) throws CompilationFailure {
+		if (JavaOperators.canApplyJavaSymbol(op, a.typeInfo(), b.typeInfo())) {
+			String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
+			if (op == LuaOperator.DIV && a.typeInfo() == ProvenType.INTEGER && b.typeInfo() == ProvenType.INTEGER) {
+				// special case to avoid integer division (in Lua all division is floating-point)
+				return a.accept(this) + " " + javaOp + " (double) " + b.accept(this);
+			}
+			return a.accept(this) + " " + javaOp + " " + b.accept(this);
+		}
+		// if there is no corresponding Java operator, call the runtime API
+		String function = op.name().toLowerCase();
+		var context = nestedData.contextName();
+		return "DynamicOps." + function + "(" + context + ", " + a.accept(this) + ", " + b.accept(this) + ")";
+	}
+
+	private String compileUnaryOperatorInvocation(LuaOperator op, RValue value) throws CompilationFailure {
+		if (JavaOperators.canApplyJavaSymbol(op, null, value.typeInfo())) {
+			String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
+			return javaOp + " " + value.accept(this);
+		}
+		// if there is no corresponding Java operator, call the runtime API
+		String function = op.name().toLowerCase();
+		var context = nestedData.contextName();
+		return "DynamicOps." + function + "(" + context + ", " + value.accept(this) + ")";
+	}
+
+	private String compileTableWrite(RValue table, RValue key, RValue value) throws CompilationFailure {
+		return "TableOps.setIndex(" + table.accept(this) + ", " + key.accept(this) + ", " + value.accept(this) + ")";
+	}
+
+	private String compileTableRead(RValue table, RValue key) throws CompilationFailure {
+		return "TableOps.index(" + table.accept(this) + ", " + key.accept(this) + ")";
+	}
+
+	private String compileFunctionCall(RValue function, List<RValue> arguments) throws CompilationFailure {
+		var argList = new ArrayList<>(arguments);
+		boolean isVararg = !argList.isEmpty() && argList.get(argList.size() - 1).isVararg();
+		if (isVararg) {
+			// put the last element in the first position
+			argList.add(0, argList.remove(argList.size() - 1));
+		}
+		var args = commaList(argList);
+		var context = nestedData.contextName();
+		return "FunctionOps.call(" + function.accept(this) + ", " + context + (argList.isEmpty() ? "" : ", " + args) + ")";
+	}
+
+	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
+		int size = args.size();
+		var builder = new StringBuilder(size * 5 + 10);
+		for (int i = 0; i < size; i++) {
+			builder.append(args.get(i).accept(this));
+			if (i != size - 1) {
+				builder.append(", ");
+			}
+		}
+		return builder;
 	}
 }

@@ -23,6 +23,7 @@ end
 for i = 1, 1000000 do
     tb[i] = math.sqrt(i)
 end
+assert(#tb == 1000000, #tb)
 local pattern = 0
 forEach(tb, indexed(function(e, i)
     if divisible(i, 31) then

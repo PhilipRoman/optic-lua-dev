@@ -1,7 +1,8 @@
 package optic.lua.runtime;
 
 import java.io.PrintWriter;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class StandardLibrary {
 	public static double toNumber(double d) {
@@ -48,7 +49,13 @@ public class StandardLibrary {
 	}
 
 	public static String toString(Object o) {
-		return Objects.toString(o, "nil");
+		if (o == null) {
+			return "nil";
+		}
+		if (o instanceof Object[]) {
+			return Arrays.stream((Object[]) o).map(StandardLibrary::toString).collect(Collectors.joining(", ", "[", "]"));
+		}
+		return Objects.toString(o);
 	}
 
 	public static String toString(double d) {
@@ -56,7 +63,7 @@ public class StandardLibrary {
 	}
 
 	public static void print(PrintWriter out, Object... o) {
-		if(o.length == 0) {
+		if (o.length == 0) {
 			out.println();
 			out.flush();
 			return;
@@ -121,7 +128,7 @@ public class StandardLibrary {
 	}
 
 	public static String strictToString(Object x) {
-		if (x instanceof CharSequence || x instanceof Number) {
+		if (x instanceof CharSequence || x instanceof Number || x instanceof Boolean) {
 			return x.toString();
 		}
 		throw new IllegalArgumentException(toString(x));

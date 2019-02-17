@@ -69,10 +69,10 @@ final class AssignmentBuilder {
 	}
 
 	@Nullable
-	private Register vararg() {
+	private RValue vararg() {
 		if (!values.isEmpty()) {
 			var last = values.get(values.size() - 1);
-			return last.isVararg() ? (Register) last : null;
+			return last.isVararg() ? last : null;
 		}
 		return null;
 	}

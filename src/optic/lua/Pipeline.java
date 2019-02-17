@@ -41,7 +41,7 @@ public final class Pipeline {
 		for (var factory : pluginFactories) {
 			long startTime = System.nanoTime();
 			var plugin = factory.create(steps, context.withPhase(Phase.COMPILING));
-			if(context.options().get(StandardFlags.PARALLEL) && plugin.concurrent()) {
+			if (context.options().get(StandardFlags.PARALLEL) && plugin.concurrent()) {
 				reporter.report(Message.createInfo("Applying plugin " + plugin + " in background"));
 				var future = background.submit(() -> {
 					plugin.apply();
@@ -56,7 +56,7 @@ public final class Pipeline {
 			}
 		}
 
-		for(var future : running) {
+		for (var future : running) {
 			try {
 				future.get();
 			} catch (InterruptedException e) {
@@ -90,6 +90,13 @@ public final class Pipeline {
 			var msg = parsingError(e);
 			context.reporter().report(msg);
 			throw new CompilationFailure();
+		} catch (RuntimeException e) {
+			if (e.getCause() instanceof RecognitionException) {
+				var msg = parsingError((RecognitionException) e.getCause());
+				context.reporter().report(msg);
+				throw new CompilationFailure();
+			}
+			throw e;
 		}
 	}
 

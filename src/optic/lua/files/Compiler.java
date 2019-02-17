@@ -18,11 +18,11 @@ public class Compiler {
 		this.context = context;
 	}
 
-	public void run(InputStream input, int nTimes) {
+	public void run(InputStream input, int nTimes) throws CompilationFailure {
 		run(input, nTimes, LuaContext.create(), List.of());
 	}
 
-	public void run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) {
+	public void run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) throws CompilationFailure {
 		final ScriptEvaluator evaluator;
 		final byte[] data;
 		try {
@@ -43,7 +43,7 @@ public class Compiler {
 					throw new UncheckedIOException("IOException during debug data dump", e1);
 				}
 			}
-			return;
+			throw new CompilationFailure();
 		}
 		for (int i = 0; i < nTimes; i++) {
 			measure(evaluator, luaContext, args);
@@ -73,9 +73,13 @@ public class Compiler {
 		try {
 			evaluator.evaluate(new Object[]{luaContext, args.toArray()});
 		} catch (InvocationTargetException e) {
-			throw e.getCause() instanceof RuntimeException
-					? ((RuntimeException) e.getCause())
-					: new RuntimeException(e.getCause());
+			if (e.getCause() instanceof Error) {
+				throw (Error) e.getCause();
+			}
+			if (e.getCause() instanceof RuntimeException) {
+				throw (RuntimeException) e.getCause();
+			}
+			throw new RuntimeException(e.getCause());
 		}
 		context.reporter().report(durationInfo(System.nanoTime() - start));
 	}

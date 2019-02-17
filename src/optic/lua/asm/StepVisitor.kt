@@ -58,12 +58,12 @@ abstract class StepVisitor<R> {
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitInvoke(x: Invoke): R {
+    open fun visitAssign(x: Assign): R {
         return defaultValue(x)
     }
 
     @Throws(CompilationFailure::class)
-    open fun visitAssign(x: Assign): R {
+    open fun visitVoid(x: Void): R {
         return defaultValue(x)
     }
 
@@ -89,8 +89,8 @@ abstract class StepVisitor<R> {
             is Select -> visitSelect(x)
             is ToNumber -> visitToNumber(x)
             is Write -> visitWrite(x)
-            is Invoke -> visitInvoke(x)
             is Assign -> visitAssign(x)
+            is Void -> visitVoid(x)
             else -> throw IllegalArgumentException(x.javaClass.name)
         }
     }

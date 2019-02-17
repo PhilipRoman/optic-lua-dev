@@ -1,6 +1,5 @@
 package optic.lua.optimization
 
-import nl.bigo.luaparser.Lua52Walker
 
 import static optic.lua.optimization.ProvenType.*
 
@@ -33,13 +32,5 @@ class LuaOperatorTest extends GroovyTestCase {
 
         assert LuaOperator.DIV.resultType(NUMBER, NUMBER) == NUMBER
         assert LuaOperator.DIV.resultType(INTEGER, INTEGER) == NUMBER
-    }
-
-    void testForTokenType() {
-        // see documentation
-        assert LuaOperator.forTokenType(Lua52Walker.GTEq) == LuaOperator.LT
-        assert LuaOperator.forTokenType(Lua52Walker.GT) == LuaOperator.LE
-        assert LuaOperator.forTokenType(Lua52Walker.LT) == LuaOperator.LT
-        assert LuaOperator.forTokenType(Lua52Walker.LTEq) == LuaOperator.LE
     }
 }

@@ -1,7 +1,7 @@
 package optic.lua.optimization;
 
 import nl.bigo.luaparser.Lua52Walker;
-import optic.lua.asm.instructions.InvocationMethod;
+import optic.lua.asm.InvocationMethod;
 import optic.lua.util.Trees;
 
 import java.util.Objects;
@@ -10,7 +10,7 @@ import static nl.bigo.luaparser.Lua52Walker.*;
 import static optic.lua.optimization.ProvenType.*;
 
 public enum LuaOperator {
-	ADD, SUB, MUL, DIV, IDIV, POW, UNM, MOD, CONCAT, BAND, BOR, BXOR, BNOT, SHL, SHR, EQ, LT, LE, LEN;
+	ADD, SUB, MUL, DIV, IDIV, POW, UNM, MOD, CONCAT, BAND, BOR, BXOR, BNOT, SHL, SHR, EQ, LT, LE, GT, GE, LEN;
 
 	public int arity() {
 		switch (this) {
@@ -35,7 +35,6 @@ public enum LuaOperator {
 			case SUB:
 			case MUL:
 			case IDIV:
-			case POW:
 			case MOD:
 				return a.and(b);
 			case DIV:
@@ -57,20 +56,19 @@ public enum LuaOperator {
 			case EQ:
 			case LT:
 			case LE:
-				return OBJECT;
+			case GT:
+			case GE:
 			case LEN:
 				return OBJECT;
+			case POW:
+				// semantics for POW require double precision even if both operands are natural numbers
+				// this is due to large number overflow mechanics
+				return NUMBER;
 			default:
 				throw new IllegalArgumentException(this.name());
 		}
 	}
 
-	/**
-	 * <h1>Important!</h1>
-	 * <strong>This method has two special cases when the argument is {@link Lua52Walker#GTEq} and {@link Lua52Walker#GT} where
-	 * it will return the inverse operator ({@link #LT} and {@link #LE}) respectively. Make sure to check for these cases
-	 * and reverse the arguments if necessary.</strong>
-	 */
 	public static LuaOperator forTokenType(int type) {
 		switch (type) {
 			case UNARY_MINUS:
@@ -107,18 +105,20 @@ public enum LuaOperator {
 				return EQ;
 			case Length:
 				return LEN;
-			case LTEq:
-			case GT:
-				return LE;
 			case Lua52Walker.LT:
-			case GTEq:
 				return LT;
+			case GTEq:
+				return GE;
+			case LTEq:
+				return LE;
+			case Lua52Walker.GT:
+				return GT;
 			default:
 				throw new IllegalArgumentException(Trees.reverseLookupName(type));
 		}
 	}
 
-	public InvocationMethod invocationTarget() {
+	public InvocationMethod invocationMethod() {
 		return InvocationMethod.valueOf(this.name());
 	}
 }

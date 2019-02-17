@@ -60,8 +60,12 @@ public class VariableInfo {
 	}
 
 	public String toDebugString() {
-		String mode = getMode().toString().toLowerCase();
-		return (isFinal() ? "final " : "") + type.get() + " " + mode + " " + name + " ";
+		return String.format("%s%s %s %s (%s)",
+				isFinal() ? "final " : "",
+				getMode().name().toLowerCase(),
+				type.get(),
+				name,
+				Integer.toHexString(hashCode()));
 	}
 
 	@Override

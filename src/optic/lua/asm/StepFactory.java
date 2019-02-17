@@ -1,42 +1,27 @@
 package optic.lua.asm;
 
+import optic.lua.asm.RValue.Invocation;
+import optic.lua.asm.instructions.Void;
 import optic.lua.asm.instructions.*;
-import optic.lua.optimization.LuaOperator;
 
 import java.util.*;
 
 class StepFactory {
 	static Step tableWrite(LValue.TableField target, RValue value) {
 		checkVararg(false, value);
-		return new Invoke(RegisterFactory.unused(), target.getTable(), InvocationMethod.SET_INDEX, List.of(target.getKey(), value));
+		return discard(RValue.invocation(target.getTable(), InvocationMethod.SET_INDEX, List.of(target.getKey(), value)));
 	}
 
 	static Step declareLocal(VariableInfo info) {
 		return new Declare(info);
 	}
 
-	static Step binaryOperator(RValue a, RValue b, LuaOperator op, Register target) {
-		return new Invoke(target, a, op.invocationTarget(), List.of(b));
-	}
-
-	static Step unaryOperator(RValue argument, LuaOperator op, Register target) {
-		return new Invoke(target, argument, op.invocationTarget(), List.of());
-	}
-
 	static Step forRange(VariableInfo counter, RValue from, RValue to, AsmBlock block) {
 		return new ForRangeLoop(counter, from, to, block);
 	}
 
-	static Step call(RValue function, List<RValue> arguments) {
-		return new Invoke(RegisterFactory.unused(), function, InvocationMethod.CALL, arguments);
-	}
-
 	static Step comment(String text) {
 		return new Comment(text);
-	}
-
-	static Step call(RValue function, List<RValue> arguments, Register output) {
-		return new Invoke(output, function, InvocationMethod.CALL, arguments);
 	}
 
 	static Step doBlock(AsmBlock block) {
@@ -57,10 +42,10 @@ class StepFactory {
 	}
 
 	static Step tableIndex(RValue table, RValue key, Register out) {
-		return new Invoke(out, table, InvocationMethod.INDEX, List.of(key));
+		return assign(out, RValue.invocation(table, InvocationMethod.INDEX, List.of(key)));
 	}
 
-	static Step select(Register out, Register varargs, int n) {
+	static Step select(Register out, RValue varargs, int n) {
 		checkVararg(false, out);
 		return new Select(out, varargs, n);
 	}
@@ -74,6 +59,10 @@ class StepFactory {
 
 	static Step write(VariableInfo target, RValue value) {
 		return new Write(target, value);
+	}
+
+	static Step discard(Invocation invocation) {
+		return new Void(invocation);
 	}
 
 	static Step toNumber(RValue source, Register target) {

@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import optic.lua.asm.InvocationMethod.ReturnCount;
 import optic.lua.asm.instructions.VariableMode;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.Numbers;
@@ -45,14 +46,18 @@ public interface RValue {
 		throw new AssertionError("Should never reach here!");
 	}
 
+	static Invocation invocation(RValue obj, InvocationMethod method, List<RValue> arguments) {
+		return new Invocation(obj, method, arguments);
+	}
+
 	default boolean isVararg() {
 		return false;
 	}
 
 	default FlatExpr discardRemaining() {
-		if (this instanceof Register && this.isVararg()) {
+		if (this.isVararg()) {
 			var r = RegisterFactory.create();
-			return new FlatExpr(List.of(StepFactory.select(r, (Register) this, 0)), r);
+			return new FlatExpr(List.of(StepFactory.select(r, this, 0)), r);
 		}
 		return new FlatExpr(List.of(), this);
 	}
@@ -164,6 +169,11 @@ public interface RValue {
 		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
 			return visitor.visitLocalName(variable);
 		}
+
+		@Override
+		public ProvenType typeInfo() {
+			return variable.typeInfo();
+		}
 	}
 
 	class UpValueName implements RValue {
@@ -207,6 +217,45 @@ public interface RValue {
 
 		public T value() {
 			return value;
+		}
+	}
+
+	class Invocation implements RValue {
+		private final RValue object;
+		private final InvocationMethod method;
+		private final List<RValue> arguments;
+
+		Invocation(RValue object, InvocationMethod method, List<RValue> arguments) {
+			this.object = object;
+			this.method = method;
+			this.arguments = arguments;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitInvocation(this);
+		}
+
+		public RValue getObject() {
+			return object;
+		}
+
+		public InvocationMethod getMethod() {
+			return method;
+		}
+
+		public List<RValue> getArguments() {
+			return arguments;
+		}
+
+		@Override
+		public boolean isVararg() {
+			return method.getReturnCount() == ReturnCount.ANY;
+		}
+
+		@Override
+		public ProvenType typeInfo() {
+			return method.typeInfo(arguments);
 		}
 	}
 }

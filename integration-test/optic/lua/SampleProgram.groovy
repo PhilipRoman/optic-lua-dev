@@ -27,8 +27,10 @@ final class SampleProgram {
 
     List<String> run() {
         def options = new Options([
-                (StandardFlags.VERIFY)    : true,
-                (StandardFlags.LOOP_SPLIT): false
+                (StandardFlags.VERIFY)        : true,
+                (StandardFlags.LOOP_SPLIT)    : false,
+//                (StandardFlags.SSA_SPLIT)     : false,
+                (StandardFlags.DEBUG_COMMENTS): true,
         ])
         def pipeline = new Pipeline(
                 options, reporter, source

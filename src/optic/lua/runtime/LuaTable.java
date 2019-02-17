@@ -120,9 +120,9 @@ public class LuaTable {
 
 	private void updateLength() {
 		double found;
-		for (double d = 1; ; d++) {
-			if (!hash.containsKey(d)) {
-				found = d;
+		for (long i = 1; ; i++) {
+			if (!hash.containsKey((double) i)) {
+				found = i;
 				break;
 			}
 		}
@@ -142,9 +142,5 @@ public class LuaTable {
 	@Override
 	public String toString() {
 		return "table 0x" + Integer.toHexString(hashCode());
-	}
-
-	Object arrayGet(int i) {
-		return get(i - 1);
 	}
 }

@@ -202,14 +202,11 @@ public class MutableFlattener implements VariableResolver {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			var register = RegisterFactory.create();
-			// Lua does not have methods for >= and >
-			// instead we reverse the arguments and use < and <= respectively
-			boolean reverse = t.getType() == GT || t.getType() == GTEq;
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
-			var a = discardRemaining(flattenExpression(t.getChild(reverse ? 1 : 0)));
-			var b = discardRemaining(flattenExpression(t.getChild(reverse ? 0 : 1)));
+			var a = discardRemaining(flattenExpression(t.getChild(0)));
+			var b = discardRemaining(flattenExpression(t.getChild(1)));
 			register.addTypeDependency(() -> op.resultType(a.typeInfo(), b.typeInfo()));
-			steps.add(StepFactory.binaryOperator(a, b, op, register));
+			steps.add(StepFactory.assign(register, RValue.invocation(a, op.invocationMethod(), List.of(b))));
 			return register;
 		}
 		if (Operators.isUnary(t)) {
@@ -217,7 +214,7 @@ public class MutableFlattener implements VariableResolver {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			RValue param = discardRemaining(flattenExpression(t.getChild(0)));
 			register.addTypeDependency(() -> op.resultType(null, param.typeInfo()));
-			steps.add(StepFactory.unaryOperator(param, op, register));
+			steps.add(StepFactory.assign(register, RValue.invocation(param, op.invocationMethod(), List.of())));
 			return register;
 		}
 		switch (t.getType()) {
@@ -306,8 +303,10 @@ public class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private RValue discardRemaining(RValue vararg) {
-		if (vararg instanceof Register) {
-			return ((Register) vararg).discardRemaining().applyTo(steps);
+		if (vararg.isVararg()) {
+			Register r = RegisterFactory.create();
+			steps.add(StepFactory.select(r, vararg, 0));
+			return r;
 		}
 		return vararg;
 	}
@@ -378,14 +377,15 @@ public class MutableFlattener implements VariableResolver {
 			if (info == null || info.getMode() != VariableMode.LOCAL) {
 				// if variable doesn't exist yet
 				if (local) {
-					locals.put(name.toString(), new VariableInfo(name.toString()));
-					declare(name.toString());
+					var variable = new VariableInfo(name.toString());
+					locals.put(name.toString(), variable);
+					declare(variable);
 				}
 			} else if (!meaning.isConditional() && context.options().get(StandardFlags.SSA_SPLIT)) {
 				// if variable is already a local variable
 				var next = info.nextIncarnation();
 				locals.put(name.toString(), next);
-				declare(next.getName());
+				declare(next);
 			}
 		}
 
@@ -396,25 +396,22 @@ public class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private void declare(String name) {
-		locals.put(name, new VariableInfo(name));
-		Step step = StepFactory.declareLocal(resolve(name));
+	private void declare(VariableInfo variable) {
+		Step step = StepFactory.declareLocal(variable);
 		steps.add(step);
 	}
 
 	@Nullable
 	@Contract(value = "_, _, true -> !null; _, _, false -> null", mutates = "this")
-	private Register createFunctionCall(RValue function, Tree call, boolean expression) throws CompilationFailure {
+	private RValue createFunctionCall(RValue function, Tree call, boolean expression) throws CompilationFailure {
 		Objects.requireNonNull(function);
 		Objects.requireNonNull(call);
 		Trees.expect(CALL, call);
 		List<RValue> arguments = normalizeValueList(flattenAll(Trees.childrenOf(call)));
 		if (expression) {
-			Register register = RegisterFactory.createVararg();
-			steps.add(StepFactory.call(function, arguments, register));
-			return register;
+			return RValue.invocation(function, InvocationMethod.CALL, arguments);
 		} else {
-			steps.add(StepFactory.call(function, arguments));
+			steps.add(StepFactory.discard(RValue.invocation(function, InvocationMethod.CALL, arguments)));
 			return null;
 		}
 	}

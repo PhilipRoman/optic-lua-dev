@@ -5,7 +5,7 @@ import optic.lua.asm.Register
 import optic.lua.asm.Step
 import java.util.function.Consumer
 
-class Select(val out: Register, val varargs: Register, val n: Int) : Step {
+class Select(val out: Register, val varargs: RValue, val n: Int) : Step {
     override fun toString(): String {
         return "$out = select($varargs, $n)"
     }
