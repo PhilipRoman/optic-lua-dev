@@ -93,16 +93,38 @@ public class EnvOps {
 		env.set("math", LuaTable.ofMap(Map.of(
 				"floor", new LuaFunction("math.floor") {
 					public Object[] call(LuaContext context, Object... args) {
-						return ListOps.create(
-								Math.floor(Objects.requireNonNull(StandardLibrary.toNumber(ListOps.get(args, 0))))
-						);
+						return ListOps.create(Math.floor(StandardLibrary.strictToNumber(args[0])));
 					}
 				},
 				"sqrt", new LuaFunction("math.sqrt") {
 					public Object[] call(LuaContext context, Object... args) {
-						Double value = StandardLibrary.toNumber(ListOps.get(args, 0));
-						assert value != null;
+						double value = StandardLibrary.strictToNumber(args[0]);
 						return ListOps.create(Math.sqrt(value));
+					}
+				},
+				"sin", new LuaFunction("math.sin") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.sin(value));
+					}
+				},
+				"cos", new LuaFunction("math.cos") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.cos(value));
+					}
+				},
+				"atan2", new LuaFunction("math.atan2") {
+					public Object[] call(LuaContext context, Object... args) {
+						double y = StandardLibrary.strictToNumber(args[0]);
+						double x = StandardLibrary.strictToNumber(args[1]);
+						return ListOps.create(Math.atan2(y, x));
+					}
+				},
+				"atan", new LuaFunction("math.atan") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.atan(value));
 					}
 				}
 		)));

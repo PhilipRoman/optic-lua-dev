@@ -165,7 +165,7 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 	}
 
 	private String compileToNumber(RValue value) throws CompilationFailure {
-		return "StandardLibrary.toNumber(" + value.accept(this) + ")";
+		return "StandardLibrary.strictToNumber(" + value.accept(this) + ")";
 	}
 
 	private String compileBinaryOperatorInvocation(LuaOperator op, RValue a, RValue b) throws CompilationFailure {

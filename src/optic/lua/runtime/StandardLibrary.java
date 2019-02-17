@@ -31,7 +31,8 @@ public class StandardLibrary {
 		return null;
 	}
 
-	static double strictToNumber(Object o) {
+	@RuntimeApi
+	public static double strictToNumber(Object o) {
 		if (o == null) {
 			throw new NullPointerException();
 		}
