@@ -128,6 +128,7 @@ public class EnvOps {
 					}
 				}
 		)));
+		env.set("_VERSION", "optic-lua [pre-alpha]");
 		return env;
 	}
 }

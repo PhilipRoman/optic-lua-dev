@@ -7,29 +7,34 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.*;
+import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.util.*;
 
 public class Compiler {
 	private final Context context;
+	private static final WeakHashMap<ByteBuffer, ScriptEvaluator> scriptCache = new WeakHashMap<>();
+	private static final int MAX_CACHED_SIZE = 4096;
+	private final boolean useCache;
 
 	public Compiler(Context context) {
 		this.context = context;
+		this.useCache = context.options().get(StandardFlags.CACHE_JAVA_COMPILING);
 	}
 
-	public void run(InputStream input, int nTimes) throws CompilationFailure {
-		run(input, nTimes, LuaContext.create(), List.of());
+	public Object[] run(InputStream input, int nTimes) throws CompilationFailure {
+		return run(input, nTimes, LuaContext.create(), List.of());
 	}
 
-	public void run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) throws CompilationFailure {
+	public Object[] run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) throws CompilationFailure {
 		final ScriptEvaluator evaluator;
 		final byte[] data;
 		try {
 			data = input.readAllBytes();
 		} catch (IOException e) {
 			context.reporter().report(ioError(e));
-			return;
+			throw new CompilationFailure();
 		}
 		try {
 			evaluator = compile(data);
@@ -45,13 +50,19 @@ public class Compiler {
 			}
 			throw new CompilationFailure();
 		}
+		Object[] result = null;
 		for (int i = 0; i < nTimes; i++) {
-			measure(evaluator, luaContext, args);
+			result = measure(evaluator, luaContext, args);
 		}
+		return Objects.requireNonNull(result);
 	}
 
 	private ScriptEvaluator compile(byte[] source) throws CompileException {
+		if (useCache && source.length <= MAX_CACHED_SIZE && scriptCache.containsKey(ByteBuffer.wrap(source))) {
+			return scriptCache.get(ByteBuffer.wrap(source));
+		}
 		var evaluator = new ScriptEvaluator();
+		evaluator.setReturnType(Object[].class);
 		evaluator.setParameters(new String[]{
 				JavaCodeOutput.INJECTED_CONTEXT_PARAM_NAME,
 				JavaCodeOutput.INJECTED_ARGS_PARAM_NAME
@@ -65,13 +76,17 @@ public class Compiler {
 			// we're cooking a ByteArrayInputStream, no errors should occur here
 			throw new AssertionError();
 		}
+		if (useCache && source.length <= MAX_CACHED_SIZE) {
+			scriptCache.put(ByteBuffer.wrap(source), evaluator);
+		}
 		return evaluator;
 	}
 
-	private void measure(ScriptEvaluator evaluator, LuaContext luaContext, List<Object> args) {
+	private Object[] measure(ScriptEvaluator evaluator, LuaContext luaContext, List<Object> args) {
 		long start = System.nanoTime();
+		final Object[] result;
 		try {
-			evaluator.evaluate(new Object[]{luaContext, args.toArray()});
+			result = (Object[]) evaluator.evaluate(new Object[]{luaContext, args.toArray()});
 		} catch (InvocationTargetException e) {
 			if (e.getCause() instanceof Error) {
 				throw (Error) e.getCause();
@@ -82,6 +97,7 @@ public class Compiler {
 			throw new RuntimeException(e.getCause());
 		}
 		context.reporter().report(durationInfo(System.nanoTime() - start));
+		return result;
 	}
 
 	private Message durationInfo(long nanos) {

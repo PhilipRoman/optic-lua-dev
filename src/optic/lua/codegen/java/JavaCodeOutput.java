@@ -247,7 +247,7 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 		buffer.add("} return ListOps.empty(); }");
 		String context = USE_INJECTED_CONTEXT ? INJECTED_CONTEXT_PARAM_NAME : "LuaContext.create()";
 		String args = USE_INJECTED_ARGS ? INJECTED_ARGS_PARAM_NAME : "new Object[0]";
-		buffer.add("main(", context, ", ", args, ");");
+		buffer.add("return main(", context, ", ", args, ");");
 		buffer.writeTo(out, this.context.options().get(Option.INDENT));
 		out.flush();
 	}

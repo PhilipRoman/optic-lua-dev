@@ -48,6 +48,10 @@ jar {
     }
 }
 
+run {
+    standardInput = System.in
+}
+
 tasks.withType(JavaExec) {
     for (def entry : System.getProperties()) {
         if (entry.key.toString().startsWith("optic.")) {

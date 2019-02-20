@@ -68,4 +68,11 @@ public final class StringUtils {
 
 		return buffer.toString();
 	}
+
+	public static String limit(String text, int maxLength, String suffix) {
+		if (text.length() > maxLength) {
+			return text.substring(0, maxLength) + suffix;
+		}
+		return text;
+	}
 }

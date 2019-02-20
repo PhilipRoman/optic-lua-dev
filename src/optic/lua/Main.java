@@ -2,6 +2,7 @@ package optic.lua;
 
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.files.Compiler;
+import optic.lua.files.*;
 import optic.lua.messages.*;
 import optic.lua.verify.*;
 import org.slf4j.*;
@@ -14,7 +15,12 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		String fileName = System.getProperty("optic.source", "samples/n-body.lua");
+		String fileName = args.length > 0 ? args[0] : System.getProperty("optic.source");
+		if (fileName == null) {
+			var shell = new InteractiveShell(System.in, System.out, System.err);
+			shell.run();
+			return;
+		}
 		int nTimes = Integer.parseInt(System.getProperty("optic.n", "10"));
 		boolean useSSA = Boolean.valueOf(System.getProperty("optic.ssa", "true"));
 		boolean useLoopSplit = Boolean.valueOf(System.getProperty("optic.loops", "true"));
