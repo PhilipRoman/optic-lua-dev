@@ -13,6 +13,8 @@ import java.nio.file.*;
 import java.util.*;
 
 public class Compiler {
+	public static final String GENERATED_CLASS_NAME = "LuaSource";
+	public static final String GENERATED_METHOD_NAME = "mainChunk";
 	private final Context context;
 	private static final WeakHashMap<ByteBuffer, ScriptEvaluator> scriptCache = new WeakHashMap<>();
 	private static final int MAX_CACHED_SIZE = 4096;
@@ -63,6 +65,8 @@ public class Compiler {
 		}
 		var evaluator = new ScriptEvaluator();
 		evaluator.setReturnType(Object[].class);
+		evaluator.setClassName(GENERATED_CLASS_NAME);
+		evaluator.setMethodName(GENERATED_METHOD_NAME);
 		evaluator.setParameters(new String[]{
 				JavaCodeOutput.INJECTED_CONTEXT_PARAM_NAME,
 				JavaCodeOutput.INJECTED_ARGS_PARAM_NAME

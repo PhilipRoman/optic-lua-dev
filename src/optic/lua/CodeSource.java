@@ -1,7 +1,6 @@
 package optic.lua;
 
 import optic.lua.messages.*;
-import optic.lua.util.StringUtils;
 import org.antlr.runtime.*;
 import org.jetbrains.annotations.*;
 
@@ -35,9 +34,8 @@ public interface CodeSource {
 		return new CodeSourceImpl(path.toString(), () -> new ANTLRFileStream(filePath), path);
 	}
 
-	static CodeSource ofString(String programText) {
-		var name = '"' + StringUtils.limit(programText, 10, "...") + '"';
-		return new CodeSourceImpl(name, () -> new ANTLRStringStream(programText), null);
+	static CodeSource ofString(String programText, String sourceName) {
+		return new CodeSourceImpl(sourceName, () -> new ANTLRStringStream(programText), null);
 	}
 
 	static CodeSource custom(String name, CharStreamSupplier streamSupplier) {

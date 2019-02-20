@@ -3,6 +3,7 @@ package optic.lua;
 import nl.bigo.luaparser.*;
 import optic.lua.asm.*;
 import optic.lua.messages.*;
+import optic.lua.util.Trees;
 import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 
@@ -96,15 +97,32 @@ public final class Pipeline {
 				context.reporter().report(msg);
 				throw new CompilationFailure();
 			}
-			throw e;
+			var msg = Message.createError(Objects.toString(e.getMessage(), "(no message)"));
+			if (e.getMessage() == null) {
+				msg.setCause(e);
+			}
+			context.reporter().report(msg);
+			throw new CompilationFailure();
 		}
 	}
 
 	private Message parsingError(RecognitionException e) {
-		var error = Message.create("Invalid syntax");
+		var message = new StringBuilder("Invalid syntax ");
+		if (e instanceof MismatchedTokenException) {
+			var mte = ((MismatchedTokenException) e);
+			message.append("(expected ");
+			message.append(Trees.reverseLookupName(mte.expecting));
+			message.append(", got ");
+			message.append(Trees.reverseLookupName(mte.getUnexpectedType()));
+			message.append(')');
+		} else {
+			message.append("(unexpected ");
+			message.append(Trees.reverseLookupName(e.getUnexpectedType()));
+			message.append(')');
+		}
+		var error = Message.create(message.toString());
 		error.setLine(e.line);
 		error.setColumn(e.charPositionInLine);
-		error.setCause(e);
 		error.setLevel(Level.ERROR);
 		error.setPhase(Phase.PARSING);
 		error.setSource(source);

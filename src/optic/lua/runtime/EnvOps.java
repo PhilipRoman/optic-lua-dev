@@ -59,8 +59,8 @@ public class EnvOps {
 		});
 		env.set("error", new LuaFunction("error") {
 			@Override
-			public Object[] call(LuaContext context, Object... args1) {
-				throw new RuntimeException(StandardLibrary.toString(ListOps.get(args1, 0)));
+			public Object[] call(LuaContext context, Object... args) {
+				throw new RuntimeException(args.length > 0 ? StandardLibrary.toString(args[0]) : "");
 			}
 		});
 		env.set("pcall", new LuaFunction("pcall") {

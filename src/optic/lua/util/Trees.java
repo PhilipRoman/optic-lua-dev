@@ -4,10 +4,13 @@ import nl.bigo.luaparser.Lua52Walker;
 import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public final class Trees {
+	public static final Field[] LUA_PARSER_FIELDS = Lua52Walker.class.getFields();
+
 	private Trees() {
 	}
 
@@ -102,11 +105,13 @@ public final class Trees {
 	}
 
 	public static String reverseLookupName(int type) {
-		var fields = Lua52Walker.class.getFields();
-		for (var field : fields) {
+		if (type == -1) {
+			return "end-of-file";
+		}
+		for (var field : LUA_PARSER_FIELDS) {
 			try {
 				if (field.getType() == Integer.TYPE && field.getInt(null) == type) {
-					return field.getName();
+					return field.getName().toLowerCase();
 				}
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException(e);

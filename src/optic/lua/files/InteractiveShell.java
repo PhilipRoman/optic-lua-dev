@@ -13,7 +13,8 @@ public class InteractiveShell {
 	private final PrintWriter out;
 	private final PrintWriter err;
 	private final WeakHashMap<String, byte[]> scriptCache = new WeakHashMap<>();
-	private final MessageReporter reporter = new StandardMessageReporter(System.err).filter(msg -> msg.level() == Level.ERROR);
+	private final MessageReporter reporter = new StandardMessageReporter(System.err)
+			.filter(msg -> msg.level() == Level.ERROR);
 	private final Options options = new Options();
 
 	{
@@ -37,11 +38,16 @@ public class InteractiveShell {
 		context.out = out;
 		context.err = err;
 		var scanner = new Scanner(in);
-		out.println(context.getGlobal("_VERSION") + " (interactive shell):");
+		out.println(String.format("%s / %s %s",
+				context.getGlobal("_VERSION"),
+				System.getProperty("java.vm.name"),
+				System.getProperty("java.vm.version")
+		));
+		out.println("Type \"!exit\" to exit; prefix line with \"=\" to evaluate expressions");
 		out.flush();
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
-			long startTime = System.nanoTime();
+//			long startTime = System.nanoTime();
 			if (line.equals("!exit")) {
 				break;
 			}
@@ -52,26 +58,26 @@ public class InteractiveShell {
 			try {
 				result = evaluate(line, context);
 			} catch (CompilationFailure failure) {
-				failure.printStackTrace();
+				continue;
+			} catch (RuntimeException e) {
+				shortenStackTrace(e);
+				reporter.report(Message.createError("Uncaught error", e));
 				continue;
 			}
 			if (result != null && result.length > 0) {
 				StandardLibrary.print(out, result);
 			}
 			out.flush();
-			System.err.println("(" + ((System.nanoTime() - startTime) / 1e6) + "ms)");
+//			System.err.println("(" + ((System.nanoTime() - startTime) / 1e6) + "ms)");
 		}
 		out.println("Exiting!");
 		out.flush();
 	}
 
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
-		return new Compiler(new Context(options, reporter)).run(
-				new ByteArrayInputStream(compileToJava(line)),
-				1,
-				context,
-				List.of()
-		);
+		Compiler compiler = new Compiler(new Context(options, reporter));
+		ByteArrayInputStream input = new ByteArrayInputStream(compileToJava(line));
+		return compiler.run(input, 1, context, List.of());
 	}
 
 	private byte[] compileToJava(String script) throws CompilationFailure {
@@ -82,7 +88,7 @@ public class InteractiveShell {
 		var pipeline = new Pipeline(
 				options,
 				reporter,
-				CodeSource.ofString(script)
+				CodeSource.ofString(script, "<stdin>")
 		);
 		var javaSourceOutput = new ByteArrayOutputStream(512);
 		pipeline.registerPlugin(JavaCodeOutput.writingTo(javaSourceOutput));
@@ -92,5 +98,21 @@ public class InteractiveShell {
 			scriptCache.put(script, bytes);
 		}
 		return bytes;
+	}
+
+	private void shortenStackTrace(RuntimeException e) {
+		// the name combination we're looking for
+		// any frames after these will be discarded
+		final String className = Compiler.GENERATED_CLASS_NAME;
+		final String methodName = Compiler.GENERATED_METHOD_NAME;
+		var trace = e.getStackTrace();
+		for (int i = 0; i < trace.length; i++) {
+			var frame = trace[i];
+			if (frame.getClassName().equals(className) && frame.getMethodName().equals(methodName)) {
+				e.setStackTrace(Arrays.copyOfRange(trace, 0, i + 1));
+				return;
+			}
+		}
+		System.out.println("#####");
 	}
 }

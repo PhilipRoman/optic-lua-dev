@@ -23,7 +23,7 @@ public class SimpleMessageFormat implements MessageFormat<String> {
 		}
 		b.append(" - ");
 		b.append(message.message());
-		message.cause().map(Throwable::getMessage).ifPresent(msg -> b.append(" caused by ").append(msg));
+		message.cause().map(Throwable::getMessage).ifPresent(msg -> b.append(" caused by exception: ").append(msg));
 		return b.toString();
 	}
 }
