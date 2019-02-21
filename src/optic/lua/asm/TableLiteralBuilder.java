@@ -1,20 +1,20 @@
 package optic.lua.asm;
 
-import optic.lua.messages.*;
+import optic.lua.messages.CompilationFailure;
 import optic.lua.util.Trees;
-import org.antlr.runtime.tree.*;
+import org.antlr.runtime.tree.Tree;
 
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua52Walker.FIELD;
 
 public class TableLiteralBuilder {
-	private final Map<Register, Register> table = new HashMap<>(4);
+	private final LinkedHashMap<RValue, RValue> table = new LinkedHashMap<>(4);
 	private final Flattener flattener;
 	private final int size;
+	private final List<Step> steps = new ArrayList<>(8);
 	private int fieldIndex = 0;
 	private int arrayFieldIndex = 1;
-	private final List<Step> steps = new ArrayList<>(8);
 
 	public TableLiteralBuilder(Flattener flattener, int numberOfEntries) {
 		this.flattener = flattener;
@@ -32,7 +32,7 @@ public class TableLiteralBuilder {
 			var value = flattener.flattenExpression(field.getChild(1)).applyTo(steps);
 			table.put(key, value);
 		} else {
-			var key = RegisterFactory.constant(arrayFieldIndex++).applyTo(steps);
+			var key = RValue.number(arrayFieldIndex++);
 			var value = flattener.flattenExpression(field.getChild(0)).applyTo(steps);
 			boolean isLastField = fieldIndex == size - 1;
 			table.put(key, isLastField ? value : value.discardRemaining().applyTo(steps));
@@ -40,7 +40,7 @@ public class TableLiteralBuilder {
 		fieldIndex++;
 	}
 
-	public Map<Register, Register> getTable() {
+	public LinkedHashMap<RValue, RValue> getTable() {
 		return table;
 	}
 

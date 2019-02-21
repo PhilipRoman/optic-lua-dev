@@ -6,5 +6,5 @@ function func(x)
         error("message")
     end
 end
-local foo, bar = pcall(func, nil)
-assert(bar == "message")
+local _, msg = pcall(func, nil)
+print(msg)

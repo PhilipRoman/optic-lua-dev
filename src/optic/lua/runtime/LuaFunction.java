@@ -1,15 +1,22 @@
 package optic.lua.runtime;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.function.*;
 
 @RuntimeApi
 public abstract class LuaFunction {
-	@RuntimeApi
-	public LuaFunction() {
-	}
+	@Nullable
+	private final String friendlyName;
 
 	@RuntimeApi
-	public abstract Object[] call(LuaContext context, Object... args);
+	public LuaFunction() {
+		friendlyName = null;
+	}
+
+	public LuaFunction(String friendlyName) {
+		this.friendlyName = friendlyName;
+	}
 
 	public static LuaFunction of(Function<Object[], Object[]> fun) {
 		return new LuaFunction() {
@@ -27,5 +34,16 @@ public abstract class LuaFunction {
 				return fun.apply(context, args);
 			}
 		};
+	}
+
+	@RuntimeApi
+	public abstract Object[] call(LuaContext context, Object... args);
+
+	@Override
+	public String toString() {
+		if (friendlyName == null) {
+			return "function 0x" + Integer.toHexString(hashCode());
+		}
+		return "function " + friendlyName;
 	}
 }

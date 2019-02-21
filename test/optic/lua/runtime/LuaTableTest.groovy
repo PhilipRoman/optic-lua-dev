@@ -34,9 +34,9 @@ class LuaTableTest extends GroovyTestCase {
     }
 
     void testBigArray() {
-        LuaTable table = LuaTable.ofArray([]);
+        LuaTable table = LuaTable.ofArray([])
         for (int i = -50; i < 50; i++) {
-            table.set(i, String.valueOf(i));
+            table.set(i, String.valueOf(i))
         }
         assert table.get(0) == "0"
         assert table.get(-50) == "-50"
@@ -45,9 +45,9 @@ class LuaTableTest extends GroovyTestCase {
     }
 
     void testLength() {
-        LuaTable table = LuaTable.ofArray([]);
+        LuaTable table = LuaTable.ofArray([])
         for (int i = -50; i < 50; i++) {
-            table.set(i, String.valueOf(i));
+            table.set(i, String.valueOf(i))
         }
         assert table.length() == 49
         table.set(11, null)

@@ -1,9 +1,6 @@
 package optic.lua.asm;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-import java.util.function.Consumer;
+import java.util.List;
 
 /**
  * Obtain instances of this interface using {@link StepFactory} methods.
@@ -13,18 +10,5 @@ public interface Step {
 		return List.of();
 	}
 
-	@Nullable
-	default Register modified() {
-		return null;
-	}
-
-	@NotNull
-	default Collection<Register> observed() {
-		List<Register> list = new ArrayList<>(4);
-		forEachObserved(list::add);
-		return list;
-	}
-
-	default void forEachObserved(Consumer<Register> action) {
-	}
+	<T, X extends Throwable> T accept(StepVisitor<T, X> visitor) throws X;
 }

@@ -10,6 +10,7 @@ final class JavaOperators {
 	}
 
 	static boolean canApplyJavaSymbol(LuaOperator operator, ProvenType a, ProvenType b) {
+		// "a" should be null if operator is unary
 		if (operator.arity() == 2) {
 			Objects.requireNonNull(a);
 		}
@@ -32,10 +33,11 @@ final class JavaOperators {
 			case SHL:
 			case SHR:
 				return a == ProvenType.INTEGER && b == ProvenType.INTEGER;
-
 			case EQ:
 			case LE:
 			case LT:
+			case GE:
+			case GT:
 				return a.isNumeric() && b.isNumeric();
 			default:
 				return false;
@@ -75,6 +77,10 @@ final class JavaOperators {
 				return "<";
 			case LE:
 				return "<=";
+			case GT:
+				return ">";
+			case GE:
+				return ">=";
 			default:
 				return null;
 		}

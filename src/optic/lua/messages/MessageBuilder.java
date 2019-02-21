@@ -27,4 +27,20 @@ public interface MessageBuilder extends Message {
 	void setLevel(Level level);
 
 	void setPhase(Phase phase);
+
+	void addTag(@NotNull Tag tag);
+
+	default void addTags(@NotNull Tag... tags) {
+		for (Tag tag : tags) {
+			addTag(tag);
+		}
+	}
+
+	void removeTag(@NotNull Tag tag);
+
+	default void removeTags(@NotNull Tag... tags) {
+		for (Tag tag : tags) {
+			removeTag(tag);
+		}
+	}
 }

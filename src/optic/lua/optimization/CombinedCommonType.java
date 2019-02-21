@@ -15,6 +15,6 @@ public class CombinedCommonType extends Combined<ProvenType> {
 
 	@Override
 	protected ProvenType emptyValue() {
-		return ProvenType.UNKNOWN;
+		return ProvenType.OBJECT;
 	}
 }

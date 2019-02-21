@@ -8,7 +8,7 @@ import java.util.*;
 
 final class AssignmentBuilder {
 	private final List<LValue> variables = new ArrayList<>(1);
-	private final List<Register> values = new ArrayList<>(1);
+	private final List<RValue> values = new ArrayList<>(1);
 	private final VariableResolver resolver;
 
 	AssignmentBuilder(VariableResolver resolver) {
@@ -19,7 +19,7 @@ final class AssignmentBuilder {
 		values.add(value);
 	}
 
-	void addValues(List<Register> newValues) {
+	void addValues(List<RValue> newValues) {
 		values.addAll(newValues);
 	}
 
@@ -33,10 +33,10 @@ final class AssignmentBuilder {
 		for (int i = 0; i < variables.size(); i++) {
 			LValue variable = variables.get(i);
 			if (i < nonVarargRegisterCount()) {
-				Register value = values.get(i);
+				RValue value = values.get(i);
 				steps.add(createWriteStep(variable, value));
 			} else if (vararg() == null) {
-				steps.add(createWriteStep(variable, RegisterFactory.nil().applyTo(steps)));
+				steps.add(createWriteStep(variable, RValue.nil()));
 			} else {
 				Register selected = RegisterFactory.create();
 				steps.add(StepFactory.select(selected, vararg(), overflow));
@@ -52,24 +52,24 @@ final class AssignmentBuilder {
 		return values.size() - (vararg() != null ? 1 : 0);
 	}
 
-	private Step createWriteStep(LValue left, Register value) {
+	private Step createWriteStep(LValue left, RValue right) {
 		if (left instanceof LValue.TableField) {
-			return StepFactory.tableWrite((TableField) left, value);
+			return StepFactory.tableWrite((TableField) left, right);
 		} else if (left instanceof LValue.Name) {
 			var name = ((Name) left);
 			VariableInfo info = resolver.resolve(name.name());
 			if (info == null) {
-				return StepFactory.write(VariableInfo.global(name.name()), value);
+				return StepFactory.write(VariableInfo.global(name.name()), right);
 			}
-			info.addTypeDependency(value::status);
+			info.addTypeDependency(right::typeInfo);
 			info.markAsWritten();
-			return StepFactory.write(info, value);
+			return StepFactory.write(info, right);
 		}
 		throw new AssertionError();
 	}
 
 	@Nullable
-	private Register vararg() {
+	private RValue vararg() {
 		if (!values.isEmpty()) {
 			var last = values.get(values.size() - 1);
 			return last.isVararg() ? last : null;

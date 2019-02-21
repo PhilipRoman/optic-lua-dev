@@ -3,6 +3,7 @@ package optic.lua;
 import nl.bigo.luaparser.*;
 import optic.lua.asm.*;
 import optic.lua.messages.*;
+import optic.lua.util.Trees;
 import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 
@@ -41,7 +42,7 @@ public final class Pipeline {
 		for (var factory : pluginFactories) {
 			long startTime = System.nanoTime();
 			var plugin = factory.create(steps, context.withPhase(Phase.COMPILING));
-			if(context.options().get(StandardFlags.PARALLEL) && plugin.concurrent()) {
+			if (context.options().get(StandardFlags.PARALLEL) && plugin.concurrent()) {
 				reporter.report(Message.createInfo("Applying plugin " + plugin + " in background"));
 				var future = background.submit(() -> {
 					plugin.apply();
@@ -56,7 +57,7 @@ public final class Pipeline {
 			}
 		}
 
-		for(var future : running) {
+		for (var future : running) {
 			try {
 				future.get();
 			} catch (InterruptedException e) {
@@ -64,7 +65,7 @@ public final class Pipeline {
 			} catch (ExecutionException e) {
 				var msg = Message.createError("Plugin failed!", e.getCause());
 				reporter.report(msg);
-				throw new CompilationFailure();
+				throw new CompilationFailure(Tag.USER_CODE);
 			}
 		}
 		// Shut down the executor to allow the virtual machine to terminate
@@ -89,18 +90,43 @@ public final class Pipeline {
 		} catch (RecognitionException e) {
 			var msg = parsingError(e);
 			context.reporter().report(msg);
-			throw new CompilationFailure();
+			throw new CompilationFailure(Tag.BAD_INPUT, Tag.PARSER);
+		} catch (RuntimeException e) {
+			if (e.getCause() instanceof RecognitionException) {
+				var msg = parsingError((RecognitionException) e.getCause());
+				context.reporter().report(msg);
+				throw new CompilationFailure(Tag.BAD_INPUT, Tag.PARSER);
+			}
+			var msg = Message.createError(Objects.toString(e.getMessage(), "(no message)"));
+			if (e.getMessage() == null) {
+				msg.setCause(e);
+			}
+			context.reporter().report(msg);
+			throw new CompilationFailure(Tag.BAD_INPUT, Tag.PARSER);
 		}
 	}
 
 	private Message parsingError(RecognitionException e) {
-		var error = Message.create("Invalid syntax");
+		var message = new StringBuilder("Invalid syntax ");
+		if (e instanceof MismatchedTokenException) {
+			var mte = ((MismatchedTokenException) e);
+			message.append("(expected ");
+			message.append(Trees.reverseLookupName(mte.expecting));
+			message.append(", got ");
+			message.append(Trees.reverseLookupName(mte.getUnexpectedType()));
+			message.append(')');
+		} else {
+			message.append("(unexpected ");
+			message.append(Trees.reverseLookupName(e.getUnexpectedType()));
+			message.append(')');
+		}
+		var error = Message.create(message.toString());
 		error.setLine(e.line);
 		error.setColumn(e.charPositionInLine);
-		error.setCause(e);
 		error.setLevel(Level.ERROR);
 		error.setPhase(Phase.PARSING);
 		error.setSource(source);
+		error.addTags(Tag.BAD_INPUT, Tag.PARSER);
 		return error;
 	}
 

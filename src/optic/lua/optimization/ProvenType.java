@@ -1,10 +1,10 @@
 package optic.lua.optimization;
 
 public enum ProvenType {
-	UNKNOWN(0), INTEGER(1), NUMBER(3), OBJECT(7);
+	INTEGER(1), NUMBER(3), OBJECT(7);
 
+	private static final ProvenType[] table = {null, INTEGER, null, NUMBER, null, null, null, OBJECT};
 	private final int code;
-	private static final ProvenType[] table = {UNKNOWN, INTEGER, null, NUMBER, null, null, null, OBJECT};
 
 	ProvenType(int i) {
 		this.code = i;

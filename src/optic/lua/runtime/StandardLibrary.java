@@ -1,9 +1,8 @@
 package optic.lua.runtime;
 
-import optic.lua.util.Numbers;
-
-import java.io.*;
+import java.io.PrintWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class StandardLibrary {
 	public static double toNumber(double d) {
@@ -32,9 +31,10 @@ public class StandardLibrary {
 		return null;
 	}
 
-	static double strictToNumber(Object o) {
+	@RuntimeApi
+	public static double strictToNumber(Object o) {
 		if (o == null) {
-			throw new IllegalArgumentException(toString(o));
+			throw new NullPointerException();
 		}
 		if (o instanceof Number) {
 			return ((Number) o).doubleValue();
@@ -50,11 +50,13 @@ public class StandardLibrary {
 	}
 
 	public static String toString(Object o) {
-		if (o instanceof Number) {
-			double d = ((Number) o).doubleValue();
-			return Numbers.isInt(d) ? Long.toString((long) d) : Double.toString(d);
+		if (o == null) {
+			return "nil";
 		}
-		return Objects.toString(o, "nil");
+		if (o instanceof Object[]) {
+			return Arrays.stream((Object[]) o).map(StandardLibrary::toString).collect(Collectors.joining(", ", "[", "]"));
+		}
+		return Objects.toString(o);
 	}
 
 	public static String toString(double d) {
@@ -62,6 +64,11 @@ public class StandardLibrary {
 	}
 
 	public static void print(PrintWriter out, Object... o) {
+		if (o.length == 0) {
+			out.println();
+			out.flush();
+			return;
+		}
 		int lim = o.length - 1;
 		for (int i = 0; i < lim; i++) {
 			out.print(toString(o[i]));
@@ -100,7 +107,6 @@ public class StandardLibrary {
 	}
 
 	public static String type(Object x) {
-		System.err.println(x);
 		if (x == null) {
 			return "nil";
 		}
@@ -117,13 +123,13 @@ public class StandardLibrary {
 			return "table";
 		}
 		if (x.getClass() == Boolean.class) {
-			return "bool";
+			return "boolean";
 		}
 		return "userdata";
 	}
 
 	public static String strictToString(Object x) {
-		if (x instanceof CharSequence || x instanceof Number) {
+		if (x instanceof CharSequence || x instanceof Number || x instanceof Boolean) {
 			return x.toString();
 		}
 		throw new IllegalArgumentException(toString(x));

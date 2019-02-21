@@ -1,8 +1,8 @@
 package optic.lua.messages;
 
 @FunctionalInterface
-interface Option<T> {
-	T defaultValue();
-
+public interface Option<T> {
 	Option<String> INDENT = () -> "\t";
+
+	T defaultValue();
 }

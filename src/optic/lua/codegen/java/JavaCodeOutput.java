@@ -2,17 +2,12 @@ package optic.lua.codegen.java;
 
 import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
-import optic.lua.asm.instructions.*;
-import optic.lua.codegen.TemplateOutput;
+import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
-import optic.lua.optimization.*;
-import optic.lua.util.*;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.*;
 
 /**
  * Creates Java source code from given {@link AsmBlock}.
@@ -32,391 +27,19 @@ import java.util.stream.*;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin {
-	private final TemplateOutput out;
-	private final AsmBlock block;
-	private final Context context;
+public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure>, CompilerPlugin {
 	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
-	private static final boolean USE_INJECTED_CONTEXT = true;
 	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
+	private static final boolean USE_INJECTED_CONTEXT = true;
 	private static final boolean USE_INJECTED_ARGS = true;
-	/**
-	 * <p>
-	 * Stack containing names of varargs variables in nested functions.
-	 * There is an entry for each level of nested functions. If an Optional
-	 * is empty, it means that function did not have a vararg parameter.
-	 * </p>
-	 * <p>
-	 * Initially, the stack contains the root vararg.
-	 * </p>
-	 */
-	private final Deque<Optional<String>> varargNamesInFunction = new ArrayDeque<>(List.of(
-			Optional.of("vararg" + UniqueNames.next()))
-	);
-	/**
-	 * @see #varargNamesInFunction
-	 */
-	private final Deque<String> contextNamesInFunction = new ArrayDeque<>();
-
-	public Void visitToNumber(@NotNull ToNumber toNumber) {
-		var from = toNumber.getSource();
-		var to = toNumber.getTarget();
-		out.printLine("double ", to, " = StandardLibrary.toNumber(", from, ");");
-		return null;
-	}
-
-	public Void visitFunctionLiteral(@NotNull FunctionLiteral function) throws CompilationFailure {
-		var target = function.getAssignTo().getName();
-		var params = function.getParams().list();
-		var argsName = "args" + UniqueNames.next();
-		var contextName = "context" + UniqueNames.next();
-		out.printLine("LuaFunction ", target, " = new LuaFunction(){ Object[] call(LuaContext ", contextName, ", Object[] ", argsName, ") { if(1==1) {");
-		out.addIndent();
-		for (var p : params) {
-			if (p.equals("...")) {
-				var varargName = "vararg" + UniqueNames.next();
-				varargNamesInFunction.addLast(Optional.of(varargName));
-				int offset = params.size() - 1;
-				out.printLine("Object[] ", varargName, " = ListOps.sublist(", argsName, ", ", offset, ");");
-			} else {
-				var param = function.getBody().locals().get(p);
-				Objects.requireNonNull(param);
-				boolean isUpValue = param.getMode() == VariableMode.UPVALUE;
-				var paramTypeName = (isUpValue && !param.isFinal()) ? "UpValue" : "Object";
-				String finalPrefix = param.isFinal() ? "final " : "";
-				out.printLine(finalPrefix, paramTypeName, " ", p, " = ListOps.get(", argsName, ", ", params.indexOf(p), ");");
-			}
-		}
-		contextNamesInFunction.addLast(contextName);
-		if (!function.getParams().
-
-				hasVarargs()) {
-			varargNamesInFunction.addLast(Optional.empty());
-		}
-
-		visitAll(function.getBody().
-
-				steps());
-		out.removeIndent();
-		out.printLine("} return ListOps.empty(); }};");
-		varargNamesInFunction.removeLast();
-		contextNamesInFunction.removeLast();
-		return null;
-	}
-
-	public Void visitLoadConstant(@NotNull LoadConstant loadConstant) {
-		var c = loadConstant.getConstant();
-		var target = loadConstant.getTarget().getName();
-		if (c == null) {
-			c = "null";
-		} else if (c instanceof String) {
-			c = '"' + c.toString() + '"';
-		}
-		String typeName = typeName(loadConstant.getTarget());
-		if (c.getClass() == Boolean.class) {
-			typeName = "boolean";
-		}
-		out.printLine(typeName, " ", target, " = ", Numbers.normalize(c), ";");
-		return null;
-	}
-
-	public Void visitMakeTable(@NotNull MakeTable makeTable) {
-		var result = makeTable.getResult();
-		var map = new HashMap<>(makeTable.getValues());
-		Optional<Entry<Register, Register>> vararg = map.entrySet().stream()
-				.filter(e -> e.getValue().isVararg())
-				.findAny();
-		// vararg is treated separately, remove it from the map
-		vararg.ifPresent(v -> map.remove(v.getKey()));
-		String list = map.entrySet().stream().map(e -> e.getKey() + ", " + e.getValue()).collect(Collectors.joining(", "));
-		vararg.ifPresentOrElse(o -> {
-			var offset = o.getKey();
-			var value = o.getValue().getName();
-			out.printLine("LuaTable ", result, " = TableOps.createWithVararg(", offset, ", ", value, ", ", list, ");");
-		}, () -> {
-			out.printLine("LuaTable ", result, " = TableOps.create(", list, ");");
-		});
-		return null;
-	}
-
-	public Void visitOperation(@NotNull Operation operation) {
-		String targetName = operation.getTarget().getName();
-		LuaOperator op = operation.getOperator();
-		@Nullable Register a = operation.getA();
-		Register b = operation.getB();
-		var context = contextNamesInFunction.getLast();
-		if (op.arity() == 2) {
-			// binary operator
-			Objects.requireNonNull(a);
-			var resultType = op.resultType(a.status(), b.status());
-			var resultTypeName = typeName(resultType);
-			if (JavaOperators.canApplyJavaSymbol(op, a.status(), b.status())) {
-				writeDebugComment("Inline operation with " + a.toDebugString() + " and " + b.toDebugString());
-				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
-				out.printLine(resultTypeName, " ", targetName, " = ", a.getName(), " ", javaOp, " ", b.getName(), ";");
-				return null;
-			}
-			// if there is no corresponding Java operator, call the runtime API
-			String function = op.name().toLowerCase();
-			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", context, ", ", a.getName(), ", ", b.getName(), ");");
-		} else {
-			// unary operator
-			var resultType = op.resultType(null, b.status());
-			var resultTypeName = typeName(resultType);
-			if (JavaOperators.canApplyJavaSymbol(op, null, b.status())) {
-				writeDebugComment("Inline operation with " + b.toDebugString());
-				String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
-				out.printLine(resultTypeName, " ", targetName, " = ", javaOp, b.getName(), ";");
-				return null;
-			}
-			// if there is no corresponding Java operator, call the runtime API
-			String function = op.name().toLowerCase();
-			out.printLine(resultTypeName, " ", targetName, " = DynamicOps.", function, "(", context, ", ", b.getName(), ");");
-		}
-		return null;
-	}
-
-	public Void visitRead(@NotNull Read read) {
-		writeDebugComment("read " + read.getSourceInfo().toDebugString() + " to " + read.getRegister().toDebugString());
-		switch (read.getSourceInfo().getMode()) {
-			case UPVALUE: {
-				if (read.getName().equals("_ENV")) {
-					var context = contextNamesInFunction.getLast();
-					out.printLine("Object ", read.getRegister(), " = ", context, "._ENV");
-					break;
-				} else if (!read.getSourceInfo().isFinal()) {
-					out.printLine("Object ", read.getRegister(), " = ", read.getName(), ".get();");
-					break;
-					// if upvalue is final, fall through to LOCAL branch
-				}
-			}
-			case LOCAL: {
-				var typeName = typeName(read.getRegister());
-				out.printLine(typeName, " ", read.getRegister(), " = ", read.getName(), ";");
-				break;
-			}
-			case GLOBAL: {
-				var context = contextNamesInFunction.getLast();
-				out.printLine("Object ", read.getRegister(), " = ", context, ".getGlobal(\"", read.getName(), "\");");
-				break;
-			}
-			default:
-				throw new AssertionError();
-		}
-		return null;
-	}
-
-	public Void visitReturn(@NotNull Return ret) {
-		var regs = ret.getRegisters();
-		if (!regs.isEmpty() && regs.get(regs.size() - 1).isVararg()) {
-			var varargs = regs.get(regs.size() - 1).getName();
-			var values = new ArrayList<>(regs);
-			values.remove(values.size() - 1);
-			out.printLine("return ListOps.concat(", varargs, values.isEmpty() ? "" : ", ", commaList(values), ");");
-		} else {
-			out.printLine("return ListOps.create(", commaList(regs), ");");
-		}
-		return null;
-	}
-
-	public Void visitGetVarargs(@NotNull GetVarargs getVarargs) throws CompilationFailure {
-		var varargsName = varargNamesInFunction.getLast();
-		if (varargsName.isPresent()) {
-			var varargs = varargsName.get();
-			out.printLine("Object[] ", getVarargs.getTo().getName(), " = ", varargs, ";");
-		} else {
-			illegalVarargUsage();
-		}
-		return null;
-	}
-
-	public Void visitSelect(@NotNull Select select) {
-		var n = select.getN();
-		var vararg = select.getVarargs().getName();
-		var target = select.getOut().getName();
-		out.printLine("Object ", target, " = ListOps.get(", vararg, ", ", n, ");");
-		return null;
-	}
-
-	public Void visitTableRead(@NotNull TableRead tableRead) {
-		out.printLine("Object ", tableRead.getOut(), " = TableOps.index(", tableRead.getTable(), ", ", tableRead.getKey(), ");");
-		return null;
-	}
-
-	public Void visitTableWrite(@NotNull TableWrite tableWrite) {
-		out.printLine("TableOps.setIndex(", tableWrite.getField().getTable(), ", ", tableWrite.getField().getKey(), ", ", tableWrite.getValue(), ");");
-		return null;
-	}
-
-	public Void visitWrite(@NotNull Write write) {
-		writeDebugComment("writing " + write.getSource().toDebugString() + " to " + write.getTarget().toDebugString());
-		switch (write.getTarget().getMode()) {
-			case UPVALUE: {
-				if (write.getTarget().isEnv()) {
-					var context = contextNamesInFunction.getLast();
-					out.printLine(context, "._ENV = ", write.getSource().getName(), ";");
-					return null;
-				} else if (!write.getTarget().isFinal()) {
-					out.printLine(write.getTarget(), ".set(", write.getSource().getName(), ");");
-					return null;
-				}
-				// if upvalue is final, fall through to LOCAL branch
-			}
-			case LOCAL: {
-				if (write.getTarget().status().isNumeric() && !write.getSource().status().isNumeric())
-					out.printLine(write.getTarget(), " = StandardLibrary.toNumber(", write.getSource().getName(), ");");
-				else
-					out.printLine(write.getTarget(), " = ", write.getSource().getName(), ";");
-				return null;
-			}
-			case GLOBAL: {
-				var context = contextNamesInFunction.getLast();
-				out.printLine(context, ".setGlobal(\"", write.getTarget().getName(), "\", ", write.getSource().getName(), ");");
-				return null;
-			}
-			default:
-				throw new AssertionError();
-		}
-	}
-
-	public Void visitForRangeLoop(@NotNull ForRangeLoop loop) throws CompilationFailure {
-		var from = loop.getFrom().getName();
-		var to = loop.getTo().getName();
-		var counter = loop.getCounter();
-		var counterName = "i_" + counter.getName();
-		String counterType = typeName(loop.getFrom().status());
-		String counterTypeName = typeName(loop.getCounter());
-		if (counterTypeName.equals("long") && context.options().get(StandardFlags.LOOP_SPLIT)) {
-			// we optimize integer loops at runtime by checking if the range is within int bounds
-			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
-			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
-			// int loop
-			out.printLine("if(", from, " >= Integer.MIN_VALUE && ", to, " <= Integer.MAX_VALUE)");
-			out.printLine("for(int ", counterName, " = (int)", from, "; ", counterName, " <= (int)", to, "; ", counterName, "++) {");
-			out.addIndent();
-			out.printLine("long ", counter.getName(), " = ", counterName, ";");
-			for (Step s : loop.getBlock().steps()) {
-				visit(s);
-			}
-			out.removeIndent();
-			out.printLine("}");
-			out.printLine("else");
-		}
-		// regular for-loop
-		out.printLine("for(", counterType, " ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
-		out.addIndent();
-		out.printLine(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
-		for (Step s : loop.getBlock().steps()) {
-			visit(s);
-		}
-		out.removeIndent();
-		out.printLine("}");
-		return null;
-	}
-
-	public Void visitDeclare(@NotNull Declare declare) {
-		VariableInfo variable = declare.getVariable();
-		String name = declare.getName();
-		assert variable.getMode() != VariableMode.GLOBAL;
-		if (variable.getMode() == VariableMode.LOCAL) {
-			// local variable
-			String finalPrefix = variable.isFinal() ? "final " : "";
-			out.printLine(finalPrefix, typeName(variable), " ", name, ";");
-		} else if (variable.isFinal()) {
-			// final upvalue
-			out.printLine("final ", typeName(variable), " ", name, ";");
-		} else {
-			// upvalue
-			out.printLine("final UpValue ", name, " = UpValue.create();");
-		}
-		return null;
-	}
-
-	public Void visitComment(@NotNull Comment comment) {
-		if (context.options().get(StandardFlags.KEEP_COMMENTS)) {
-			out.printLine("// ", comment.getText());
-		}
-		return null;
-	}
-
-	private void writeDebugComment(String comment) {
-		if (context.options().get(StandardFlags.DEBUG_COMMENTS)) {
-			out.printLine("// ", comment);
-		}
-	}
-
-	public Void visitCall(@NotNull Call call) {
-		var function = call.getFunction().getName();
-		var argList = new ArrayList<>(call.getArgs());
-		boolean isVararg = !argList.isEmpty() && argList.get(argList.size() - 1).isVararg();
-		if (isVararg) {
-			// put the last element in the first position
-			argList.add(0, argList.remove(argList.size() - 1));
-		}
-		var prefix = call.getOutput().isUnused() ? "" : ("Object[] " + call.getOutput().getName() + " = ");
-		var args = commaList(argList);
-		var context = contextNamesInFunction.getLast();
-		out.printLine(prefix, "FunctionOps.call(", function, ", ", context, argList.isEmpty() ? "" : ", ", args, ");");
-		return null;
-	}
-
-	private static CharSequence commaList(List<Register> args) {
-		int size = args.size();
-		var builder = new StringBuilder(size * 5 + 10);
-		for (int i = 0; i < size; i++) {
-			builder.append(args.get(i).getName());
-			if (i != size - 1) {
-				builder.append(", ");
-			}
-		}
-		return builder;
-	}
-
-	private static String toNumber(VariableInfo info) {
-		return info.status().isNumeric() ? info.getName() : "StandardLibrary.toNumber(" + info.getName() + ")";
-	}
-
-	private static String toNumber(Register r) {
-		return r.status().isNumeric() ? r.getName() : "StandardLibrary.toNumber(" + r.getName() + ")";
-	}
-
-	public Void visitIfElseChain(@NotNull IfElseChain ifElseChain) throws CompilationFailure {
-		int size = ifElseChain.getClauses().size();
-		int i = 0;
-		for (var entry : ifElseChain.getClauses().entrySet()) {
-			boolean isLast = ++i == size;
-			FlatExpr condition = entry.getKey();
-			AsmBlock value = entry.getValue();
-
-			visitAll(condition.block());
-			out.printLine("if(DynamicOps.isTrue(", condition.value().getName(), ")) {");
-			out.addIndent();
-			visitAll(value.steps());
-			out.removeIndent();
-			out.printLine("}", isLast ? "" : " else {");
-			if (!isLast) {
-				out.addIndent();
-			}
-		}
-		for (int j = 0; j < size - 1; j++) {
-			out.removeIndent();
-			out.printLine("}");
-		}
-//		out.printLine(String.join("", Collections.nCopies(size - 1, "}")));
-		return null;
-	}
-
-	public Void visitBlock(@NotNull Block block) throws CompilationFailure {
-		out.printLine("{");
-		out.addIndent();
-		visitAll(block.getSteps().steps());
-		out.removeIndent();
-		out.printLine("}");
-		return null;
-	}
+	final Context context;
+	private final PrintStream out;
+	private final AsmBlock block;
+	private final NestedData nestedData = new NestedData();
+	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
 
 	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
-		this.out = new TemplateOutput(context, out);
+		this.out = out;
 		this.block = block;
 		this.context = context;
 	}
@@ -426,29 +49,216 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		return (steps, context) -> new JavaCodeOutput(printStream, steps, context);
 	}
 
-	private void execute() throws CompilationFailure {
-		var msg = Message.create("Java code output still in development!");
-		msg.setLevel(Level.WARNING);
-		context.reporter().report(msg);
-		out.printLine("import optic.lua.runtime.*;");
-		var contextName = "context" + UniqueNames.next();
-		contextNamesInFunction.addLast(contextName);
-		out.printLine("static Object[] main(final LuaContext ", contextName, ", Object[] args) { if(1 == 1) {");
-		out.addIndent();
-		visitAll(block.steps());
-		out.removeIndent();
-		out.printLine("} return ListOps.empty(); }");
-		String context = USE_INJECTED_CONTEXT ? INJECTED_CONTEXT_PARAM_NAME : "LuaContext.create()";
-		String args = USE_INJECTED_ARGS ? INJECTED_ARGS_PARAM_NAME : "new Object[0]";
-		out.printLine("main(", context, ", ", args, ");");
-		out.flush();
+	@Override
+	public ResultBuffer visitReturn(List<RValue> values) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		if (!values.isEmpty() && values.get(values.size() - 1).isVararg()) {
+			var varargs = values.get(values.size() - 1);
+			var valuesCopy = new ArrayList<>(values);
+			valuesCopy.remove(valuesCopy.size() - 1);
+			buffer.add("return ListOps.concat(", expression(varargs), valuesCopy.isEmpty() ? "" : ", ", commaList(valuesCopy), ");");
+		} else {
+			buffer.add("return ListOps.create(", commaList(values), ");");
+		}
+		return buffer;
 	}
 
-	private void illegalVarargUsage() throws CompilationFailure {
-		var msg = Message.create("Cannot use ... outside of vararg function");
-		msg.setLevel(Level.ERROR);
-		context.reporter().report(msg);
-		throw new CompilationFailure();
+	@Override
+	public ResultBuffer visitSelect(Register target, int n, RValue vararg) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add("Object ", target, " = ListOps.get(", expression(vararg), ", ", n, ");");
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitWrite(VariableInfo variable, RValue value) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		switch (variable.getMode()) {
+			case UPVALUE: {
+				if (variable.isEnv()) {
+					var context = nestedData.contextName();
+					buffer.add(context, "._ENV = ", expression(value), ";");
+					return buffer;
+				} else if (!variable.isFinal()) {
+					buffer.add(variable.getName(), ".set(", expression(value), ");");
+					return buffer;
+				}
+				// if upvalue is final, fall through to LOCAL branch
+			}
+			case LOCAL: {
+				if (variable.typeInfo().isNumeric() && !value.typeInfo().isNumeric())
+					buffer.add(variable, " = StandardLibrary.toNumber(", expression(value), ");");
+				else
+					buffer.add(variable, " = ", expression(value), ";");
+				return buffer;
+			}
+			case GLOBAL: {
+				var context = nestedData.contextName();
+				buffer.add(context, ".setGlobal(\"", variable.getName(), "\", ", expression(value), ");");
+				return buffer;
+			}
+			default:
+				throw new AssertionError();
+		}
+	}
+
+	@Override
+	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, AsmBlock block) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		var counterName = "i_" + counter.getName();
+		String counterType = JavaUtils.typeName(from.typeInfo());
+		String counterTypeName = JavaUtils.typeName(counter);
+		if (counterTypeName.equals("long") && context.options().get(StandardFlags.LOOP_SPLIT)) {
+			// we optimize integer loops at runtime by checking if the range is within int bounds
+			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
+			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
+			// int loop
+			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", to, " <= Integer.MAX_VALUE)");
+			buffer.add("for(int ", counterName, " = (int)", expression(from), "; ", counterName, " <= (int)", expression(to), "; ", counterName, "++) {");
+			buffer.add("long ", counter.getName(), " = ", counterName, ";");
+			buffer.addBlock(visitAll(block.steps()));
+			buffer.add("}");
+			buffer.add("else");
+		}
+		// regular for-loop
+		buffer.add("for(", counterType, " ", counterName, " = ", expression(from), "; ", counterName, " <= ", expression(to), "; ", counterName, "++) {");
+		buffer.add(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
+		buffer.addBlock(visitAll(block.steps()));
+		buffer.add("}");
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitDeclaration(VariableInfo variable) {
+		var buffer = new ResultBuffer();
+		String name = variable.getName();
+		assert variable.getMode() != VariableMode.GLOBAL;
+		if (variable.getMode() == VariableMode.LOCAL) {
+			// local variable
+			String finalPrefix = variable.isFinal() ? "final " : "";
+			boolean debug = context.options().get(StandardFlags.DEBUG_COMMENTS);
+			String debugSuffix = debug ? (" /* " + variable.toDebugString() + " */") : "";
+			buffer.add(finalPrefix, JavaUtils.typeName(variable), " ", name, ";", debugSuffix);
+		} else if (variable.isFinal()) {
+			// final upvalue
+			buffer.add("final ", JavaUtils.typeName(variable), " ", name, ";");
+		} else {
+			// upvalue
+			buffer.add("final UpValue ", name, " = UpValue.create();");
+		}
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws CompilationFailure {
+		context.reporter().report(Message.createError("ForEachLoop currently not supported!"));
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+	}
+
+	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
+		int size = args.size();
+		var builder = new StringBuilder(size * 5 + 10);
+		for (int i = 0; i < size; i++) {
+			builder.append(expression(args.get(i)));
+			if (i != size - 1) {
+				builder.append(", ");
+			}
+		}
+		return builder;
+	}
+
+	@NotNull
+	private CharSequence expression(RValue expression) throws CompilationFailure {
+		return Objects.requireNonNull(expression.accept(expressionVisitor));
+	}
+
+	@Override
+	public ResultBuffer visitIfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		int size = clauses.size();
+		int i = 0;
+		for (var entry : clauses.entrySet()) {
+			boolean isLast = ++i == size;
+			FlatExpr condition = entry.getKey();
+			AsmBlock value = entry.getValue();
+			buffer.addBlock(visitAll(condition.block()));
+			buffer.add("if(DynamicOps.isTrue(", expression(condition.value()), ")) {");
+			buffer.addBlock(visitAll(value.steps()));
+			buffer.add("}", isLast ? "" : " else {");
+		}
+		for (int j = 0; j < size - 1; j++) {
+			buffer.add("}");
+		}
+//		buffer.add(String.join("", Collections.nCopies(size - 1, "}")));
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitLoop(AsmBlock body) throws CompilationFailure {
+		context.reporter().report(Message.createError("Loop currently not supported!"));
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+	}
+
+	@Override
+	public ResultBuffer visitBlock(AsmBlock block) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add("{");
+		buffer.addBlock(visitAll(block.steps()));
+		buffer.add("}");
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitBreakIf(RValue condition) throws CompilationFailure {
+		context.reporter().report(Message.createError("BreakIf currently not supported!"));
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+	}
+
+	@Override
+	public ResultBuffer visitVoid(RValue.Invocation invocation) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add(expression(invocation) + ";");
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitComment(String comment) {
+		var buffer = new ResultBuffer();
+		if (context.options().get(StandardFlags.KEEP_COMMENTS)) {
+			buffer.add("// ", comment);
+		}
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitAssignment(Register register, RValue value) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add(JavaUtils.typeName(register), " ", register.getName(), " = ", expression(value), ";");
+		return buffer;
+	}
+
+	private void execute() throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		{
+			var msg = Message.create("Java code output still in development");
+			msg.setLevel(Level.WARNING);
+			context.reporter().report(msg);
+		}
+		if (context.options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
+			var msg = Message.create("Use of ALLOW_UPVALUE_VARARGS is not officially supported");
+			msg.setLevel(Level.WARNING);
+			context.reporter().report(msg);
+		}
+		buffer.add("import optic.lua.runtime.*;");
+		var contextName = nestedData.pushNewContextName();
+		buffer.add("static Object[] main(final LuaContext ", contextName, ", Object[] args) { if(1 == 1) {");
+		buffer.addBlock(visitAll(block.steps()));
+		buffer.add("} return ListOps.empty(); }");
+		String context = USE_INJECTED_CONTEXT ? INJECTED_CONTEXT_PARAM_NAME : "LuaContext.create()";
+		String args = USE_INJECTED_ARGS ? INJECTED_ARGS_PARAM_NAME : "new Object[0]";
+		buffer.add("return main(", context, ", ", args, ");");
+		buffer.writeTo(out, this.context.options().get(Option.INDENT));
+		out.flush();
 	}
 
 	@Override
@@ -462,35 +272,8 @@ public class JavaCodeOutput extends StepVisitor<Void> implements CompilerPlugin 
 		return true;
 	}
 
-	private static String typeName(Register r) {
-		return typeName(r.status());
-	}
-
-	private static String typeName(VariableInfo i) {
-		return typeName(i.status());
-	}
-
-	private static String typeName(ProvenType type) {
-		switch (type) {
-			case UNKNOWN:
-			case OBJECT:
-				return "Object";
-			case NUMBER:
-				return "double";
-			case INTEGER:
-				return "long";
-			default:
-				throw new AssertionError("should never reach here");
-		}
-	}
-
 	@Override
 	public String toString() {
 		return getClass().getName();
-	}
-
-	@Override
-	public Void defaultValue(@NotNull Step x) {
-		return null;
 	}
 }

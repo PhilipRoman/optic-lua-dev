@@ -2,11 +2,11 @@ package optic.lua;
 
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.files.Compiler;
+import optic.lua.files.*;
 import optic.lua.messages.*;
-import optic.lua.verify.*;
 import org.slf4j.*;
 
-import java.nio.file.Files;
+import java.nio.file.*;
 
 import static optic.lua.messages.StandardFlags.*;
 
@@ -14,7 +14,12 @@ public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {
-		String fileName = System.getProperty("optic.source", "samples/n-body.lua");
+		String fileName = args.length > 0 ? args[0] : System.getProperty("optic.source");
+		if (fileName == null) {
+			var shell = new InteractiveShell(System.in, System.out, System.err);
+			shell.run();
+			return;
+		}
 		int nTimes = Integer.parseInt(System.getProperty("optic.n", "10"));
 		boolean useSSA = Boolean.valueOf(System.getProperty("optic.ssa", "true"));
 		boolean useLoopSplit = Boolean.valueOf(System.getProperty("optic.loops", "true"));
@@ -24,17 +29,16 @@ public class Main {
 		options.set(SSA_SPLIT, useSSA);
 		options.set(LOOP_SPLIT, useLoopSplit);
 		options.disable(KEEP_COMMENTS);
-		options.disable(DEBUG_COMMENTS);
+		options.enable(DEBUG_COMMENTS);
 		options.enable(PARALLEL);
 		options.enable(VERIFY);
 		options.set(INDENT, "\t");
+		MessageReporter reporter = new LogMessageReporter(log, new SimpleMessageFormat());
 		var pipeline = new Pipeline(
 				options,
-				new LogMessageReporter(log, new SimpleMessageFormat()),
+				reporter,
 				codeSource
 		);
-		pipeline.registerPlugin(SingleAssignmentVerifier::new);
-		pipeline.registerPlugin(SingleRegisterUseVerifier::new);
 		pipeline.registerPlugin(JavaCodeOutput.writingTo(Files.newOutputStream(temp)));
 		try {
 			pipeline.run();
@@ -43,7 +47,7 @@ public class Main {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		// Files.copy(temp, System.err);
-		new Compiler(new LogMessageReporter(log, new SimpleMessageFormat())).run(Files.newInputStream(temp), nTimes);
+		Files.copy(temp, Paths.get("out.java"), StandardCopyOption.REPLACE_EXISTING);
+		new Compiler(new Context(options, reporter)).run(Files.newInputStream(temp), nTimes);
 	}
 }

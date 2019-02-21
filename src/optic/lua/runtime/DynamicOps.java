@@ -89,6 +89,14 @@ public class DynamicOps {
 		return toNum(a) % toNum(b);
 	}
 
+	public static long mod(LuaContext ctx, long a, long b) {
+		return a % b;
+	}
+
+	public static double mod(LuaContext ctx, double a, double b) {
+		return a % b;
+	}
+
 	public static double mod(LuaContext ctx, Object a, double b) {
 		return toNum(a) % b;
 	}
@@ -109,30 +117,32 @@ public class DynamicOps {
 		return Math.pow(a, toNum(b));
 	}
 
-	public static long pow(LuaContext ctx, long base, long exp) {
-		long result = 1;
+	public static double pow(LuaContext ctx, long base, long exp) {
+		return Math.pow(base, exp);
+		/*long result = 1;
 		while (exp != 0) {
 			if ((exp & 1) == 1)
 				result *= base;
 			exp >>= 1;
 			base *= base;
 		}
-		return result;
+		return result;*/
 	}
 
 	public static double pow(LuaContext ctx, double a, double b) {
 		return Math.pow(a, b);
 	}
 
-	public static long pow(LuaContext ctx, int base, int exp) {
-		long result = 1;
+	public static double pow(LuaContext ctx, int base, int exp) {
+		return Math.pow(base, exp);
+		/*long result = 1;
 		while (exp != 0) {
 			if ((exp & 1) == 1)
 				result *= base;
 			exp >>= 1;
 			base *= base;
 		}
-		return result;
+		return result;*/
 	}
 
 	public static long bor(LuaContext ctx, long a, long b) {
@@ -203,6 +213,30 @@ public class DynamicOps {
 
 	public static boolean lt(LuaContext ctx, Object a, Object b) {
 		return toNum(a) < toNum(b);
+	}
+
+	public static boolean ge(LuaContext ctx, double a, double b) {
+		return a >= b;
+	}
+
+	public static boolean ge(LuaContext ctx, Object a, Object b) {
+		return toNum(a) >= toNum(b);
+	}
+
+	public static boolean gt(LuaContext ctx, double a, double b) {
+		return a > b;
+	}
+
+	public static boolean gt(LuaContext ctx, Object a, Object b) {
+		return toNum(a) > toNum(b);
+	}
+
+	public static Object bnot(LuaContext ctx, Object i) {
+		return ~toInt(i);
+	}
+
+	public static long bnot(LuaContext ctx, long i) {
+		return ~i;
 	}
 
 	public static int len(LuaContext ctx, Object table) {

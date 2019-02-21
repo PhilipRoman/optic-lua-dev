@@ -2,8 +2,7 @@ package optic.lua.messages;
 
 import optic.lua.CodeSource;
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.*;
 
 public class NullMessageReporter implements MessageReporter {
 	@Override

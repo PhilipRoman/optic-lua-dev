@@ -6,7 +6,11 @@ public enum StandardFlags implements Option<Boolean> {
 	PARALLEL(Runtime.getRuntime().availableProcessors() > 2),
 	VERIFY(false),
 	SSA_SPLIT(true),
-	LOOP_SPLIT(false);
+	LOOP_SPLIT(false),
+	DUMP_ON_INTERNAL_ERROR(true),
+	CACHE_JAVA_COMPILING(true),
+	CACHE_LUA_COMPILING(true),
+	ALLOW_UPVALUE_VARARGS(false);
 	private final boolean defaultValue;
 
 	StandardFlags(boolean value) {

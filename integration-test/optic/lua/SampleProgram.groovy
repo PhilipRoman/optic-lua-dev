@@ -3,10 +3,7 @@ package optic.lua
 import groovy.transform.CompileStatic
 import optic.lua.codegen.java.JavaCodeOutput
 import optic.lua.files.Compiler
-import optic.lua.messages.MessageReporter
-import optic.lua.messages.Options
-import optic.lua.messages.StandardFlags
-import optic.lua.messages.StandardMessageReporter
+import optic.lua.messages.*
 import optic.lua.runtime.LuaContext
 
 import java.nio.file.Files
@@ -26,8 +23,10 @@ final class SampleProgram {
 
     List<String> run() {
         def options = new Options([
-                (StandardFlags.VERIFY)    : true,
-                (StandardFlags.LOOP_SPLIT): true
+                (StandardFlags.VERIFY)        : true,
+                (StandardFlags.LOOP_SPLIT)    : false,
+//                (StandardFlags.SSA_SPLIT)     : false,
+                (StandardFlags.DEBUG_COMMENTS): true,
         ])
         def pipeline = new Pipeline(
                 options, reporter, source
@@ -39,7 +38,7 @@ final class SampleProgram {
         def context = LuaContext.create()
         def out = new StringWriter()
         context.out = new PrintWriter(out)
-        new Compiler(reporter).run(Files.newInputStream(temp), 1, context, List.of())
+        new Compiler(new Context(options, reporter)).run(Files.newInputStream(temp), 1, context, List.of())
         def scanner = new Scanner(out.getBuffer().toString())
         def list = new ArrayList<String>()
         while (scanner.hasNextLine()) {

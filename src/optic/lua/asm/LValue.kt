@@ -8,7 +8,7 @@ package optic.lua.asm
  */
 interface LValue {
 
-    class TableField internal constructor(val table: Register, val key: Register) : LValue {
+    class TableField internal constructor(val table: RValue, val key: RValue) : LValue {
         override fun toString(): String {
             return table.toString() + "[" + key + "]"
         }

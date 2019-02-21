@@ -48,11 +48,19 @@ jar {
     }
 }
 
+run {
+    standardInput = System.in
+}
+
 tasks.withType(JavaExec) {
-	systemProperties(System.getProperties())
-	jvmArgs(["-XX:+UnlockExperimentalVMOptions"])
-	jvmArgs(["-XX:+UnlockDiagnosticVMOptions"])
-	jvmArgs(System.getProperty("jvmflags", "").split(";"))
+    for (def entry : System.getProperties()) {
+        if (entry.key.toString().startsWith("optic.")) {
+            systemProperty(entry.key.toString(), entry.value)
+        }
+    }
+    jvmArgs(["-XX:+UnlockExperimentalVMOptions"])
+    jvmArgs(["-XX:+UnlockDiagnosticVMOptions"])
+    jvmArgs(System.getProperty("jvmflags", "").split(";"))
 }
 
 dependencies {
