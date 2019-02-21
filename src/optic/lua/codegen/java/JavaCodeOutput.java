@@ -54,19 +54,6 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	}
 
 	@Override
-	public ResultBuffer visitGetVarargs(Register register) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		var varargsName = nestedData.varargName();
-		if (varargsName.isPresent()) {
-			var varargs = varargsName.get();
-			buffer.add("Object[] ", register.getName(), " = ", varargs, ";");
-		} else {
-			illegalVarargUsage();
-		}
-		return buffer;
-	}
-
-	@Override
 	public ResultBuffer visitSelect(Register target, int n, RValue vararg) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		buffer.add("Object ", target, " = ListOps.get(", expression(vararg), ", ", n, ");");
@@ -254,9 +241,16 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 
 	private void execute() throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		var msg = Message.create("Java code output still in development!");
-		msg.setLevel(Level.WARNING);
-		context.reporter().report(msg);
+		{
+			var msg = Message.create("Java code output still in development");
+			msg.setLevel(Level.WARNING);
+			context.reporter().report(msg);
+		}
+		if(context.options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
+			var msg = Message.create("Use of ALLOW_UPVALUE_VARARGS is not officially supported");
+			msg.setLevel(Level.WARNING);
+			context.reporter().report(msg);
+		}
 		buffer.add("import optic.lua.runtime.*;");
 		var contextName = nestedData.pushNewContextName();
 		buffer.add("static Object[] main(final LuaContext ", contextName, ", Object[] args) { if(1 == 1) {");
@@ -267,13 +261,6 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		buffer.add("return main(", context, ", ", args, ");");
 		buffer.writeTo(out, this.context.options().get(Option.INDENT));
 		out.flush();
-	}
-
-	private void illegalVarargUsage() throws CompilationFailure {
-		var msg = Message.create("Cannot use ... outside of vararg function");
-		msg.setLevel(Level.ERROR);
-		context.reporter().report(msg);
-		throw new CompilationFailure(Tag.BAD_INPUT);
 	}
 
 	@Override

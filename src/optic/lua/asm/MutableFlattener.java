@@ -255,9 +255,7 @@ public class MutableFlattener implements VariableResolver {
 				return createTableLiteral(t);
 			}
 			case DotDotDot: {
-				var reg = RegisterFactory.createVararg();
-				steps.add(StepFactory.getVarargs(reg));
-				return reg;
+				return RValue.varargs();
 			}
 			case CONDITION: {
 				return flattenExpression(t.getChild(0));

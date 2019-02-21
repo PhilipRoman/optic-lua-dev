@@ -9,7 +9,8 @@ public enum StandardFlags implements Option<Boolean> {
 	LOOP_SPLIT(false),
 	DUMP_ON_INTERNAL_ERROR(true),
 	CACHE_JAVA_COMPILING(true),
-	CACHE_LUA_COMPILING(true);
+	CACHE_LUA_COMPILING(true),
+	ALLOW_UPVALUE_VARARGS(false);
 	private final boolean defaultValue;
 
 	StandardFlags(boolean value) {

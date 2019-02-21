@@ -30,11 +30,6 @@ class StepFactory {
 		return new Return(registers);
 	}
 
-	static Step getVarargs(Register to) {
-		checkVararg(true, to);
-		return new GetVarargs(to);
-	}
-
 	static Step assign(Register result, RValue value) {
 		return new Assign(result, value);
 	}

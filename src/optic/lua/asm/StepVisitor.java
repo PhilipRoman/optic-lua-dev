@@ -17,8 +17,6 @@ public interface StepVisitor<T, X extends Throwable> {
 
 	T visitForRangeLoop(VariableInfo counter, RValue from, RValue to, AsmBlock body) throws X;
 
-	T visitGetVarargs(Register register) throws X;
-
 	T visitIfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) throws X;
 
 	T visitLoop(AsmBlock body) throws X;

@@ -14,12 +14,13 @@ public class InteractiveShell {
 	private final PrintWriter err;
 	private final WeakHashMap<String, byte[]> scriptCache = new WeakHashMap<>();
 	private final MessageReporter reporter = new StandardMessageReporter(System.err)
-			.filter(msg -> msg.level() == Level.ERROR);
+			.filter(msg -> msg.level().compareTo(Level.WARNING) >= 0);
 	private final Options options = new Options();
 
 	{
 		options.enable(StandardFlags.CACHE_JAVA_COMPILING);
 		options.enable(StandardFlags.CACHE_LUA_COMPILING);
+		options.enable(StandardFlags.ALLOW_UPVALUE_VARARGS);
 		options.disable(StandardFlags.LOOP_SPLIT);
 		options.disable(StandardFlags.PARALLEL);
 		options.disable(StandardFlags.VERIFY);

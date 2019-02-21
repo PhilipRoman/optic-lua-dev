@@ -32,10 +32,6 @@ class ForRangeLoop(
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitForRangeLoop(counter, from, to, block)
 }
 
-class GetVarargs(private val to: Register) : Step {
-    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitGetVarargs(to)
-}
-
 class IfElseChain(private val clauses: LinkedHashMap<FlatExpr, AsmBlock>) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitIfElseChain(clauses)
 }

@@ -81,7 +81,7 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 			if (p.equals("...")) {
 				var varargName = nestedData.pushNewVarargName();
 				int offset = params.size() - 1;
-				buffer.add("\tObject[] " + varargName + " = ListOps.sublist(" + argsName + ", " + offset + ");");
+				buffer.add("\tfinal Object[] " + varargName + " = ListOps.sublist(" + argsName + ", " + offset + ");");
 			} else {
 				var param = t.body().locals().get(p);
 				Objects.requireNonNull(param);
@@ -164,6 +164,14 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 		}
 	}
 
+	@Override
+	public String visitVarargs() throws CompilationFailure {
+		if (options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
+			return nestedData.firstNestedVarargName().orElseThrow(this::illegalVarargUsage);
+		}
+		return nestedData.varargName().orElseThrow(this::illegalVarargUsage);
+	}
+
 	private String compileToNumber(RValue value) throws CompilationFailure {
 		return "StandardLibrary.strictToNumber(" + value.accept(this) + ")";
 	}
@@ -224,5 +232,12 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 			}
 		}
 		return builder;
+	}
+
+	private CompilationFailure illegalVarargUsage() {
+		var msg = Message.create("Cannot use ... outside of vararg function");
+		msg.setLevel(Level.ERROR);
+		statementVisitor.context.reporter().report(msg);
+		return new CompilationFailure(Tag.BAD_INPUT);
 	}
 }

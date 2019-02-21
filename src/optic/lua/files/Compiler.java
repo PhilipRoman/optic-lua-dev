@@ -120,16 +120,21 @@ public class Compiler {
 	}
 
 	private Message compilationError(byte[] source, CompileException e) {
-		int line = e.getLocation().getLineNumber();
-		Scanner scanner = new Scanner(new ByteArrayInputStream(source));
-		for (int i = 1; i < line; i++) {
-			scanner.nextLine();
-		}
-		String sourceCode = scanner.nextLine();
-		var msg = Message.create("Compilation error (line " + line + "), source code: >>>>> " + sourceCode + " <<<<< ");
+		boolean hasLocation = e.getLocation() != null;
+		String sourceInfo = hasLocation ? ", source code: " + findLine(source, e.getLocation().getLineNumber()) : "";
+		String lineInfo = hasLocation ? " (line " + e.getLocation().getLineNumber() + ")" : "";
+		var msg = Message.create("Compilation error" + lineInfo + " " + sourceInfo);
 		msg.setCause(e);
 		msg.setPhase(Phase.COMPILING);
 		msg.setLevel(Level.ERROR);
 		return msg;
+	}
+
+	private static String findLine(byte[] source, int line) {
+		Scanner scanner = new Scanner(new ByteArrayInputStream(source));
+		for (int i = 1; i < line; i++) {
+			scanner.nextLine();
+		}
+		return scanner.nextLine();
 	}
 }

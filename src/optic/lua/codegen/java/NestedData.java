@@ -4,7 +4,7 @@ import optic.lua.util.UniqueNames;
 
 import java.util.*;
 
-public class NestedData {
+class NestedData {
 	/**
 	 * <p>
 	 * Stack containing names of varargs variables in nested functions.
@@ -26,35 +26,44 @@ public class NestedData {
 	 */
 	private final Deque<String> contextNamesInFunction = new ArrayDeque<>(8);
 
-	public String pushNewVarargName() {
+	String pushNewVarargName() {
 		String name = "varargs_" + UniqueNames.next();
 		varargNamesInFunction.addFirst(Optional.of(name));
 		return name;
 	}
 
-	public void pushMissingVarargName() {
+	void pushMissingVarargName() {
 		varargNamesInFunction.addFirst(Optional.empty());
 	}
 
-	public void popLastVarargName() {
+	void popLastVarargName() {
 		varargNamesInFunction.removeFirst();
 	}
 
-	public Optional<String> varargName() {
+	Optional<String> varargName() {
 		return varargNamesInFunction.peekFirst();
 	}
 
-	public String pushNewContextName() {
+	String pushNewContextName() {
 		String name = "context_" + UniqueNames.next();
 		contextNamesInFunction.addFirst(name);
 		return name;
 	}
 
-	public String contextName() {
+	String contextName() {
 		return contextNamesInFunction.peekFirst();
 	}
 
-	public void popLastContextName() {
+	void popLastContextName() {
 		contextNamesInFunction.removeFirst();
+	}
+
+	Optional<String> firstNestedVarargName() {
+		for (var o : varargNamesInFunction) {
+			if (o.isPresent()) {
+				return o;
+			}
+		}
+		return Optional.empty();
 	}
 }

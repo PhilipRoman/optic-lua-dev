@@ -9,6 +9,10 @@ import java.util.*;
 public interface RValue {
 	<T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X;
 
+	static RValue varargs() {
+		return new Varargs();
+	}
+
 	static RValue number(double num) {
 		return new NumberConstant(num);
 	}
@@ -255,6 +259,25 @@ public interface RValue {
 		@Override
 		public ProvenType typeInfo() {
 			return method.typeInfo(arguments);
+		}
+	}
+
+	class Varargs implements RValue {
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitVarargs();
+		}
+
+		@Override
+		public boolean isVararg() {
+			return true;
+		}
+
+		@Override
+		public FlatExpr discardRemaining() {
+			Register result = RegisterFactory.create();
+			Step step = StepFactory.select(result, this, 0);
+			return new FlatExpr(List.of(step), result);
 		}
 	}
 }
