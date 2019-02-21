@@ -7,8 +7,6 @@ import optic.lua.util.Numbers;
 import java.util.*;
 
 public interface RValue {
-	<T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X;
-
 	static RValue varargs() {
 		return new Varargs();
 	}
@@ -52,6 +50,8 @@ public interface RValue {
 	static Invocation invocation(RValue obj, InvocationMethod method, List<RValue> arguments) {
 		return new Invocation(obj, method, arguments);
 	}
+
+	<T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X;
 
 	default boolean isVararg() {
 		return false;

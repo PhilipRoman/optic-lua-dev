@@ -8,11 +8,11 @@ import java.util.function.Supplier;
 import static optic.lua.asm.VariableMode.*;
 
 public class VariableInfo {
+	private final String name;
 	private boolean isFinal = true;
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
 	private boolean isEnv = false;
-	private final String name;
 	private CombinedCommonType type = new CombinedCommonType();
 
 	VariableInfo(String name) {
@@ -24,6 +24,10 @@ public class VariableInfo {
 		v.markAsUpvalue();
 		v.isEnv = true;
 		return v;
+	}
+
+	static VariableInfo global(String name) {
+		return new GlobalVariableInfo(name);
 	}
 
 	VariableInfo nextIncarnation() {
@@ -52,10 +56,6 @@ public class VariableInfo {
 
 	public boolean isFinal() {
 		return isFinal;
-	}
-
-	static VariableInfo global(String name) {
-		return new GlobalVariableInfo(name);
 	}
 
 	public String toDebugString() {

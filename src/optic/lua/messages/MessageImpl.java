@@ -6,30 +6,15 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 class MessageImpl implements Message, MessageBuilder {
-	private int line = -1;
-	private int column = -1;
 	@NotNull
 	private final String message;
+	private final Set<Tag> tags;
+	private int line = -1;
+	private int column = -1;
 	private CodeSource source = null;
 	private Level level = null;
 	private Phase phase = null;
 	private Throwable cause = null;
-	private final Set<Tag> tags;
-
-	static MessageImpl copyOf(Message src) {
-		if (src instanceof MessageImpl) {
-			var m = (MessageImpl) src;
-			return new MessageImpl(
-					m.line, m.column, m.message, m.source, m.level, m.phase, m.cause, EnumSet.copyOf(m.tags));
-		} else
-			return new MessageImpl(
-					src.line().orElse(-1), src.column().orElse(-1),
-					src.message(),
-					src.source().orElse(null),
-					src.level(), src.phase(),
-					src.cause().orElse(null),
-					EnumSet.copyOf(src.tags()));
-	}
 
 	private MessageImpl(int line, int column, @NotNull String message, CodeSource source, Level level, Phase phase, Throwable cause, Set<Tag> tags) {
 		this.line = line;
@@ -45,6 +30,21 @@ class MessageImpl implements Message, MessageBuilder {
 	MessageImpl(@NotNull String message) {
 		this.message = Objects.requireNonNull(message);
 		this.tags = EnumSet.noneOf(Tag.class);
+	}
+
+	static MessageImpl copyOf(Message src) {
+		if (src instanceof MessageImpl) {
+			var m = (MessageImpl) src;
+			return new MessageImpl(
+					m.line, m.column, m.message, m.source, m.level, m.phase, m.cause, EnumSet.copyOf(m.tags));
+		} else
+			return new MessageImpl(
+					src.line().orElse(-1), src.column().orElse(-1),
+					src.message(),
+					src.source().orElse(null),
+					src.level(), src.phase(),
+					src.cause().orElse(null),
+					EnumSet.copyOf(src.tags()));
 	}
 
 	@NotNull

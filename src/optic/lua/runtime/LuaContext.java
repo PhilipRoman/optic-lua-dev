@@ -9,17 +9,17 @@ public class LuaContext {
 	@RuntimeApi
 	public Object _ENV;
 
+	public static LuaContext create() {
+		var ctx = new LuaContext();
+		ctx._ENV = EnvOps.createEnv();
+		return ctx;
+	}
+
 	public Object getGlobal(String name) {
 		return TableOps.index(_ENV, name);
 	}
 
 	public void setGlobal(String name, Object value) {
 		TableOps.setIndex(_ENV, name, value);
-	}
-
-	public static LuaContext create() {
-		var ctx = new LuaContext();
-		ctx._ENV = EnvOps.createEnv();
-		return ctx;
 	}
 }

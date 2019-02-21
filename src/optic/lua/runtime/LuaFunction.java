@@ -18,9 +18,6 @@ public abstract class LuaFunction {
 		this.friendlyName = friendlyName;
 	}
 
-	@RuntimeApi
-	public abstract Object[] call(LuaContext context, Object... args);
-
 	public static LuaFunction of(Function<Object[], Object[]> fun) {
 		return new LuaFunction() {
 			@Override
@@ -38,6 +35,9 @@ public abstract class LuaFunction {
 			}
 		};
 	}
+
+	@RuntimeApi
+	public abstract Object[] call(LuaContext context, Object... args);
 
 	@Override
 	public String toString() {

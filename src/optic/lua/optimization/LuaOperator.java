@@ -12,6 +12,55 @@ import static optic.lua.optimization.ProvenType.*;
 public enum LuaOperator {
 	ADD, SUB, MUL, DIV, IDIV, POW, UNM, MOD, CONCAT, BAND, BOR, BXOR, BNOT, SHL, SHR, EQ, LT, LE, GT, GE, LEN;
 
+	public static LuaOperator forTokenType(int type) {
+		switch (type) {
+			case UNARY_MINUS:
+				return UNM;
+			case Add:
+				return ADD;
+			case Minus:
+				return SUB;
+			case Mult:
+				return MUL;
+			case Div:
+				return DIV;
+			case Pow:
+				return POW;
+			case Mod:
+				return MOD;
+			case FloorDiv:
+				return IDIV;
+			case DotDot:
+				return CONCAT;
+			case BitOr:
+				return BOR;
+			case BitAnd:
+				return BAND;
+			case BIT_NOT:
+				return BNOT;
+			case Tilde:
+				return BXOR;
+			case BitLShift:
+				return SHL;
+			case BitRShift:
+				return SHR;
+			case Eq:
+				return EQ;
+			case Length:
+				return LEN;
+			case Lua52Walker.LT:
+				return LT;
+			case GTEq:
+				return GE;
+			case LTEq:
+				return LE;
+			case Lua52Walker.GT:
+				return GT;
+			default:
+				throw new IllegalArgumentException(Trees.reverseLookupName(type));
+		}
+	}
+
 	public int arity() {
 		switch (this) {
 			case UNM:
@@ -66,55 +115,6 @@ public enum LuaOperator {
 				return NUMBER;
 			default:
 				throw new IllegalArgumentException(this.name());
-		}
-	}
-
-	public static LuaOperator forTokenType(int type) {
-		switch (type) {
-			case UNARY_MINUS:
-				return UNM;
-			case Add:
-				return ADD;
-			case Minus:
-				return SUB;
-			case Mult:
-				return MUL;
-			case Div:
-				return DIV;
-			case Pow:
-				return POW;
-			case Mod:
-				return MOD;
-			case FloorDiv:
-				return IDIV;
-			case DotDot:
-				return CONCAT;
-			case BitOr:
-				return BOR;
-			case BitAnd:
-				return BAND;
-			case BIT_NOT:
-				return BNOT;
-			case Tilde:
-				return BXOR;
-			case BitLShift:
-				return SHL;
-			case BitRShift:
-				return SHR;
-			case Eq:
-				return EQ;
-			case Length:
-				return LEN;
-			case Lua52Walker.LT:
-				return LT;
-			case GTEq:
-				return GE;
-			case LTEq:
-				return LE;
-			case Lua52Walker.GT:
-				return GT;
-			default:
-				throw new IllegalArgumentException(Trees.reverseLookupName(type));
 		}
 	}
 

@@ -9,6 +9,18 @@ public class LuaTable {
 	private boolean staleLength = false;
 	private boolean staleMaxIndex = false;
 
+	private LuaTable(int hashSize) {
+		hash = new HashMap<>(hashSize);
+		length = 0;
+		maxIndex = 0;
+	}
+
+	private LuaTable(HashMap<Object, Object> hash, int length, int maxIndex) {
+		this.hash = hash;
+		this.length = length;
+		this.maxIndex = maxIndex;
+	}
+
 	public static LuaTable ofMap(Map<?, ?> entries) {
 		LuaTable table = new LuaTable(entries.size());
 		entries.forEach(table::set);
@@ -32,18 +44,6 @@ public class LuaTable {
 
 	public static LuaTable allocate(int size) {
 		return new LuaTable(size);
-	}
-
-	private LuaTable(int hashSize) {
-		hash = new HashMap<>(hashSize);
-		length = 0;
-		maxIndex = 0;
-	}
-
-	private LuaTable(HashMap<Object, Object> hash, int length, int maxIndex) {
-		this.hash = hash;
-		this.length = length;
-		this.maxIndex = maxIndex;
 	}
 
 	public Object get(Object key) {
@@ -83,7 +83,7 @@ public class LuaTable {
 	}
 
 	int length() {
-		if(staleLength) {
+		if (staleLength) {
 			updateLength();
 			staleLength = false;
 		}
@@ -91,7 +91,7 @@ public class LuaTable {
 	}
 
 	int maxIndex() {
-		if(staleMaxIndex) {
+		if (staleMaxIndex) {
 			updateMaxIndex();
 			staleMaxIndex = false;
 		}

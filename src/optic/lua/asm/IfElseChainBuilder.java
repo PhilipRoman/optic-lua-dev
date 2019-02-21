@@ -25,10 +25,15 @@ class IfElseChainBuilder {
 
 	LinkedHashMap<FlatExpr, AsmBlock> build() {
 		var map = new LinkedHashMap<FlatExpr, AsmBlock>(chain.size());
-		for(var c : chain) {
+		for (var c : chain) {
 			map.put(c.condition, c.thenBlock);
 		}
 		return map;
+	}
+
+	@Override
+	public String toString() {
+		return chain.toString();
 	}
 
 	private static class Conditional {
@@ -39,10 +44,5 @@ class IfElseChainBuilder {
 			this.condition = condition;
 			this.thenBlock = thenBlock;
 		}
-	}
-
-	@Override
-	public String toString() {
-		return chain.toString();
 	}
 }

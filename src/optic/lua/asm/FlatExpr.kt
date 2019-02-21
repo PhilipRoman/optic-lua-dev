@@ -10,7 +10,7 @@ class FlatExpr(private val block: List<Step>, private val value: RValue) {
     }
 
     fun discardRemaining(): FlatExpr {
-            val r = value.discardRemaining()
-            return FlatExpr(block + r.block, r.value)
+        val r = value.discardRemaining()
+        return FlatExpr(block + r.block, r.value)
     }
 }

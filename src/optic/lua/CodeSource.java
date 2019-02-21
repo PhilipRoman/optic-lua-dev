@@ -8,6 +8,19 @@ import java.nio.file.*;
 import java.util.*;
 
 public interface CodeSource {
+	static CodeSource ofFile(String filePath) {
+		var path = Paths.get(filePath).toAbsolutePath();
+		return new CodeSourceImpl(path.getFileName().toString(), () -> new ANTLRFileStream(filePath), path);
+	}
+
+	static CodeSource ofString(String programText, String sourceName) {
+		return new CodeSourceImpl(sourceName, () -> new ANTLRStringStream(programText), null);
+	}
+
+	static CodeSource custom(String name, CharStreamSupplier streamSupplier) {
+		return new CodeSourceImpl(name, streamSupplier, null);
+	}
+
 	/**
 	 * @return new character stream from this source
 	 * @implNote do <b>NOT</b> return the same stream when called again!
@@ -29,17 +42,15 @@ public interface CodeSource {
 	 */
 	Optional<Path> path();
 
-	static CodeSource ofFile(String filePath) {
-		var path = Paths.get(filePath).toAbsolutePath();
-		return new CodeSourceImpl(path.getFileName().toString(), () -> new ANTLRFileStream(filePath), path);
-	}
-
-	static CodeSource ofString(String programText, String sourceName) {
-		return new CodeSourceImpl(sourceName, () -> new ANTLRStringStream(programText), null);
-	}
-
-	static CodeSource custom(String name, CharStreamSupplier streamSupplier) {
-		return new CodeSourceImpl(name, streamSupplier, null);
+	@FunctionalInterface
+	interface CharStreamSupplier {
+		/**
+		 * @return new character stream
+		 * @implNote do <b>NOT</b> return the same stream when called again!
+		 */
+		@NotNull
+		@Contract("-> new")
+		CharStream get() throws Exception;
 	}
 
 	class CodeSourceImpl implements CodeSource {
@@ -85,16 +96,5 @@ public interface CodeSource {
 		public Optional<Path> path() {
 			return Optional.ofNullable(path);
 		}
-	}
-
-	@FunctionalInterface
-	interface CharStreamSupplier {
-		/**
-		 * @return new character stream
-		 * @implNote do <b>NOT</b> return the same stream when called again!
-		 */
-		@NotNull
-		@Contract("-> new")
-		CharStream get() throws Exception;
 	}
 }

@@ -1,6 +1,6 @@
 package optic.lua.codegen;
 
-import java.io.*;
+import java.io.PrintStream;
 import java.util.*;
 
 public class ResultBuffer {
@@ -47,7 +47,7 @@ public class ResultBuffer {
 
 	public void addBlock(Iterable<ResultBuffer> lines) {
 		var buffer = new ResultBuffer();
-		for(var b : lines) {
+		for (var b : lines) {
 			buffer.elements.addAll(b.elements);
 		}
 		addChild(buffer);

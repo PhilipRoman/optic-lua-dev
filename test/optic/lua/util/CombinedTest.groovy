@@ -35,6 +35,7 @@ class CombinedTest extends GroovyTestCase {
         assert combined.get() == Set.of("a", "b", "c", "d")
         Supplier<Set<String>> supplier = new Supplier<Set<String>>() {
             boolean state = false
+
             @Override
             Set<String> get() {
                 return state ? Set.of("true") : Set.of("false")
@@ -47,6 +48,6 @@ class CombinedTest extends GroovyTestCase {
     }
 
     static String max(Set<String> set) {
-        return set.stream().max({x, y -> x <=> y}).orElseThrow()
+        return set.stream().max({ x, y -> x <=> y }).orElseThrow()
     }
 }

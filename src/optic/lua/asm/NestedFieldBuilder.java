@@ -26,7 +26,7 @@ final class NestedFieldBuilder {
 	public FlatExpr build() {
 		List<Step> steps = new ArrayList<>();
 		RValue table = start;
-		for(var key : keys) {
+		for (var key : keys) {
 			steps.addAll(key.block());
 			Register next = RegisterFactory.create();
 			steps.add(StepFactory.tableIndex(table, key.value(), next));

@@ -2,7 +2,6 @@ package optic.lua.codegen.java;
 
 import optic.lua.asm.*;
 import optic.lua.asm.RValue.*;
-import optic.lua.asm.VariableMode;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
@@ -17,13 +16,13 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
 
-	private Options options() {
-		return statementVisitor.context.options();
-	}
-
 	JavaExpressionVisitor(NestedData data, JavaCodeOutput visitor) {
 		nestedData = Objects.requireNonNull(data);
 		statementVisitor = visitor;
+	}
+
+	private Options options() {
+		return statementVisitor.context.options();
 	}
 
 	@Override

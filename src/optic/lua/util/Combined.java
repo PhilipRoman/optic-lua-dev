@@ -19,7 +19,7 @@ public abstract class Combined<T> {
 		if (recursionDetector) {
 			return emptyValue();
 		}
-		if(sources.isEmpty()) {
+		if (sources.isEmpty()) {
 			return emptyValue();
 		}
 		Iterator<Supplier<T>> iterator = sources.iterator();

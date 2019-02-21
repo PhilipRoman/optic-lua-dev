@@ -2,7 +2,6 @@ package optic.lua.codegen.java;
 
 import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
-import optic.lua.asm.VariableMode;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
 import org.jetbrains.annotations.NotNull;
@@ -29,15 +28,26 @@ import java.util.*;
  *
  * */
 public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure>, CompilerPlugin {
+	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
+	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
+	private static final boolean USE_INJECTED_CONTEXT = true;
+	private static final boolean USE_INJECTED_ARGS = true;
+	final Context context;
 	private final PrintStream out;
 	private final AsmBlock block;
-	final Context context;
-	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
-	private static final boolean USE_INJECTED_CONTEXT = true;
-	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
-	private static final boolean USE_INJECTED_ARGS = true;
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
+
+	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
+		this.out = out;
+		this.block = block;
+		this.context = context;
+	}
+
+	public static CompilerPlugin.Factory writingTo(OutputStream stream) {
+		PrintStream printStream = new PrintStream(new BufferedOutputStream(stream));
+		return (steps, context) -> new JavaCodeOutput(printStream, steps, context);
+	}
 
 	@Override
 	public ResultBuffer visitReturn(List<RValue> values) throws CompilationFailure {
@@ -227,18 +237,6 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		return buffer;
 	}
 
-	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
-		this.out = out;
-		this.block = block;
-		this.context = context;
-	}
-
-	public static CompilerPlugin.Factory writingTo(OutputStream stream) {
-		PrintStream printStream = new PrintStream(new BufferedOutputStream(stream));
-		return (steps, context) -> new JavaCodeOutput(printStream, steps, context);
-	}
-
-
 	private void execute() throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		{
@@ -246,7 +244,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 			msg.setLevel(Level.WARNING);
 			context.reporter().report(msg);
 		}
-		if(context.options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
+		if (context.options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
 			var msg = Message.create("Use of ALLOW_UPVALUE_VARARGS is not officially supported");
 			msg.setLevel(Level.WARNING);
 			context.reporter().report(msg);

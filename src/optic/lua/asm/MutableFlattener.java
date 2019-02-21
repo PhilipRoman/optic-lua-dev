@@ -11,6 +11,7 @@ import java.lang.String;
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua52Walker.Number;
+import static nl.bigo.luaparser.Lua52Walker.Return;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
@@ -41,23 +42,6 @@ public class MutableFlattener implements VariableResolver {
 		this.steps = steps;
 	}
 
-	public Flattener getInterface() {
-		return new Flattener() {
-			@Override
-			public AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure {
-				return MutableFlattener.flatten(tree, context, MutableFlattener.this, locals, meaning);
-			}
-
-			@Override
-			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
-				List<Step> steps = new ArrayList<>();
-				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context, meaning);
-				RValue result = flattener.flattenExpression(tree);
-				return new FlatExpr(flattener.steps, result);
-			}
-		};
-	}
-
 	public static AsmBlock flatten(CommonTree tree, Context context) throws CompilationFailure {
 		return flatten(tree, context, null, List.of(), BlockMeaning.MAIN_CHUNK);
 	}
@@ -80,6 +64,23 @@ public class MutableFlattener implements VariableResolver {
 			}
 		}
 		return new AsmBlock(f.steps, f.locals);
+	}
+
+	public Flattener getInterface() {
+		return new Flattener() {
+			@Override
+			public AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure {
+				return MutableFlattener.flatten(tree, context, MutableFlattener.this, locals, meaning);
+			}
+
+			@Override
+			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
+				List<Step> steps = new ArrayList<>();
+				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context, meaning);
+				RValue result = flattener.flattenExpression(tree);
+				return new FlatExpr(flattener.steps, result);
+			}
+		};
 	}
 
 	private AsmBlock flattenDoBlock(CommonTree tree) throws CompilationFailure {

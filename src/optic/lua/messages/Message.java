@@ -10,6 +10,42 @@ import java.util.*;
  */
 public interface Message {
 	/**
+	 * @return mutable message with the given text
+	 */
+	static MessageBuilder create(String message) {
+		Objects.requireNonNull(message);
+		return new MessageImpl(message);
+	}
+
+	/**
+	 * @return mutable message with the given text and {@link Level#ERROR} level
+	 */
+	static MessageBuilder createError(String message) {
+		var msg = create(message);
+		msg.setLevel(Level.ERROR);
+		return msg;
+	}
+
+	/**
+	 * @return mutable message with the given text and {@link Level#ERROR} level
+	 */
+	static MessageBuilder createError(String message, Throwable cause) {
+		var msg = create(message);
+		msg.setLevel(Level.ERROR);
+		msg.setCause(cause);
+		return msg;
+	}
+
+	/**
+	 * @return mutable message with the given text and {@link Level#INFO} level
+	 */
+	static Message createInfo(String message) {
+		var msg = create(message);
+		msg.setLevel(Level.INFO);
+		return msg;
+	}
+
+	/**
 	 * @return the source code line associated with this message (if present)
 	 */
 	@NotNull
@@ -56,40 +92,4 @@ public interface Message {
 	 */
 	@NotNull
 	Set<Tag> tags();
-
-	/**
-	 * @return mutable message with the given text
-	 */
-	static MessageBuilder create(String message) {
-		Objects.requireNonNull(message);
-		return new MessageImpl(message);
-	}
-
-	/**
-	 * @return mutable message with the given text and {@link Level#ERROR} level
-	 */
-	static MessageBuilder createError(String message) {
-		var msg = create(message);
-		msg.setLevel(Level.ERROR);
-		return msg;
-	}
-
-	/**
-	 * @return mutable message with the given text and {@link Level#ERROR} level
-	 */
-	static MessageBuilder createError(String message, Throwable cause) {
-		var msg = create(message);
-		msg.setLevel(Level.ERROR);
-		msg.setCause(cause);
-		return msg;
-	}
-
-	/**
-	 * @return mutable message with the given text and {@link Level#INFO} level
-	 */
-	static Message createInfo(String message) {
-		var msg = create(message);
-		msg.setLevel(Level.INFO);
-		return msg;
-	}
 }

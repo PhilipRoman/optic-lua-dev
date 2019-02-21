@@ -5,9 +5,11 @@ import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
 
 import java.util.*;
-import java.util.stream.*;
+import java.util.stream.Collectors;
 
 import static nl.bigo.luaparser.Lua52Walker.*;
+
+import java.lang.String;
 
 /**
  * Represents a possibly empty list of named parameters, optionally followed by a vararg (...)

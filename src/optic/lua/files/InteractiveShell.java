@@ -20,7 +20,6 @@ public class InteractiveShell {
 	{
 		options.enable(StandardFlags.CACHE_JAVA_COMPILING);
 		options.enable(StandardFlags.CACHE_LUA_COMPILING);
-		options.enable(StandardFlags.ALLOW_UPVALUE_VARARGS);
 		options.disable(StandardFlags.LOOP_SPLIT);
 		options.disable(StandardFlags.PARALLEL);
 		options.disable(StandardFlags.VERIFY);

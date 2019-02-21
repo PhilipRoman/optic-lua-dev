@@ -3,8 +3,8 @@ package optic.lua.optimization;
 public enum ProvenType {
 	INTEGER(1), NUMBER(3), OBJECT(7);
 
-	private final int code;
 	private static final ProvenType[] table = {null, INTEGER, null, NUMBER, null, null, null, OBJECT};
+	private final int code;
 
 	ProvenType(int i) {
 		this.code = i;

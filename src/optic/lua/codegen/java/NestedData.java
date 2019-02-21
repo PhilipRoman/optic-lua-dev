@@ -16,15 +16,14 @@ class NestedData {
 	 * </p>
 	 */
 	private final Deque<Optional<String>> varargNamesInFunction = new ArrayDeque<>(8);
-
-	{
-		pushNewVarargName();
-	}
-
 	/**
 	 * @see #varargNamesInFunction
 	 */
 	private final Deque<String> contextNamesInFunction = new ArrayDeque<>(8);
+
+	{
+		pushNewVarargName();
+	}
 
 	String pushNewVarargName() {
 		String name = "varargs_" + UniqueNames.next();

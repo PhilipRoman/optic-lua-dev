@@ -3,11 +3,7 @@ package optic.lua
 import groovy.transform.CompileStatic
 import optic.lua.codegen.java.JavaCodeOutput
 import optic.lua.files.Compiler
-import optic.lua.messages.Context
-import optic.lua.messages.MessageReporter
-import optic.lua.messages.Options
-import optic.lua.messages.StandardFlags
-import optic.lua.messages.StandardMessageReporter
+import optic.lua.messages.*
 import optic.lua.runtime.LuaContext
 
 import java.nio.file.Files

@@ -28,6 +28,7 @@ public class FunctionOps {
 		Errors.attemptToCall(func);
 		return null;
 	}
+
 	@RuntimeApi
 	public static Object[] call(UpValue u, LuaContext context) {
 		return call(u.value, context);

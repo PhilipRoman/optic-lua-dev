@@ -7,7 +7,7 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
 import java.io.*;
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.util.*;
@@ -15,14 +15,22 @@ import java.util.*;
 public class Compiler {
 	public static final String GENERATED_CLASS_NAME = "LuaSource";
 	public static final String GENERATED_METHOD_NAME = "mainChunk";
-	private final Context context;
 	private static final WeakHashMap<ByteBuffer, ScriptEvaluator> scriptCache = new WeakHashMap<>();
 	private static final int MAX_CACHED_SIZE = 4096;
+	private final Context context;
 	private final boolean useCache;
 
 	public Compiler(Context context) {
 		this.context = context;
 		this.useCache = context.options().get(StandardFlags.CACHE_JAVA_COMPILING);
+	}
+
+	private static String findLine(byte[] source, int line) {
+		Scanner scanner = new Scanner(new ByteArrayInputStream(source));
+		for (int i = 1; i < line; i++) {
+			scanner.nextLine();
+		}
+		return scanner.nextLine();
 	}
 
 	public Object[] run(InputStream input, int nTimes) throws CompilationFailure {
@@ -128,13 +136,5 @@ public class Compiler {
 		msg.setPhase(Phase.COMPILING);
 		msg.setLevel(Level.ERROR);
 		return msg;
-	}
-
-	private static String findLine(byte[] source, int line) {
-		Scanner scanner = new Scanner(new ByteArrayInputStream(source));
-		for (int i = 1; i < line; i++) {
-			scanner.nextLine();
-		}
-		return scanner.nextLine();
 	}
 }

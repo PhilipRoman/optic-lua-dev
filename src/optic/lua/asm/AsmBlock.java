@@ -13,6 +13,10 @@ public final class AsmBlock {
 		this.locals = locals;
 	}
 
+	private static Stream<Step> expandStepRecursive(Step step) {
+		return step.children().stream().flatMap(AsmBlock::expandStepRecursive);
+	}
+
 	public Stream<Step> recursiveStream() {
 		return steps.stream()
 				.flatMap(AsmBlock::expandStepRecursive);
@@ -20,10 +24,6 @@ public final class AsmBlock {
 
 	public Stream<Step> stream() {
 		return steps.stream();
-	}
-
-	private static Stream<Step> expandStepRecursive(Step step) {
-		return step.children().stream().flatMap(AsmBlock::expandStepRecursive);
 	}
 
 	public Map<String, VariableInfo> locals() {
@@ -39,7 +39,7 @@ public final class AsmBlock {
 	}
 
 	private void forEachRecursiveChild(List<Step> steps, Consumer<Step> action) {
-		for(var step : steps) {
+		for (var step : steps) {
 			action.accept(step);
 			forEachRecursiveChild(step.children(), action);
 		}
