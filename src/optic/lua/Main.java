@@ -4,7 +4,6 @@ import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.files.Compiler;
 import optic.lua.files.*;
 import optic.lua.messages.*;
-import optic.lua.verify.*;
 import org.slf4j.*;
 
 import java.nio.file.*;
@@ -40,8 +39,6 @@ public class Main {
 				reporter,
 				codeSource
 		);
-		pipeline.registerPlugin(SingleAssignmentVerifier::new);
-		pipeline.registerPlugin(SingleRegisterUseVerifier::new);
 		pipeline.registerPlugin(JavaCodeOutput.writingTo(Files.newOutputStream(temp)));
 		try {
 			pipeline.run();

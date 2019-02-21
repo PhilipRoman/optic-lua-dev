@@ -2,7 +2,7 @@ package optic.lua.codegen.java;
 
 import optic.lua.asm.*;
 import optic.lua.asm.RValue.*;
-import optic.lua.asm.instructions.VariableMode;
+import optic.lua.asm.VariableMode;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;

@@ -1,7 +1,6 @@
 package optic.lua.asm;
 
 import optic.lua.asm.InvocationMethod.ReturnCount;
-import optic.lua.asm.instructions.VariableMode;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.Numbers;
 

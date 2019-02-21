@@ -1,6 +1,5 @@
 package optic.lua.asm;
 
-import optic.lua.asm.instructions.VariableMode;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;

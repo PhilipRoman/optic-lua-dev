@@ -1,8 +1,6 @@
 package optic.lua.asm;
 
 import optic.lua.asm.RValue.Invocation;
-import optic.lua.asm.instructions.Void;
-import optic.lua.asm.instructions.*;
 
 import java.util.*;
 

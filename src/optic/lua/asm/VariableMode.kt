@@ -1,4 +1,4 @@
-package optic.lua.asm.instructions
+package optic.lua.asm
 
 enum class VariableMode {
     LOCAL, UPVALUE, GLOBAL

@@ -1,12 +1,11 @@
 package optic.lua.asm;
 
-import optic.lua.asm.instructions.VariableMode;
 import optic.lua.optimization.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
 
-import static optic.lua.asm.instructions.VariableMode.*;
+import static optic.lua.asm.VariableMode.*;
 
 public class VariableInfo {
 	private boolean isFinal = true;
