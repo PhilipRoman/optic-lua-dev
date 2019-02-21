@@ -194,7 +194,7 @@ public class MutableFlattener implements VariableResolver {
 			}
 		}
 		emit(Level.ERROR, "Unknown statement: " + t.toStringTree(), t);
-		throw new CompilationFailure();
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
 	}
 
 	private RValue flattenExpression(Tree t) throws CompilationFailure {
@@ -273,7 +273,7 @@ public class MutableFlattener implements VariableResolver {
 			}
 		}
 		emit(Level.ERROR, "Unknown expression: " + t + " in " + t.getParent().toStringTree(), t);
-		throw new CompilationFailure();
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
 	}
 
 	@Contract(mutates = "this")

@@ -155,7 +155,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	@Override
 	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws CompilationFailure {
 		context.reporter().report(Message.createError("ForEachLoop currently not supported!"));
-		throw new CompilationFailure();
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
 	}
 
 	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
@@ -199,7 +199,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	@Override
 	public ResultBuffer visitLoop(AsmBlock body) throws CompilationFailure {
 		context.reporter().report(Message.createError("Loop currently not supported!"));
-		throw new CompilationFailure();
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
 	}
 
 	@Override
@@ -214,7 +214,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	@Override
 	public ResultBuffer visitBreakIf(RValue condition) throws CompilationFailure {
 		context.reporter().report(Message.createError("BreakIf currently not supported!"));
-		throw new CompilationFailure();
+		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
 	}
 
 	@Override
@@ -273,7 +273,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		var msg = Message.create("Cannot use ... outside of vararg function");
 		msg.setLevel(Level.ERROR);
 		context.reporter().report(msg);
-		throw new CompilationFailure();
+		throw new CompilationFailure(Tag.BAD_INPUT);
 	}
 
 	@Override

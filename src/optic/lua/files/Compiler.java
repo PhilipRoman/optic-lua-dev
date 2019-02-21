@@ -36,7 +36,7 @@ public class Compiler {
 			data = input.readAllBytes();
 		} catch (IOException e) {
 			context.reporter().report(ioError(e));
-			throw new CompilationFailure();
+			throw new CompilationFailure(Tag.IO_ERROR);
 		}
 		try {
 			evaluator = compile(data);
@@ -50,7 +50,7 @@ public class Compiler {
 					throw new UncheckedIOException("IOException during debug data dump", e1);
 				}
 			}
-			throw new CompilationFailure();
+			throw new CompilationFailure(Tag.BUG);
 		}
 		Object[] result = null;
 		for (int i = 0; i < nTimes; i++) {

@@ -65,7 +65,7 @@ public final class Pipeline {
 			} catch (ExecutionException e) {
 				var msg = Message.createError("Plugin failed!", e.getCause());
 				reporter.report(msg);
-				throw new CompilationFailure();
+				throw new CompilationFailure(Tag.USER_CODE);
 			}
 		}
 		// Shut down the executor to allow the virtual machine to terminate
@@ -90,19 +90,19 @@ public final class Pipeline {
 		} catch (RecognitionException e) {
 			var msg = parsingError(e);
 			context.reporter().report(msg);
-			throw new CompilationFailure();
+			throw new CompilationFailure(Tag.BAD_INPUT, Tag.PARSER);
 		} catch (RuntimeException e) {
 			if (e.getCause() instanceof RecognitionException) {
 				var msg = parsingError((RecognitionException) e.getCause());
 				context.reporter().report(msg);
-				throw new CompilationFailure();
+				throw new CompilationFailure(Tag.BAD_INPUT, Tag.PARSER);
 			}
 			var msg = Message.createError(Objects.toString(e.getMessage(), "(no message)"));
 			if (e.getMessage() == null) {
 				msg.setCause(e);
 			}
 			context.reporter().report(msg);
-			throw new CompilationFailure();
+			throw new CompilationFailure(Tag.BAD_INPUT, Tag.PARSER);
 		}
 	}
 
@@ -126,6 +126,7 @@ public final class Pipeline {
 		error.setLevel(Level.ERROR);
 		error.setPhase(Phase.PARSING);
 		error.setSource(source);
+		error.addTags(Tag.BAD_INPUT, Tag.PARSER);
 		return error;
 	}
 

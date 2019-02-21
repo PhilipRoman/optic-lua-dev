@@ -52,6 +52,12 @@ public interface Message {
 	Optional<Throwable> cause();
 
 	/**
+	 * @return a set of tags describing this message
+	 */
+	@NotNull
+	Set<Tag> tags();
+
+	/**
 	 * @return mutable message with the given text
 	 */
 	static MessageBuilder create(String message) {
