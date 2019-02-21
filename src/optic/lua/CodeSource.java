@@ -31,7 +31,7 @@ public interface CodeSource {
 
 	static CodeSource ofFile(String filePath) {
 		var path = Paths.get(filePath).toAbsolutePath();
-		return new CodeSourceImpl(path.toString(), () -> new ANTLRFileStream(filePath), path);
+		return new CodeSourceImpl(path.getFileName().toString(), () -> new ANTLRFileStream(filePath), path);
 	}
 
 	static CodeSource ofString(String programText, String sourceName) {
@@ -70,10 +70,9 @@ public interface CodeSource {
 				msg.setCause(e);
 				msg.setLevel(Level.ERROR);
 				context.reporter().report(msg);
-				throw new CompilationFailure();
+				throw new CompilationFailure(Tag.USER_CODE);
 			}
-			Objects.requireNonNull(stream);
-			return stream;
+			return Objects.requireNonNull(stream);
 		}
 
 		@NotNull
