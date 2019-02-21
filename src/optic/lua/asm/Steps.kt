@@ -8,12 +8,20 @@ class Block(private val steps: AsmBlock) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitBlock(steps)
 }
 
+class BreakIf(private val condition: RValue) : Step {
+    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitBreakIf(condition);
+}
+
 class Comment(private val text: String) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitComment(text)
 }
 
 class Declare(private val variable: VariableInfo) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitDeclaration(variable)
+}
+
+class ForEachLoop(private val variables: List<VariableInfo>, private val iterator: RValue, private val body: AsmBlock) : Step {
+    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitForEachLoop(variables, iterator, body)
 }
 
 class ForRangeLoop(
@@ -30,6 +38,10 @@ class GetVarargs(private val to: Register) : Step {
 
 class IfElseChain(private val clauses: LinkedHashMap<FlatExpr, AsmBlock>) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitIfElseChain(clauses)
+}
+
+class Loop(private val body: AsmBlock) : Step {
+    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitLoop(body);
 }
 
 class Return(private val values: List<RValue>) : Step {

@@ -152,6 +152,12 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		return buffer;
 	}
 
+	@Override
+	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws CompilationFailure {
+		context.reporter().report(Message.createError("ForEachLoop currently not supported!"));
+		throw new CompilationFailure();
+	}
+
 	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
 		int size = args.size();
 		var builder = new StringBuilder(size * 5 + 10);
@@ -191,12 +197,24 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	}
 
 	@Override
+	public ResultBuffer visitLoop(AsmBlock body) throws CompilationFailure {
+		context.reporter().report(Message.createError("Loop currently not supported!"));
+		throw new CompilationFailure();
+	}
+
+	@Override
 	public ResultBuffer visitBlock(AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		buffer.add("{");
 		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("}");
 		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitBreakIf(RValue condition) throws CompilationFailure {
+		context.reporter().report(Message.createError("BreakIf currently not supported!"));
+		throw new CompilationFailure();
 	}
 
 	@Override
