@@ -27,4 +27,6 @@ public interface Step {
 
 	default void forEachObserved(Consumer<RValue> action) {
 	}
+
+	<T, X extends Throwable> T accept(StepVisitor<T, X> visitor) throws X;
 }

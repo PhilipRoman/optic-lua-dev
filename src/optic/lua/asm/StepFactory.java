@@ -65,7 +65,7 @@ class StepFactory {
 		return new Void(invocation);
 	}
 
-	static Step ifThenChain(Map<FlatExpr, AsmBlock> clauses) {
+	static Step ifThenChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
 		return new IfElseChain(clauses);
 	}
 }

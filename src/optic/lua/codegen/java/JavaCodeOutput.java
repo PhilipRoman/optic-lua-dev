@@ -2,8 +2,7 @@ package optic.lua.codegen.java;
 
 import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
-import optic.lua.asm.instructions.Void;
-import optic.lua.asm.instructions.*;
+import optic.lua.asm.instructions.VariableMode;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +28,7 @@ import java.util.*;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements CompilerPlugin {
+public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure>, CompilerPlugin {
 	private final PrintStream out;
 	private final AsmBlock block;
 	final Context context;
@@ -40,9 +39,9 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
 
-	public ResultBuffer visitReturn(@NotNull Return ret) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitReturn(List<RValue> values) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		var values = ret.getValues();
 		if (!values.isEmpty() && values.get(values.size() - 1).isVararg()) {
 			var varargs = values.get(values.size() - 1);
 			var valuesCopy = new ArrayList<>(values);
@@ -54,51 +53,51 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 		return buffer;
 	}
 
-	public ResultBuffer visitGetVarargs(@NotNull GetVarargs getVarargs) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitGetVarargs(Register register) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		var varargsName = nestedData.varargName();
 		if (varargsName.isPresent()) {
 			var varargs = varargsName.get();
-			buffer.add("Object[] ", getVarargs.getTo().getName(), " = ", varargs, ";");
+			buffer.add("Object[] ", register.getName(), " = ", varargs, ";");
 		} else {
 			illegalVarargUsage();
 		}
 		return buffer;
 	}
 
-	public ResultBuffer visitSelect(@NotNull Select select) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitSelect(Register target, int n, RValue vararg) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		var n = select.getN();
-		var vararg = expression(select.getVarargs());
-		var target = select.getOut().getName();
-		buffer.add("Object ", target, " = ListOps.get(", vararg, ", ", n, ");");
+		buffer.add("Object ", target, " = ListOps.get(", expression(vararg), ", ", n, ");");
 		return buffer;
 	}
 
-	public ResultBuffer visitWrite(@NotNull Write write) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitWrite(VariableInfo variable, RValue value) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		switch (write.getTarget().getMode()) {
+		switch (variable.getMode()) {
 			case UPVALUE: {
-				if (write.getTarget().isEnv()) {
+				if (variable.isEnv()) {
 					var context = nestedData.contextName();
-					buffer.add(context, "._ENV = ", expression(write.getSource()), ";");
+					buffer.add(context, "._ENV = ", expression(value), ";");
 					return buffer;
-				} else if (!write.getTarget().isFinal()) {
-					buffer.add(write.getTarget(), ".set(", expression(write.getSource()), ");");
+				} else if (!variable.isFinal()) {
+					buffer.add(variable.getName(), ".set(", expression(value), ");");
 					return buffer;
 				}
 				// if upvalue is final, fall through to LOCAL branch
 			}
 			case LOCAL: {
-				if (write.getTarget().typeInfo().isNumeric() && !write.getSource().typeInfo().isNumeric())
-					buffer.add(write.getTarget(), " = StandardLibrary.toNumber(", expression(write.getSource()), ");");
+				if (variable.typeInfo().isNumeric() && !value.typeInfo().isNumeric())
+					buffer.add(variable, " = StandardLibrary.toNumber(", expression(value), ");");
 				else
-					buffer.add(write.getTarget(), " = ", expression(write.getSource()), ";");
+					buffer.add(variable, " = ", expression(value), ";");
 				return buffer;
 			}
 			case GLOBAL: {
 				var context = nestedData.contextName();
-				buffer.add(context, ".setGlobal(\"", write.getTarget().getName(), "\", ", expression(write.getSource()), ");");
+				buffer.add(context, ".setGlobal(\"", variable.getName(), "\", ", expression(value), ");");
 				return buffer;
 			}
 			default:
@@ -106,39 +105,36 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 		}
 	}
 
-	public ResultBuffer visitForRangeLoop(@NotNull ForRangeLoop loop) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		var from = expression(loop.getFrom());
-		var to = expression(loop.getTo());
-		var counter = loop.getCounter();
 		var counterName = "i_" + counter.getName();
-		String counterType = JavaUtils.typeName(loop.getFrom().typeInfo());
-		String counterTypeName = JavaUtils.typeName(loop.getCounter());
+		String counterType = JavaUtils.typeName(from.typeInfo());
+		String counterTypeName = JavaUtils.typeName(counter);
 		if (counterTypeName.equals("long") && context.options().get(StandardFlags.LOOP_SPLIT)) {
 			// we optimize integer loops at runtime by checking if the range is within int bounds
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
 			// int loop
-			buffer.add("if(", from, " >= Integer.MIN_VALUE && ", to, " <= Integer.MAX_VALUE)");
-			buffer.add("for(int ", counterName, " = (int)", from, "; ", counterName, " <= (int)", to, "; ", counterName, "++) {");
+			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", to, " <= Integer.MAX_VALUE)");
+			buffer.add("for(int ", counterName, " = (int)", expression(from), "; ", counterName, " <= (int)", expression(to), "; ", counterName, "++) {");
 			buffer.add("long ", counter.getName(), " = ", counterName, ";");
-			buffer.addBlock(visitAll(loop.getBlock().steps()));
+			buffer.addBlock(visitAll(block.steps()));
 			buffer.add("}");
 			buffer.add("else");
 		}
 		// regular for-loop
-		buffer.add("for(", counterType, " ", counterName, " = ", from, "; ", counterName, " <= ", to, "; ", counterName, "++) {");
+		buffer.add("for(", counterType, " ", counterName, " = ", expression(from), "; ", counterName, " <= ", expression(to), "; ", counterName, "++) {");
 		buffer.add(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
-		buffer.addBlock(visitAll(loop.getBlock().steps()));
+		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("}");
 		return buffer;
 	}
 
 	@Override
-	public ResultBuffer visitDeclare(@NotNull Declare declare) {
+	public ResultBuffer visitDeclaration(VariableInfo variable) {
 		var buffer = new ResultBuffer();
-		VariableInfo variable = declare.getVariable();
-		String name = declare.getName();
+		String name = variable.getName();
 		assert variable.getMode() != VariableMode.GLOBAL;
 		if (variable.getMode() == VariableMode.LOCAL) {
 			// local variable
@@ -152,14 +148,6 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 		} else {
 			// upvalue
 			buffer.add("final UpValue ", name, " = UpValue.create();");
-		}
-		return buffer;
-	}
-
-	public ResultBuffer visitComment(@NotNull Comment comment) {
-		var buffer = new ResultBuffer();
-		if (context.options().get(StandardFlags.KEEP_COMMENTS)) {
-			buffer.add("// ", comment.getText());
 		}
 		return buffer;
 	}
@@ -181,11 +169,12 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 		return Objects.requireNonNull(expression.accept(expressionVisitor));
 	}
 
-	public ResultBuffer visitIfElseChain(@NotNull IfElseChain ifElseChain) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitIfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		int size = ifElseChain.getClauses().size();
+		int size = clauses.size();
 		int i = 0;
-		for (var entry : ifElseChain.getClauses().entrySet()) {
+		for (var entry : clauses.entrySet()) {
 			boolean isLast = ++i == size;
 			FlatExpr condition = entry.getKey();
 			AsmBlock value = entry.getValue();
@@ -201,25 +190,35 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 		return buffer;
 	}
 
-	public ResultBuffer visitBlock(@NotNull Block block) throws CompilationFailure {
+	@Override
+	public ResultBuffer visitBlock(AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		buffer.add("{");
-		buffer.addBlock(visitAll(block.getSteps().steps()));
+		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("}");
 		return buffer;
 	}
 
 	@Override
-	public ResultBuffer visitVoid(@NotNull Void x) throws CompilationFailure {
+	public ResultBuffer visitVoid(RValue.Invocation invocation) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		buffer.add(expression(x.getInvocation()) + ";");
+		buffer.add(expression(invocation) + ";");
 		return buffer;
 	}
 
 	@Override
-	public ResultBuffer visitAssign(@NotNull Assign x) throws CompilationFailure {
+	public ResultBuffer visitComment(String comment) {
 		var buffer = new ResultBuffer();
-		buffer.add(JavaUtils.typeName(x.getResult()), " ", x.getResult().getName(), " = ", expression(x.getValue()), ";");
+		if (context.options().get(StandardFlags.KEEP_COMMENTS)) {
+			buffer.add("// ", comment);
+		}
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitAssignment(Register register, RValue value) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add(JavaUtils.typeName(register), " ", register.getName(), " = ", expression(value), ";");
 		return buffer;
 	}
 
@@ -273,10 +272,5 @@ public class JavaCodeOutput extends StepVisitor<ResultBuffer> implements Compile
 	@Override
 	public String toString() {
 		return getClass().getName();
-	}
-
-	@Override
-	public ResultBuffer defaultValue(@NotNull Step x) {
-		throw new IllegalArgumentException("No handler for " + x.getClass());
 	}
 }

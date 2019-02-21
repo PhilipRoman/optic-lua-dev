@@ -23,7 +23,7 @@ class IfElseChainBuilder {
 		chain.add(new Conditional(condition, body));
 	}
 
-	Map<FlatExpr, AsmBlock> build() {
+	LinkedHashMap<FlatExpr, AsmBlock> build() {
 		var map = new LinkedHashMap<FlatExpr, AsmBlock>(chain.size());
 		for(var c : chain) {
 			map.put(c.condition, c.thenBlock);
