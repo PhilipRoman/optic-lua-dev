@@ -24,8 +24,8 @@ final class SampleProgram {
     List<String> run() {
         def options = new Options([
                 (StandardFlags.VERIFY)        : true,
-                (StandardFlags.LOOP_SPLIT)    : false,
-//                (StandardFlags.SSA_SPLIT)     : false,
+                (StandardFlags.LOOP_SPLIT)    : true,
+                (StandardFlags.SSA_SPLIT)     : true,
                 (StandardFlags.DEBUG_COMMENTS): true,
         ])
         def pipeline = new Pipeline(
