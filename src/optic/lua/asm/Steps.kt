@@ -1,5 +1,7 @@
 package optic.lua.asm
 
+import org.jetbrains.annotations.NotNull
+
 class Assign(private val result: Register, private val value: RValue) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitAssignment(result, value)
 }
@@ -8,8 +10,8 @@ class Block(private val steps: AsmBlock) : Step {
     override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitBlock(steps)
 }
 
-class BreakIf(private val condition: RValue) : Step {
-    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitBreakIf(condition);
+class BreakIf(private val condition: @NotNull RValue, private val isTrue: Boolean) : Step {
+    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitBreakIf(condition, isTrue)
 }
 
 class Comment(private val text: String) : Step {

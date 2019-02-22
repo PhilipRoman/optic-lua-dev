@@ -195,8 +195,11 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 
 	@Override
 	public ResultBuffer visitLoop(AsmBlock body) throws CompilationFailure {
-		context.reporter().report(Message.createError("Loop currently not supported!"));
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+		var buffer = new ResultBuffer();
+		buffer.add("while(true) {");
+		buffer.addBlock(visitAll(body.steps()));
+		buffer.add("}");
+		return buffer;
 	}
 
 	@Override
@@ -209,9 +212,10 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	}
 
 	@Override
-	public ResultBuffer visitBreakIf(RValue condition) throws CompilationFailure {
-		context.reporter().report(Message.createError("BreakIf currently not supported!"));
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+	public ResultBuffer visitBreakIf(RValue condition, boolean isTrue) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add("if(", (isTrue ? "" : "!"), "DynamicOps.isTrue(", expression(condition), ")) break;");
+		return buffer;
 	}
 
 	@Override
