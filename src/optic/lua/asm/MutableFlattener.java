@@ -405,7 +405,7 @@ public class MutableFlattener implements VariableResolver {
 					locals.put(name.toString(), variable);
 					declare(variable);
 				}
-			} else if (!meaning.isConditional() && context.options().get(StandardFlags.SSA_SPLIT)) {
+			} else if (locals.containsKey(info.getName()) && context.options().get(StandardFlags.SSA_SPLIT)) {
 				// if variable is already a local variable
 				var next = info.nextIncarnation();
 				locals.put(name.toString(), next);
