@@ -57,6 +57,10 @@ public interface RValue {
 		return false;
 	}
 
+	default boolean isPure() {
+		return false;
+	}
+
 	default FlatExpr discardRemaining() {
 		if (this.isVararg()) {
 			var r = RegisterFactory.create();
@@ -177,6 +181,11 @@ public interface RValue {
 		public ProvenType typeInfo() {
 			return variable.typeInfo();
 		}
+
+		@Override
+		public boolean isPure() {
+			return true;
+		}
 	}
 
 	class UpValueName implements RValue {
@@ -220,6 +229,11 @@ public interface RValue {
 
 		public T value() {
 			return value;
+		}
+
+		@Override
+		public boolean isPure() {
+			return true;
 		}
 	}
 

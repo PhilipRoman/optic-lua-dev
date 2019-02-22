@@ -30,8 +30,9 @@ class ForRangeLoop(
         private val counter: VariableInfo,
         private val from: RValue,
         private val to: RValue,
+        private val step: RValue,
         private val block: AsmBlock) : Step {
-    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitForRangeLoop(counter, from, to, block)
+    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitForRangeLoop(counter, from, to, step, block)
 }
 
 class IfElseChain(private val clauses: LinkedHashMap<FlatExpr, AsmBlock>) : Step {

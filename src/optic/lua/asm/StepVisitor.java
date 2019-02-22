@@ -15,7 +15,7 @@ public interface StepVisitor<T, X extends Throwable> {
 
 	T visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws X;
 
-	T visitForRangeLoop(VariableInfo counter, RValue from, RValue to, AsmBlock body) throws X;
+	T visitForRangeLoop(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock body) throws X;
 
 	T visitIfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) throws X;
 
