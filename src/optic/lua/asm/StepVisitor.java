@@ -9,7 +9,7 @@ public interface StepVisitor<T, X extends Throwable> {
 
 	T visitBlock(AsmBlock block) throws X;
 
-	T visitBreakIf(RValue condition) throws X;
+	T visitBreakIf(RValue condition, boolean isTrue) throws X;
 
 	T visitDeclaration(VariableInfo variable) throws X;
 

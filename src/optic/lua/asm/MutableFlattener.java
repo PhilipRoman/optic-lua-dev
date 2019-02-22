@@ -87,6 +87,10 @@ public class MutableFlattener implements VariableResolver {
 		return flatten(tree, context, this, List.of(), BlockMeaning.DO_BLOCK);
 	}
 
+	private AsmBlock flattenLoopBody(CommonTree tree) throws CompilationFailure {
+		return flatten(tree, context, this, List.of(), BlockMeaning.LOOP_BODY);
+	}
+
 	private AsmBlock flattenForRangeBody(CommonTree tree, ProvenType counterType, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.update(counterType);
@@ -163,6 +167,31 @@ public class MutableFlattener implements VariableResolver {
 				AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
 				VariableInfo counter = body.locals().get(varName);
 				steps.add(StepFactory.forRange(counter, from, to, body));
+				return;
+			}
+			case While: {
+				// while (<condition>) (do (chunk (<body>)))
+				var condition = getInterface().flattenExpression(t.getChild(0));
+				var chunk = Trees.expect(CHUNK, t.getChild(1).getChild(0));
+				var body = flattenLoopBody((CommonTree) chunk);
+				var stepList = new ArrayList<Step>(body.steps().size() + 8);
+				stepList.addAll(condition.block());
+				stepList.add(StepFactory.breakIf(condition.value(), false));
+				stepList.addAll(body.steps());
+				var processedBody = new AsmBlock(stepList, body.locals());
+				steps.add(StepFactory.loop(processedBody));
+				return;
+			}
+			case Repeat: {
+				// repeat (chunk (<body>)) (<condition>)
+				var condition = getInterface().flattenExpression(t.getChild(1));
+				var chunk = Trees.expect(CHUNK, t.getChild(0));
+				var body = flattenLoopBody((CommonTree) chunk);
+				var stepList = new ArrayList<>(body.steps());
+				stepList.addAll(condition.block());
+				stepList.add(StepFactory.breakIf(condition.value(), true));
+				var processedBody = new AsmBlock(stepList, body.locals());
+				steps.add(StepFactory.loop(processedBody));
 				return;
 			}
 			case Do: {
@@ -376,7 +405,7 @@ public class MutableFlattener implements VariableResolver {
 					locals.put(name.toString(), variable);
 					declare(variable);
 				}
-			} else if (!meaning.isConditional() && context.options().get(StandardFlags.SSA_SPLIT)) {
+			} else if (locals.containsKey(info.getName()) && context.options().get(StandardFlags.SSA_SPLIT)) {
 				// if variable is already a local variable
 				var next = info.nextIncarnation();
 				locals.put(name.toString(), next);

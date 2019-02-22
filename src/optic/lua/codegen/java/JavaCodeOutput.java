@@ -113,7 +113,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
 			// int loop
-			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", to, " <= Integer.MAX_VALUE)");
+			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE)");
 			buffer.add("for(int ", counterName, " = (int)", expression(from), "; ", counterName, " <= (int)", expression(to), "; ", counterName, "++) {");
 			buffer.add("long ", counter.getName(), " = ", counterName, ";");
 			buffer.addBlock(visitAll(block.steps()));
@@ -195,8 +195,11 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 
 	@Override
 	public ResultBuffer visitLoop(AsmBlock body) throws CompilationFailure {
-		context.reporter().report(Message.createError("Loop currently not supported!"));
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+		var buffer = new ResultBuffer();
+		buffer.add("while(true) {");
+		buffer.addBlock(visitAll(body.steps()));
+		buffer.add("}");
+		return buffer;
 	}
 
 	@Override
@@ -209,9 +212,10 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	}
 
 	@Override
-	public ResultBuffer visitBreakIf(RValue condition) throws CompilationFailure {
-		context.reporter().report(Message.createError("BreakIf currently not supported!"));
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+	public ResultBuffer visitBreakIf(RValue condition, boolean isTrue) throws CompilationFailure {
+		var buffer = new ResultBuffer();
+		buffer.add("if(", (isTrue ? "" : "!"), "DynamicOps.isTrue(", expression(condition), ")) break;");
+		return buffer;
 	}
 
 	@Override

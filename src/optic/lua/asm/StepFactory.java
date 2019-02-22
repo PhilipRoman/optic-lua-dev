@@ -61,4 +61,12 @@ class StepFactory {
 	static Step ifThenChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
 		return new IfElseChain(clauses);
 	}
+
+	static Step breakIf(RValue expression, boolean isTrue) {
+		return new BreakIf(expression, isTrue);
+	}
+
+	static Step loop(AsmBlock body) {
+		return new Loop(body);
+	}
 }
