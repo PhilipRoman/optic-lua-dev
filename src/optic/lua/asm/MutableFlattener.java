@@ -60,7 +60,7 @@ public class MutableFlattener implements VariableResolver {
 				f.flattenStatement((Tree) stat);
 			} catch (RuntimeException e) {
 				f.emit(Level.ERROR, "Unhandled exception", ((Tree) stat), e);
-				throw new CompilationFailure();
+				throw new CompilationFailure(Tag.BUG);
 			}
 		}
 		return new AsmBlock(f.steps, f.locals);
@@ -161,12 +161,25 @@ public class MutableFlattener implements VariableResolver {
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
-				RValue from = toNumber(flattenExpression(t.getChild(1)));
-				RValue to = toNumber(flattenExpression(t.getChild(2)));
-				CommonTree block = (CommonTree) t.getChild(3).getChild(0);
-				AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
-				VariableInfo counter = body.locals().get(varName);
-				steps.add(StepFactory.forRange(counter, from, to, body));
+				RValue from = evaluateOnce(toNumber(flattenExpression(t.getChild(1))));
+				RValue to = evaluateOnce(toNumber(flattenExpression(t.getChild(2))));
+				Tree stepOrBody = t.getChild(3);
+				if (stepOrBody.getType() == Do) {
+					// for loop without step:
+					// for i = A, B do ... end
+					CommonTree block = (CommonTree) stepOrBody.getChild(0);
+					AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
+					VariableInfo counter = body.locals().get(varName);
+					steps.add(StepFactory.forRange(counter, from, to, body));
+				} else {
+					// for loop with step "C":
+					// for i = A, B, C do ... end
+					RValue step = evaluateOnce(toNumber(flattenExpression(stepOrBody)));
+					CommonTree block = (CommonTree) t.getChild(4).getChild(0);
+					AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
+					VariableInfo counter = body.locals().get(varName);
+					steps.add(StepFactory.forRange(counter, from, to, step, body));
+				}
 				return;
 			}
 			case While: {
@@ -323,6 +336,16 @@ public class MutableFlattener implements VariableResolver {
 			return a;
 		}
 		return RValue.invocation(a, InvocationMethod.TO_NUMBER, List.of());
+	}
+
+	private RValue evaluateOnce(RValue value) {
+		if (value.isPure()) {
+			return value;
+		}
+		var register = RegisterFactory.create();
+		register.updateStatus(value.typeInfo());
+		steps.add(StepFactory.assign(register, value));
+		return register;
 	}
 
 	@Contract(mutates = "this")

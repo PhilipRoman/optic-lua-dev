@@ -15,7 +15,11 @@ class StepFactory {
 	}
 
 	static Step forRange(VariableInfo counter, RValue from, RValue to, AsmBlock block) {
-		return new ForRangeLoop(counter, from, to, block);
+		return new ForRangeLoop(counter, from, to, RValue.number(1), block);
+	}
+
+	static Step forRange(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) {
+		return new ForRangeLoop(counter, from, to, step, block);
 	}
 
 	static Step comment(String text) {

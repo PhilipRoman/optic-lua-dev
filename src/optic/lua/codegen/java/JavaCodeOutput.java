@@ -103,7 +103,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	}
 
 	@Override
-	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, AsmBlock block) throws CompilationFailure {
+	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		var counterName = "i_" + counter.getName();
 		String counterType = JavaUtils.typeName(from.typeInfo());
@@ -113,15 +113,15 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
 			// int loop
-			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE)");
-			buffer.add("for(int ", counterName, " = (int)", expression(from), "; ", counterName, " <= (int)", expression(to), "; ", counterName, "++) {");
+			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE && (long) ", expression(step), " == ", expression(step), ")");
+			buffer.add("for(int ", counterName, " = (int)", expression(from), "; ", counterName, " <= (int)", expression(to), "; ", counterName, " += ", expression(step), ") {");
 			buffer.add("long ", counter.getName(), " = ", counterName, ";");
 			buffer.addBlock(visitAll(block.steps()));
 			buffer.add("}");
 			buffer.add("else");
 		}
 		// regular for-loop
-		buffer.add("for(", counterType, " ", counterName, " = ", expression(from), "; ", counterName, " <= ", expression(to), "; ", counterName, "++) {");
+		buffer.add("for(", counterType, " ", counterName, " = ", expression(from), "; ", counterName, " <= ", expression(to), "; ", counterName, " += ", expression(step), ") {");
 		buffer.add(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
 		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("}");
