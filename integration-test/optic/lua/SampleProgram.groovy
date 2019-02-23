@@ -2,7 +2,7 @@ package optic.lua
 
 import groovy.transform.CompileStatic
 import optic.lua.codegen.java.JavaCodeOutput
-import optic.lua.files.Compiler
+import optic.lua.io.Compiler
 import optic.lua.messages.*
 import optic.lua.runtime.LuaContext
 
