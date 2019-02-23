@@ -64,6 +64,12 @@ for _i = 1, 3, 0.5 do
 end
 assert(sum == 1 + 1.5 + 2 + 2.5 + 3)
 
+sum = 0
+for _i = 1, -1.1, -0.5 do
+    sum = sum + _i
+end
+assert(sum == 0)
+
 local keys = {}
 for k, v in pairs {a = 1, b = 2, c = 3} do
     keys[#keys + 1] = k
