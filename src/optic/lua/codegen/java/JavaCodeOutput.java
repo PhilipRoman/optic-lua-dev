@@ -4,6 +4,7 @@ import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
+import optic.lua.util.UniqueNames;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -151,8 +152,19 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 
 	@Override
 	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws CompilationFailure {
-		context.reporter().report(Message.createError("ForEachLoop currently not supported!"));
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+		var buffer = new ResultBuffer();
+		var iteratorName = "iterator_" + UniqueNames.next();
+		var eachName = "each_" + UniqueNames.next();
+		buffer.add("Iterator ", iteratorName, " = (Iterator) ", expression(iterator), ";");
+		buffer.add("while(", iteratorName, ".hasNext()) {");
+		buffer.add("Object[] ", eachName, " = (Object[]) ", iteratorName, ".next();");
+		int i = 0;
+		for (var variable : variables) {
+			buffer.add(JavaUtils.typeName(variable), " ", variable.getName(), " = ListOps.get(", eachName, ", ", i++, ");");
+		}
+		buffer.addBlock(visitAll(body.steps()));
+		buffer.add("}");
+		return buffer;
 	}
 
 	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
@@ -254,6 +266,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 			context.reporter().report(msg);
 		}
 		buffer.add("import optic.lua.runtime.*;");
+		buffer.add("import java.util.Iterator;");
 		var contextName = nestedData.pushNewContextName();
 		buffer.add("static Object[] main(final LuaContext ", contextName, ", Object[] args) { if(1 == 1) {");
 		buffer.addBlock(visitAll(block.steps()));

@@ -91,6 +91,10 @@ public class MutableFlattener implements VariableResolver {
 		return flatten(tree, context, this, List.of(), BlockMeaning.LOOP_BODY);
 	}
 
+	private AsmBlock flattenForInLoopBody(CommonTree tree, List<VariableInfo> variables) throws CompilationFailure {
+		return flatten(tree, context, this, variables, BlockMeaning.LOOP_BODY);
+	}
+
 	private AsmBlock flattenForRangeBody(CommonTree tree, ProvenType counterType, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.update(counterType);
@@ -176,10 +180,25 @@ public class MutableFlattener implements VariableResolver {
 					// for i = A, B, C do ... end
 					RValue step = evaluateOnce(toNumber(flattenExpression(stepOrBody)));
 					CommonTree block = (CommonTree) t.getChild(4).getChild(0);
-					AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
+					AsmBlock body = flattenForRangeBody(block, from.typeInfo().and(step.typeInfo()), varName);
 					VariableInfo counter = body.locals().get(varName);
 					steps.add(StepFactory.forRange(counter, from, to, step, body));
 				}
+				return;
+			}
+			case FOR_IN: {
+				// FOR_IN (NAME_LIST <nameList>) (EXPR_LIST <iterator>) (do (CHUNK <body>))
+				var nameList = (CommonTree) Trees.expectChild(NAME_LIST, t, 0);
+				var variables = new ArrayList<VariableInfo>(3);
+				for (var name : nameList.getChildren()) {
+					variables.add(new VariableInfo(name.toString()));
+				}
+				if (t.getChild(1).getChildCount() > 1) {
+					emit(Level.WARNING, "for loop iterator should be a single expression; additional expressions will be ignored!", t);
+				}
+				var iterator = evaluateOnce(discardRemaining(flattenExpression(Trees.expectChild(EXPR_LIST, t, 1).getChild(0))));
+				var body = flattenForInLoopBody((CommonTree) Trees.expectChild(Do, t, 2), variables);
+				steps.add(StepFactory.forInLoop(variables, iterator, body));
 				return;
 			}
 			case While: {

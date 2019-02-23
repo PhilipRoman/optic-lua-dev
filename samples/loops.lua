@@ -50,3 +50,9 @@ print(sum == 1 + 3 + 5)
 print(num1)
 print(num2)
 print(num3)
+
+local keys = {}
+for k, v in pairs {a = 1, b = 2, c = 3} do
+    keys[#keys + 1] = k
+end
+assert(table.concat(keys) == "abc")
