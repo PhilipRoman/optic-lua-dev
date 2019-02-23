@@ -1,8 +1,8 @@
 package optic.lua;
 
 import optic.lua.codegen.java.JavaCodeOutput;
-import optic.lua.files.Compiler;
-import optic.lua.files.*;
+import optic.lua.io.Compiler;
+import optic.lua.io.*;
 import optic.lua.messages.*;
 import org.slf4j.*;
 

@@ -1,4 +1,4 @@
-package optic.lua.files;
+package optic.lua.io;
 
 import java.nio.file.Path;
 
