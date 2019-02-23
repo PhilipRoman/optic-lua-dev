@@ -4,6 +4,7 @@ import optic.lua.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
+import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
 import org.jetbrains.annotations.NotNull;
 
@@ -106,24 +107,24 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	@Override
 	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		var counterName = "i_" + counter.getName();
-		String counterType = JavaUtils.typeName(from.typeInfo());
-		String counterTypeName = JavaUtils.typeName(counter);
-		if (counterTypeName.equals("long") && context.options().get(StandardFlags.LOOP_SPLIT)) {
+		var realCounterName = "i_" + counter.getName();
+		ProvenType realCounterType = from.typeInfo().and(step.typeInfo());
+		if (realCounterType == ProvenType.INTEGER
+				&& context.options().get(StandardFlags.LOOP_SPLIT)) {
 			// we optimize integer loops at runtime by checking if the range is within int bounds
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
 			// int loop
 			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE && (long) ", expression(step), " == ", expression(step), ")");
-			buffer.add("for(int ", counterName, " = (int)", expression(from), "; ", counterName, " <= (int)", expression(to), "; ", counterName, " += ", expression(step), ") {");
-			buffer.add("long ", counter.getName(), " = ", counterName, ";");
+			buffer.add("for(int ", realCounterName, " = (int)", expression(from), "; ", realCounterName, " <= (int)", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
+			buffer.add("long ", counter.getName(), " = ", realCounterName, ";");
 			buffer.addBlock(visitAll(block.steps()));
 			buffer.add("}");
 			buffer.add("else");
 		}
 		// regular for-loop
-		buffer.add("for(", counterType, " ", counterName, " = ", expression(from), "; ", counterName, " <= ", expression(to), "; ", counterName, " += ", expression(step), ") {");
-		buffer.add(counterTypeName, " ", counter.getName(), " = ", counterName, ";");
+		buffer.add("for(", JavaUtils.typeName(realCounterType), " ", realCounterName, " = ", expression(from), "; ", realCounterName, " <= ", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
+		buffer.add(JavaUtils.typeName(counter), " ", counter.getName(), " = ", realCounterName, ";");
 		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("}");
 		return buffer;
