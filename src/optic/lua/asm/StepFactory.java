@@ -73,4 +73,8 @@ class StepFactory {
 	static Step loop(AsmBlock body) {
 		return new Loop(body);
 	}
+
+	static Step forInLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) {
+		return new ForEachLoop(variables, iterator, body);
+	}
 }

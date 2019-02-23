@@ -23,6 +23,13 @@ public class EnvOps {
 				return ListOps.empty();
 			}
 		});
+		env.set("pairs", new LuaFunction("pairs") {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				var table = (LuaTable) args[0];
+				return new Object[]{table.pairsIterator()};
+			}
+		});
 		env.set("type", new LuaFunction("type") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {

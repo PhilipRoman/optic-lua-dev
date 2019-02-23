@@ -143,4 +143,25 @@ public class LuaTable {
 	public String toString() {
 		return "table 0x" + Integer.toHexString(hashCode());
 	}
+
+	public Iterator pairsIterator() {
+		var it = hash.entrySet().iterator();
+		return new Iterator() {
+			@Override
+			public boolean hasNext() {
+				return it.hasNext();
+			}
+
+			@Override
+			public Object next() {
+				var next = it.next();
+				return new Object[]{next.getKey(), next.getValue()};
+			}
+
+			@Override
+			public String toString() {
+				return "[iterator pairs(" + LuaTable.this + ")]";
+			}
+		};
+	}
 }
