@@ -1,4 +1,4 @@
-package optic.lua.files;
+package optic.lua.io;
 
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
