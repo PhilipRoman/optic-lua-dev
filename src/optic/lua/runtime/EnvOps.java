@@ -109,7 +109,7 @@ public class EnvOps {
 				} catch (RuntimeException e) {
 					String msg = e.getMessage();
 					if (msg == null) {
-						return ListOps.create(false);
+						return ListOps.createWithBoolean(false);
 					}
 					return ListOps.create(false, msg);
 				}
@@ -198,11 +198,6 @@ public class EnvOps {
 				}
 		)));
 		env.set("math", LuaTable.ofMap(Map.of(
-				"floor", new LuaFunction("math.floor") {
-					public Object[] call(LuaContext context, Object... args) {
-						return ListOps.create(Math.floor(StandardLibrary.strictToNumber(args[0])));
-					}
-				},
 				"sqrt", new LuaFunction("math.sqrt") {
 					public Object[] call(LuaContext context, Object... args) {
 						double value = StandardLibrary.strictToNumber(args[0]);
@@ -233,8 +228,91 @@ public class EnvOps {
 						double value = StandardLibrary.strictToNumber(args[0]);
 						return ListOps.create(Math.atan(value));
 					}
+				},
+				"abs", new LuaFunction("math.abs") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.abs(value));
+					}
+				},
+				"ceil", new LuaFunction("math.ceil") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.ceil(value));
+					}
+				},
+				"floor", new LuaFunction("math.floor") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.floor(value));
+					}
+				},
+				"deg", new LuaFunction("math.deg") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.toDegrees(value));
+					}
+				},
+				"exp", new LuaFunction("math.exp") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.exp(value));
+					}
 				}
 		)));
+		LuaTable math = (LuaTable) env.get("math");
+		math.set("huge", Double.POSITIVE_INFINITY);
+		math.set("maxinteger", Long.MAX_VALUE);
+		math.set("mininteger", Long.MIN_VALUE);
+		math.set("pi", Math.PI);
+		math.set("log", new LuaFunction("math.log") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return ListOps.create(Math.log(value));
+			}
+		});
+		math.set("rad", new LuaFunction("math.rad") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return ListOps.create(Math.toRadians(value));
+			}
+		});
+		math.set("tan", new LuaFunction("math.tan") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return ListOps.create(Math.tan(value));
+			}
+		});
+		Object[] numberTypeFloat = {"number"};
+		Object[] numberTypeInt = {"integer"};
+		math.set("type", new LuaFunction("math.type") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return (long) value == value ? numberTypeInt : numberTypeFloat;
+			}
+		});
+		math.set("max", new LuaFunction("math.max") {
+			public Object[] call(LuaContext context, Object... args) {
+				double a = StandardLibrary.strictToNumber(args[0]);
+				double b = StandardLibrary.strictToNumber(args[1]);
+				return ListOps.create(Math.max(a, b));
+			}
+		});
+		math.set("min", new LuaFunction("math.min") {
+			public Object[] call(LuaContext context, Object... args) {
+				double a = StandardLibrary.strictToNumber(args[0]);
+				double b = StandardLibrary.strictToNumber(args[1]);
+				return ListOps.create(Math.min(a, b));
+			}
+		});
+		math.set("ult", new LuaFunction("math.ult") {
+			public Object[] call(LuaContext context, Object... args) {
+				long a = DynamicOps.toInt(args[0]);
+				long b = DynamicOps.toInt(args[1]);
+				// java.lang.Long::compareUnsigned
+				return ListOps.createWithBoolean(a + Long.MIN_VALUE < b + Long.MIN_VALUE);
+			}
+		});
 		env.set("_VERSION", "optic-lua [pre-alpha]");
 		return env;
 	}
