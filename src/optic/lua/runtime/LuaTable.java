@@ -6,8 +6,8 @@ public class LuaTable {
 	private final HashMap<Object, Object> hash;
 	private int length;
 	private int maxIndex;
-	private boolean staleLength = false;
-	private boolean staleMaxIndex = false;
+	private boolean staleLength = true;
+	private boolean staleMaxIndex = true;
 
 	private LuaTable(int hashSize) {
 		hash = new HashMap<>(hashSize);

@@ -1,6 +1,6 @@
 package optic.lua.runtime;
 
-import java.util.Map;
+import java.util.*;
 
 @RuntimeApi
 public class EnvOps {
@@ -12,6 +12,17 @@ public class EnvOps {
 	@RuntimeApi
 	public static void set(UpValue _ENV, String key, Object value) {
 		((LuaTable) _ENV.value).set(key, value);
+	}
+
+	private static int adjustFromIndex(int from, int length) {
+		return from < 0 ? length + from : from - 1;
+	}
+
+	private static int adjustToIndex(int to, int length) {
+		if (to < 0) {
+			to = length + to + 1;
+		}
+		return (to <= length) ? to : length;
 	}
 
 	@RuntimeApi
@@ -40,6 +51,18 @@ public class EnvOps {
 				return ListOps.create(StandardLibrary.type(value));
 			}
 		});
+		env.set("tostring", new LuaFunction() {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				return ListOps.create(StandardLibrary.toString(args[0]));
+			}
+		});
+		env.set("tonumber", new LuaFunction() {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				return ListOps.create(StandardLibrary.toNumber(args[0]));
+			}
+		});
 		env.set("table", LuaTable.ofMap(Map.of(
 				"concat", new LuaFunction("table.concat") {
 					public Object[] call(LuaContext context, Object... args) {
@@ -47,7 +70,9 @@ public class EnvOps {
 							throw new IllegalArgumentException("Bad argument #1, expected value");
 						}
 						Object table = args[0];
-						return ListOps.create(StandardLibrary.tableConcat(table));
+						Object delimiter = ListOps.get(args, 1);
+						String delimiterString = delimiter == null ? "" : StandardLibrary.strictToString(delimiter);
+						return ListOps.create(StandardLibrary.tableConcat(table, delimiterString));
 					}
 				}
 		)));
@@ -84,7 +109,7 @@ public class EnvOps {
 				} catch (RuntimeException e) {
 					String msg = e.getMessage();
 					if (msg == null) {
-						return ListOps.create(false);
+						return ListOps.createWithBoolean(false);
 					}
 					return ListOps.create(false, msg);
 				}
@@ -93,16 +118,86 @@ public class EnvOps {
 		env.set("os", LuaTable.ofMap(Map.of(
 				"time", new LuaFunction("os.time") {
 					public Object[] call(LuaContext context, Object... args) {
-						return ListOps.create((double) (System.currentTimeMillis() / 1000));
+						return ListOps.create((System.currentTimeMillis() / 1000));
+					}
+				}
+		)));
+		env.set("string", LuaTable.ofMap(Map.of(
+				"sub", new LuaFunction("string.sub") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						int from = (int) DynamicOps.toInt(args[1]);
+						from = adjustFromIndex(from, str.length());
+						Object thirdArgument = ListOps.get(args, 2);
+						int to = thirdArgument == null ? str.length() : (int) DynamicOps.toInt(thirdArgument);
+						to = adjustToIndex(to, str.length());
+						if (to < from || from >= str.length()) {
+							return ListOps.create("");
+						}
+						return ListOps.create(str.substring(from, to));
+					}
+				},
+				"len", new LuaFunction("string.len") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						return ListOps.create(str.length());
+					}
+				},
+				"lower", new LuaFunction("string.lower") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						return ListOps.create(str.toLowerCase());
+					}
+				},
+				"upper", new LuaFunction("string.upper") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						return ListOps.create(str.toUpperCase());
+					}
+				},
+				"format", new LuaFunction("string.format") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						Object[] params = Arrays.copyOfRange(args, 1, args.length);
+						return ListOps.create(String.format(str, params));
+					}
+				},
+				"rep", new LuaFunction("string.rep") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						int n = (int) DynamicOps.toInt(args[1]);
+						return ListOps.create(str.repeat(Math.max(0, n)));
+					}
+				},
+				"byte", new LuaFunction("string.byte") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						String str = StandardLibrary.strictToString(args[0]);
+						Object secondArgument = ListOps.get(args, 1);
+						int from = secondArgument == null ? 1 : (int) DynamicOps.toInt(secondArgument);
+						Object thirdArgument = ListOps.get(args, 2);
+						int to = thirdArgument == null ? (secondArgument == null ? 1 : from) : (int) DynamicOps.toInt(thirdArgument);
+						from = adjustFromIndex(from, str.length());
+						to = adjustToIndex(to, str.length());
+						if (to < from || from >= str.length()) {
+							return ListOps.empty();
+						}
+						int length = to - from;
+						Object[] result = new Object[length];
+						for (int i = 0; i < length; i++) {
+							result[i] = (byte) str.charAt(from + i);
+						}
+						return result;
 					}
 				}
 		)));
 		env.set("math", LuaTable.ofMap(Map.of(
-				"floor", new LuaFunction("math.floor") {
-					public Object[] call(LuaContext context, Object... args) {
-						return ListOps.create(Math.floor(StandardLibrary.strictToNumber(args[0])));
-					}
-				},
 				"sqrt", new LuaFunction("math.sqrt") {
 					public Object[] call(LuaContext context, Object... args) {
 						double value = StandardLibrary.strictToNumber(args[0]);
@@ -133,8 +228,91 @@ public class EnvOps {
 						double value = StandardLibrary.strictToNumber(args[0]);
 						return ListOps.create(Math.atan(value));
 					}
+				},
+				"abs", new LuaFunction("math.abs") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.abs(value));
+					}
+				},
+				"ceil", new LuaFunction("math.ceil") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.ceil(value));
+					}
+				},
+				"floor", new LuaFunction("math.floor") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.floor(value));
+					}
+				},
+				"deg", new LuaFunction("math.deg") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.toDegrees(value));
+					}
+				},
+				"exp", new LuaFunction("math.exp") {
+					public Object[] call(LuaContext context, Object... args) {
+						double value = StandardLibrary.strictToNumber(args[0]);
+						return ListOps.create(Math.exp(value));
+					}
 				}
 		)));
+		LuaTable math = (LuaTable) env.get("math");
+		math.set("huge", Double.POSITIVE_INFINITY);
+		math.set("maxinteger", Long.MAX_VALUE);
+		math.set("mininteger", Long.MIN_VALUE);
+		math.set("pi", Math.PI);
+		math.set("log", new LuaFunction("math.log") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return ListOps.create(Math.log(value));
+			}
+		});
+		math.set("rad", new LuaFunction("math.rad") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return ListOps.create(Math.toRadians(value));
+			}
+		});
+		math.set("tan", new LuaFunction("math.tan") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return ListOps.create(Math.tan(value));
+			}
+		});
+		Object[] numberTypeFloat = {"number"};
+		Object[] numberTypeInt = {"integer"};
+		math.set("type", new LuaFunction("math.type") {
+			public Object[] call(LuaContext context, Object... args) {
+				double value = StandardLibrary.strictToNumber(args[0]);
+				return (long) value == value ? numberTypeInt : numberTypeFloat;
+			}
+		});
+		math.set("max", new LuaFunction("math.max") {
+			public Object[] call(LuaContext context, Object... args) {
+				double a = StandardLibrary.strictToNumber(args[0]);
+				double b = StandardLibrary.strictToNumber(args[1]);
+				return ListOps.create(Math.max(a, b));
+			}
+		});
+		math.set("min", new LuaFunction("math.min") {
+			public Object[] call(LuaContext context, Object... args) {
+				double a = StandardLibrary.strictToNumber(args[0]);
+				double b = StandardLibrary.strictToNumber(args[1]);
+				return ListOps.create(Math.min(a, b));
+			}
+		});
+		math.set("ult", new LuaFunction("math.ult") {
+			public Object[] call(LuaContext context, Object... args) {
+				long a = DynamicOps.toInt(args[0]);
+				long b = DynamicOps.toInt(args[1]);
+				// java.lang.Long::compareUnsigned
+				return ListOps.createWithBoolean(a + Long.MIN_VALUE < b + Long.MIN_VALUE);
+			}
+		});
 		env.set("_VERSION", "optic-lua [pre-alpha]");
 		return env;
 	}

@@ -3,6 +3,8 @@ package optic.lua.runtime;
 @RuntimeApi
 public class ListOps {
 	private static Object[] EMPTY = {};
+	private static Object[] TRUE = {true};
+	private static Object[] FALSE = {false};
 
 	@RuntimeApi
 	public static Object[] empty() {
@@ -31,6 +33,10 @@ public class ListOps {
 	@RuntimeApi
 	public static Object[] create(Object... args) {
 		return args;
+	}
+
+	static Object[] createWithBoolean(boolean value) {
+		return value ? TRUE : FALSE;
 	}
 
 	@RuntimeApi

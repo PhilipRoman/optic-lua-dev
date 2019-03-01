@@ -78,32 +78,32 @@ public class StandardLibrary {
 		out.flush();
 	}
 
-	public static CharSequence tableConcat(Object arg) {
+	public static CharSequence tableConcat(Object arg, String delimiter) {
 		if (arg instanceof LuaTable) {
-			return tableConcat((LuaTable) arg);
+			return tableConcat((LuaTable) arg, delimiter);
 		}
 		throw new IllegalArgumentException("Expected table, got " + arg);
 	}
 
-	public static CharSequence tableConcat(LuaTable table) {
+	public static CharSequence tableConcat(Object arg) {
+		return tableConcat((LuaTable) arg, "");
+	}
+
+	public static CharSequence tableConcat(LuaTable table, String delimiter) {
+		if (delimiter == null) {
+			delimiter = "";
+		}
 		int length = table.length();
-		int size = 0;
+		StringJoiner joiner = new StringJoiner(delimiter);
 		for (int i = 1; i <= length; i++) {
 			Object o = table.get(i);
-			if (o instanceof Number) {
-				size += 8;
-			} else if (o instanceof CharSequence) {
-				size += ((CharSequence) o).length();
+			if (o instanceof Number || o instanceof CharSequence) {
+				joiner.add(o.toString());
 			} else {
 				throw new IllegalArgumentException("Illegal value (" + toString(o) + "), expected string or number");
 			}
 		}
-		StringBuilder builder = new StringBuilder(size);
-		for (int i = 1; i <= length; i++) {
-			Object o = table.get(i);
-			builder.append(o);
-		}
-		return builder.length() < 16 ? builder.toString() : builder;
+		return joiner.toString();
 	}
 
 	public static String type(Object x) {

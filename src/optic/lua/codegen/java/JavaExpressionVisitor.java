@@ -61,9 +61,9 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 		String list = joiner.toString();
 		if (vararg.isPresent()) {
 			var v = vararg.get();
-			var offset = v.getKey();
+			var offset = v.getKey().accept(this);
 			var value = v.getValue().accept(this);
-			return "TableOps.createWithVararg(" + offset + ", " + value + ", " + list + ")";
+			return "TableOps.createWithVararg(" + offset + ", " + value + (map.isEmpty() ? "" : ", ") + list + ")";
 		} else {
 			return "TableOps.create(" + list + ")";
 		}
@@ -216,9 +216,11 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 			// put the last element in the first position
 			argList.add(0, argList.remove(argList.size() - 1));
 		}
-		var args = commaList(argList);
+		var args = isVararg
+				? "ListOps.concat(" + commaList(argList) + ")"
+				: "ListOps.create(" + commaList(argList) + ")";
 		var context = nestedData.contextName();
-		return "FunctionOps.call(" + function.accept(this) + ", " + context + (argList.isEmpty() ? "" : ", " + args) + ")";
+		return "FunctionOps.call(" + function.accept(this) + ", " + context + "," + args + ")";
 	}
 
 	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
