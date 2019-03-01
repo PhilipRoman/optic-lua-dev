@@ -10,7 +10,7 @@ public class DynamicOps {
 		return StandardLibrary.strictToNumber(x);
 	}
 
-	private static long toInt(Object a) {
+	static long toInt(Object a) {
 		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
 			return ((Number) a).longValue();
 		}
@@ -239,8 +239,10 @@ public class DynamicOps {
 		return ~i;
 	}
 
-	public static int len(LuaContext ctx, Object table) {
-		return ((LuaTable) table).length();
+	public static int len(LuaContext ctx, Object value) {
+		return value instanceof CharSequence
+				? ((CharSequence) value).length()
+				: ((LuaTable) value).length();
 	}
 
 	public static String concat(LuaContext ctx, Object a, Object b) {
