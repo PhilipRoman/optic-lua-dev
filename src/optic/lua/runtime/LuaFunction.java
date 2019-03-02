@@ -2,6 +2,7 @@ package optic.lua.runtime;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.function.*;
 
 @RuntimeApi
@@ -45,5 +46,13 @@ public abstract class LuaFunction {
 			return "function 0x" + Integer.toHexString(hashCode());
 		}
 		return "function " + friendlyName;
+	}
+
+	public boolean sameCreationSite(LuaFunction function) {
+		return Objects.equals(function.friendlyName, friendlyName);
+	}
+
+	public int creationSiteHash() {
+		return Objects.hashCode(friendlyName);
 	}
 }

@@ -4,6 +4,7 @@ import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.io.Compiler;
 import optic.lua.io.*;
 import optic.lua.messages.*;
+import optic.lua.runtime.InvocationSite;
 import org.slf4j.*;
 
 import java.nio.file.*;
@@ -20,7 +21,7 @@ public class Main {
 			shell.run();
 			return;
 		}
-		int nTimes = Integer.parseInt(System.getProperty("optic.n", "10"));
+		int nTimes = Integer.parseInt(System.getProperty("optic.n", "1"));
 		boolean useSSA = Boolean.valueOf(System.getProperty("optic.ssa", "true"));
 		boolean useLoopSplit = Boolean.valueOf(System.getProperty("optic.loops", "true"));
 		var codeSource = CodeSource.ofFile(fileName);
@@ -49,5 +50,6 @@ public class Main {
 		}
 		Files.copy(temp, Paths.get("out.java"), StandardCopyOption.REPLACE_EXISTING);
 		new Compiler(new Context(options, reporter)).run(Files.newInputStream(temp), nTimes);
+		InvocationSite.dumpAll(System.err);
 	}
 }

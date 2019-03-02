@@ -104,7 +104,7 @@ public class EnvOps {
 				Object f = args[0];
 				Object[] params = ListOps.sublist(args, 1);
 				try {
-					Object[] result = FunctionOps.call(f, context, params);
+					Object[] result = FunctionOps.call("pcall_call_site", f, context, params);
 					return ListOps.concat(result, true);
 				} catch (RuntimeException e) {
 					String msg = e.getMessage();

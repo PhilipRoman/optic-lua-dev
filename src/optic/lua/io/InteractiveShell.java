@@ -113,6 +113,5 @@ public class InteractiveShell {
 				return;
 			}
 		}
-		System.out.println("#####");
 	}
 }

@@ -75,7 +75,8 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 		var params = t.parameters().list();
 		var argsName = "args" + UniqueNames.next();
 		var contextName = nestedData.pushNewContextName();
-		buffer.add("new LuaFunction(){ Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
+		String functionCreationSiteId = "anon_func_" + UniqueNames.next();
+		buffer.add("new LuaFunction(\"", functionCreationSiteId, "\"){ Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
 		for (var p : params) {
 			if (p.equals("...")) {
 				var varargName = nestedData.pushNewVarargName();
@@ -220,7 +221,8 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 				? "ListOps.concat(" + commaList(argList) + ")"
 				: "ListOps.create(" + commaList(argList) + ")";
 		var context = nestedData.contextName();
-		return "FunctionOps.call(" + function.accept(this) + ", " + context + "," + args + ")";
+		String callSiteId = "call_site_" + UniqueNames.next();
+		return "FunctionOps.call(\"" + callSiteId + "\", " + function.accept(this) + ", " + context + "," + args + ")";
 	}
 
 	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
