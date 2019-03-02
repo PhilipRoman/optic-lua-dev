@@ -7,7 +7,7 @@ import optic.lua.runtime.*;
 import java.io.*;
 import java.util.*;
 
-public class InteractiveShell {
+public final class InteractiveShell {
 	private final Reader in;
 	private final PrintWriter out;
 	private final PrintWriter err;
@@ -76,7 +76,7 @@ public class InteractiveShell {
 	}
 
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
-		JavaCompiler compiler = new JavaCompiler(new Context(options, reporter));
+		JaninoCompiler compiler = new JaninoCompiler(new Context(options, reporter));
 		ByteArrayInputStream input = new ByteArrayInputStream(compileToJava(line));
 		return compiler.run(input, 1, context, List.of());
 	}
@@ -103,8 +103,8 @@ public class InteractiveShell {
 	private void shortenStackTrace(RuntimeException e) {
 		// the name combination we're looking for
 		// any frames after these will be discarded
-		final String className = JavaCompiler.GENERATED_CLASS_NAME;
-		final String methodName = JavaCompiler.GENERATED_METHOD_NAME;
+		final String className = JaninoCompiler.GENERATED_CLASS_NAME;
+		final String methodName = JaninoCompiler.GENERATED_METHOD_NAME;
 		var trace = e.getStackTrace();
 		for (int i = 0; i < trace.length; i++) {
 			var frame = trace[i];

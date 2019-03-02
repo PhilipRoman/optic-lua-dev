@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.*;
 
-public class Bundle {
+public final class Bundle {
 	private final Map<String, Method> compiledFiles;
 
 	public static Bundle emptyBundle() {

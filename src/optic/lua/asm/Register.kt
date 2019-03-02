@@ -27,10 +27,10 @@ class Register constructor(val name: String, val vararg: Boolean) : RValue {
         return name == "_"
     }
 
-    override fun isVararg(): Boolean = vararg;
+    override fun isVararg(): Boolean = vararg
 
     override fun isPure(): Boolean {
-        return true;
+        return true
     }
 
     override fun typeInfo(): ProvenType {

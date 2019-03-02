@@ -5,7 +5,7 @@ import org.jetbrains.annotations.*;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-public class FileExtensionMapper implements FileMapper {
+public final class FileExtensionMapper implements FileMapper {
 	private static final Pattern EXTENSION = Pattern.compile("^\\.[a-zA-Z0-9_]+$");
 	private static final FileExtensionMapper LUA_TO_JAVA = new FileExtensionMapper(".lua", ".java");
 	private final String from;

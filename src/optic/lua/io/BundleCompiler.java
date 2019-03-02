@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.*;
 
-public class BundleCompiler {
+public final class BundleCompiler {
 	private final Context context;
 
 	public BundleCompiler(Context context) {
@@ -47,6 +47,6 @@ public class BundleCompiler {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		return new JavaCompiler(context).compile(buffer.toByteArray());
+		return new JaninoCompiler(context).compile(buffer.toByteArray());
 	}
 }

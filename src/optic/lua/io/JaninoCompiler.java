@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.util.*;
 
-public class JavaCompiler {
+final class JaninoCompiler {
 	public static final String GENERATED_CLASS_NAME = "LuaSource";
 	public static final String GENERATED_METHOD_NAME = "mainChunk";
 	private static final WeakHashMap<ByteBuffer, ScriptEvaluator> scriptCache = new WeakHashMap<>();
@@ -20,7 +20,7 @@ public class JavaCompiler {
 	private final Context context;
 	private final boolean useCache;
 
-	public JavaCompiler(Context context) {
+	public JaninoCompiler(Context context) {
 		this.context = context;
 		this.useCache = context.options().get(StandardFlags.CACHE_JAVA_COMPILING);
 	}

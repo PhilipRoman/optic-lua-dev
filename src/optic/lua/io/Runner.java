@@ -5,7 +5,7 @@ import optic.lua.runtime.LuaContext;
 import java.lang.reflect.*;
 import java.util.List;
 
-public class Runner {
+public final class Runner {
 	public Object[] run(Method method, LuaContext luaContext, List<Object> args) {
 		final Object[] result;
 		try {

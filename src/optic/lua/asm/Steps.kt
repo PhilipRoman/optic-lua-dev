@@ -40,7 +40,7 @@ class IfElseChain(private val clauses: LinkedHashMap<FlatExpr, AsmBlock>) : Step
 }
 
 class Loop(private val body: AsmBlock) : Step {
-    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitLoop(body);
+    override fun <T : Any, X : Throwable> accept(visitor: StepVisitor<T, X>): T = visitor.visitLoop(body)
 }
 
 class Return(private val values: List<RValue>) : Step {
