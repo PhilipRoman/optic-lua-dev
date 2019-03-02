@@ -7,7 +7,7 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.util.*;
@@ -33,21 +33,10 @@ public class Compiler {
 		return scanner.nextLine();
 	}
 
-	public Object[] run(InputStream input, int nTimes) throws CompilationFailure {
-		return run(input, nTimes, LuaContext.create(), List.of());
-	}
-
-	public Object[] run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) throws CompilationFailure {
+	public Method compile(byte[] data) throws CompilationFailure {
 		final ScriptEvaluator evaluator;
-		final byte[] data;
 		try {
-			data = input.readAllBytes();
-		} catch (IOException e) {
-			context.reporter().report(ioError(e));
-			throw new CompilationFailure(Tag.IO_ERROR);
-		}
-		try {
-			evaluator = compile(data);
+			evaluator = createEvaluator(data);
 		} catch (CompileException e) {
 			context.reporter().report(compilationError(data, e));
 			if (context.options().get(StandardFlags.DUMP_ON_INTERNAL_ERROR)) {
@@ -60,14 +49,27 @@ public class Compiler {
 			}
 			throw new CompilationFailure(Tag.BUG);
 		}
+		return evaluator.getMethod();
+	}
+
+	public Object[] run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) throws CompilationFailure {
+		final byte[] data;
+		try {
+			data = input.readAllBytes();
+		} catch (IOException e) {
+			context.reporter().report(ioError(e));
+			throw new CompilationFailure(Tag.IO_ERROR);
+		}
+		var method = compile(data);
 		Object[] result = null;
+		var runner = new Runner();
 		for (int i = 0; i < nTimes; i++) {
-			result = measure(evaluator, luaContext, args);
+			result = runner.run(method, luaContext, args);
 		}
 		return Objects.requireNonNull(result);
 	}
 
-	private ScriptEvaluator compile(byte[] source) throws CompileException {
+	private ScriptEvaluator createEvaluator(byte[] source) throws CompileException {
 		if (useCache && source.length <= MAX_CACHED_SIZE && scriptCache.containsKey(ByteBuffer.wrap(source))) {
 			return scriptCache.get(ByteBuffer.wrap(source));
 		}
@@ -92,31 +94,6 @@ public class Compiler {
 			scriptCache.put(ByteBuffer.wrap(source), evaluator);
 		}
 		return evaluator;
-	}
-
-	private Object[] measure(ScriptEvaluator evaluator, LuaContext luaContext, List<Object> args) {
-		long start = System.nanoTime();
-		final Object[] result;
-		try {
-			result = (Object[]) evaluator.evaluate(new Object[]{luaContext, args.toArray()});
-		} catch (InvocationTargetException e) {
-			if (e.getCause() instanceof Error) {
-				throw (Error) e.getCause();
-			}
-			if (e.getCause() instanceof RuntimeException) {
-				throw (RuntimeException) e.getCause();
-			}
-			throw new RuntimeException(e.getCause());
-		}
-		context.reporter().report(durationInfo(System.nanoTime() - start));
-		return result;
-	}
-
-	private Message durationInfo(long nanos) {
-		var msg = Message.create("Program took " + (nanos / (int) 1e6) + " ms");
-		msg.setLevel(Level.INFO);
-		msg.setPhase(Phase.RUNTIME);
-		return msg;
 	}
 
 	private Message ioError(IOException e) {

@@ -8,7 +8,6 @@ import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 public final class Pipeline {
 	private final CodeSource source;
@@ -37,39 +36,13 @@ public final class Pipeline {
 		reporter.report(durationInfo("Flattening", getTime(Moment.START_FLATTENING, Moment.FINISH_FLATTENING)));
 
 		registerTime(Moment.START_PLUGINS);
-		ExecutorService background = Executors.newCachedThreadPool();
-		Collection<Future<?>> running = new ArrayList<>(4);
 		for (var factory : pluginFactories) {
 			long startTime = System.nanoTime();
 			var plugin = factory.create(steps, context.withPhase(Phase.COMPILING));
-			if (context.options().get(StandardFlags.PARALLEL) && plugin.concurrent()) {
-				reporter.report(Message.createInfo("Applying plugin " + plugin + " in background"));
-				var future = background.submit(() -> {
-					plugin.apply();
-					reporter.report(durationInfo(plugin, System.nanoTime() - startTime));
-					return null;
-				});
-				running.add(future);
-			} else {
-				reporter.report(Message.createInfo("Applying plugin " + plugin));
-				steps = plugin.apply();
-				reporter.report(durationInfo(plugin, System.nanoTime() - startTime));
-			}
+			reporter.report(Message.createDebug("Applying plugin " + plugin));
+			steps = plugin.apply();
+			reporter.report(durationInfo(plugin, System.nanoTime() - startTime));
 		}
-
-		for (var future : running) {
-			try {
-				future.get();
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Concurrent plugins should not be interrupted!");
-			} catch (ExecutionException e) {
-				var msg = Message.createError("Plugin failed!", e.getCause());
-				reporter.report(msg);
-				throw new CompilationFailure(Tag.USER_CODE);
-			}
-		}
-		// Shut down the executor to allow the virtual machine to terminate
-		background.shutdownNow();
 		registerTime(Moment.FINISH_PLUGINS);
 
 		reporter.report(durationInfo("Plugins", getTime(Moment.START_PLUGINS, Moment.FINISH_PLUGINS)));
@@ -132,11 +105,12 @@ public final class Pipeline {
 
 	private Message durationInfo(Object action, long nanos) {
 		Objects.requireNonNull(action);
-		var error = Message.create(action + " took " + (nanos / (int) 1e6) + " ms");
-		error.setLevel(Level.INFO);
-		error.setPhase(Phase.CODEGEN);
-		error.setSource(source);
-		return error;
+		var msg = Message.create(action + " took " + (nanos / (int) 1e6) + " ms");
+		msg.setLevel(Level.DEBUG);
+		msg.setPhase(Phase.CODEGEN);
+		msg.addTag(Tag.STATISTICS);
+		msg.setSource(source);
+		return msg;
 	}
 
 	private void registerTime(Moment moment) {

@@ -12,6 +12,7 @@ public class InteractiveShell {
 	private final Reader in;
 	private final PrintWriter out;
 	private final PrintWriter err;
+	private final Bundle bundle;
 	private final WeakHashMap<String, byte[]> scriptCache = new WeakHashMap<>();
 	private final MessageReporter reporter = new StandardMessageReporter(System.err)
 			.filter(msg -> msg.level().compareTo(Level.WARNING) >= 0);
@@ -26,14 +27,15 @@ public class InteractiveShell {
 		options.disable(StandardFlags.DEBUG_COMMENTS);
 	}
 
-	public InteractiveShell(InputStream in, OutputStream out, OutputStream err) {
+	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle) {
 		this.in = new InputStreamReader(in);
 		this.out = new PrintWriter(new OutputStreamWriter(out));
 		this.err = new PrintWriter(new OutputStreamWriter(err));
+		this.bundle = bundle;
 	}
 
 	public void run() {
-		LuaContext context = LuaContext.create();
+		LuaContext context = LuaContext.create(bundle);
 		context.in = in;
 		context.out = out;
 		context.err = err;

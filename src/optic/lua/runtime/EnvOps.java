@@ -25,7 +25,6 @@ public class EnvOps {
 		return (to <= length) ? to : length;
 	}
 
-	@RuntimeApi
 	public static LuaTable createEnv() {
 		LuaTable env = LuaTable.allocate(64);
 		env.set("print", new LuaFunction("print") {
@@ -34,6 +33,13 @@ public class EnvOps {
 				return ListOps.empty();
 			}
 		});
+		env.set("optic", LuaTable.ofMap(Map.of(
+				"bundle", new LuaFunction("optic.bundle") {
+					public Object[] call(LuaContext context, Object... args) {
+						return ListOps.create(LuaTable.ofArray(context.bundle.listFiles()));
+					}
+				}
+		)));
 		env.set("pairs", new LuaFunction("pairs") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
