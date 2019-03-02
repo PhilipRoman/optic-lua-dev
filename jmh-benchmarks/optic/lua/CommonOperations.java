@@ -19,6 +19,8 @@ public class CommonOperations {
 			return ListOps.create(DynamicOps.add(context, ListOps.get(args, 0), ListOps.get(args, 1)));
 		}
 	};
+	private static final Double DOUBLE = 12345.6789d;
+	private static final Object[] TWO_NUMBERS = {3.1415, 0.12345};
 
 	private static final LuaFunction DYNAMIC_EMPTY_FUNCTION = new LuaFunction() {
 		@Override
@@ -39,6 +41,31 @@ public class CommonOperations {
 
 	@Benchmark
 	public static void empty() {
+	}
+
+	@Benchmark
+	public static Object[] allocateSingletonArray() {
+		return new Object[]{1.234d};
+	}
+
+	@Benchmark
+	public static Object concatArrays2Plus2() {
+		return ListOps.concat(TWO_NUMBERS, TWO_NUMBERS);
+	}
+
+	@Benchmark
+	public static Object boxNumber() {
+		return 12345.6789d;
+	}
+
+	@Benchmark
+	public static double unboxNumber() {
+		return DOUBLE;
+	}
+
+	@Benchmark
+	public static LuaTable allocateTable() {
+		return TableOps.create();
 	}
 
 	@SuppressWarnings("ConstantConditions")
