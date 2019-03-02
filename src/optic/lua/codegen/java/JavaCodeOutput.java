@@ -1,6 +1,6 @@
 package optic.lua.codegen.java;
 
-import optic.lua.CompilerPlugin;
+import optic.lua.io.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;
@@ -258,7 +258,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		var buffer = new ResultBuffer();
 		{
 			var msg = Message.create("Java code output still in development");
-			msg.setLevel(Level.WARNING);
+			msg.setLevel(Level.DEBUG);
 			context.reporter().report(msg);
 		}
 		if (context.options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {

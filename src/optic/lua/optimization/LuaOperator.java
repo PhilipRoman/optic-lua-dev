@@ -79,6 +79,7 @@ public enum LuaOperator {
 		Objects.requireNonNull(b);
 		switch (this) {
 			case UNM:
+			case BNOT:
 				return b;
 			case ADD:
 			case SUB:
@@ -89,9 +90,13 @@ public enum LuaOperator {
 			case DIV:
 				return a.isNumeric() && b.isNumeric() ? NUMBER : OBJECT;
 			case CONCAT:
+			case EQ:
+			case LT:
+			case LE:
+			case GT:
+			case GE:
+			case LEN:
 				return OBJECT;
-			case BNOT:
-				return b;
 			case BAND:
 			case BOR:
 			case BXOR:
@@ -102,13 +107,6 @@ public enum LuaOperator {
 				} else {
 					return OBJECT;
 				}
-			case EQ:
-			case LT:
-			case LE:
-			case GT:
-			case GE:
-			case LEN:
-				return OBJECT;
 			case POW:
 				// semantics for POW require double precision even if both operands are natural numbers
 				// this is due to large number overflow mechanics

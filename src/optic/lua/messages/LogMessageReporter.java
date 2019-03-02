@@ -22,8 +22,6 @@ public class LogMessageReporter implements MessageReporter {
 				log.debug(text);
 				break;
 			case HINT:
-				log.info(text);
-				break;
 			case INFO:
 				log.info(text);
 				break;

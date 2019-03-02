@@ -1,9 +1,16 @@
 package optic.lua.messages;
 
-public enum Level {
+import java.util.function.Predicate;
+
+public enum Level implements Predicate<Message> {
 	TRACE, DEBUG, HINT, INFO, WARNING, ERROR;
 
 	public final boolean canBeFatal() {
 		return this == ERROR;
+	}
+
+	@Override
+	public boolean test(Message msg) {
+		return msg.level().compareTo(this) >= 0;
 	}
 }

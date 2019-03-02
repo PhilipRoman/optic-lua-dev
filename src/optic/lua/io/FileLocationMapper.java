@@ -2,7 +2,7 @@ package optic.lua.io;
 
 import java.nio.file.Path;
 
-public class FileLocationMapper implements FileMapper {
+public final class FileLocationMapper implements FileMapper {
 	private final Path from;
 	private final Path to;
 

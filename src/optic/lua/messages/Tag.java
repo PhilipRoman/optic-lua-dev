@@ -6,7 +6,7 @@ public enum Tag {
 	IO_ERROR,
 	BUG,
 	BAD_INPUT,
-	PARSER;
+	PARSER, STATISTICS;
 
 	@Override
 	public String toString() {

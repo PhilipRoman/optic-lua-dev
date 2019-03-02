@@ -24,6 +24,11 @@ final class JavaOperators {
 			case DIV:
 			case IDIV:
 			case MOD:
+			case EQ:
+			case LE:
+			case LT:
+			case GE:
+			case GT:
 				return a.isNumeric() && b.isNumeric();
 			case BNOT:
 				return b == ProvenType.INTEGER;
@@ -33,12 +38,6 @@ final class JavaOperators {
 			case SHL:
 			case SHR:
 				return a == ProvenType.INTEGER && b == ProvenType.INTEGER;
-			case EQ:
-			case LE:
-			case LT:
-			case GE:
-			case GT:
-				return a.isNumeric() && b.isNumeric();
 			default:
 				return false;
 		}
@@ -50,13 +49,12 @@ final class JavaOperators {
 			case ADD:
 				return "+";
 			case SUB:
+			case UNM:
 				return "-";
 			case MUL:
 				return "*";
 			case DIV:
 				return "/";
-			case UNM:
-				return "-";
 			case MOD:
 				return "%";
 			case BAND:

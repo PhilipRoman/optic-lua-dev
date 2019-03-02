@@ -10,7 +10,7 @@ interface LValue {
 
     class TableField internal constructor(val table: RValue, val key: RValue) : LValue {
         override fun toString(): String {
-            return table.toString() + "[" + key + "]"
+            return "$table[$key]"
         }
     }
 

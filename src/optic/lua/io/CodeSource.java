@@ -1,4 +1,4 @@
-package optic.lua;
+package optic.lua.io;
 
 import optic.lua.messages.*;
 import org.antlr.runtime.*;

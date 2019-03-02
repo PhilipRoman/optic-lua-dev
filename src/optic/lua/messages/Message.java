@@ -1,6 +1,6 @@
 package optic.lua.messages;
 
-import optic.lua.CodeSource;
+import optic.lua.io.CodeSource;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -39,9 +39,18 @@ public interface Message {
 	/**
 	 * @return mutable message with the given text and {@link Level#INFO} level
 	 */
-	static Message createInfo(String message) {
+	static MessageBuilder createInfo(String message) {
 		var msg = create(message);
 		msg.setLevel(Level.INFO);
+		return msg;
+	}
+
+	/**
+	 * @return mutable message with the given text and {@link Level#DEBUG} level
+	 */
+	static MessageBuilder createDebug(String message) {
+		var msg = create(message);
+		msg.setLevel(Level.DEBUG);
 		return msg;
 	}
 
