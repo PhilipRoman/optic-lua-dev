@@ -1,6 +1,6 @@
 package optic.lua.codegen.java;
 
-import optic.lua.CompilerPlugin;
+import optic.lua.io.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.codegen.ResultBuffer;
 import optic.lua.messages.*;

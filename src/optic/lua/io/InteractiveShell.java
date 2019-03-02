@@ -1,6 +1,5 @@
 package optic.lua.io;
 
-import optic.lua.*;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 import optic.lua.runtime.*;
@@ -77,7 +76,7 @@ public class InteractiveShell {
 	}
 
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
-		Compiler compiler = new Compiler(new Context(options, reporter));
+		JavaCompiler compiler = new JavaCompiler(new Context(options, reporter));
 		ByteArrayInputStream input = new ByteArrayInputStream(compileToJava(line));
 		return compiler.run(input, 1, context, List.of());
 	}
@@ -87,15 +86,14 @@ public class InteractiveShell {
 		if (useCache && scriptCache.containsKey(script)) {
 			return scriptCache.get(script);
 		}
-		var pipeline = new Pipeline(
-				options,
-				reporter,
-				CodeSource.ofString(script, "<stdin>")
+		var buffer = new ByteArrayOutputStream(512);
+		var pipeline = new SingleSourceCompiler(
+				new Context(options, reporter),
+				CodeSource.ofString(script, "<stdin>"),
+				List.of(JavaCodeOutput.writingTo(buffer))
 		);
-		var javaSourceOutput = new ByteArrayOutputStream(512);
-		pipeline.registerPlugin(JavaCodeOutput.writingTo(javaSourceOutput));
 		pipeline.run();
-		byte[] bytes = javaSourceOutput.toByteArray();
+		byte[] bytes = buffer.toByteArray();
 		if (useCache) {
 			scriptCache.put(script, bytes);
 		}
@@ -105,8 +103,8 @@ public class InteractiveShell {
 	private void shortenStackTrace(RuntimeException e) {
 		// the name combination we're looking for
 		// any frames after these will be discarded
-		final String className = Compiler.GENERATED_CLASS_NAME;
-		final String methodName = Compiler.GENERATED_METHOD_NAME;
+		final String className = JavaCompiler.GENERATED_CLASS_NAME;
+		final String methodName = JavaCompiler.GENERATED_METHOD_NAME;
 		var trace = e.getStackTrace();
 		for (int i = 0; i < trace.length; i++) {
 			var frame = trace[i];

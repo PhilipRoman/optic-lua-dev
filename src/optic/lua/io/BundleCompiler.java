@@ -1,6 +1,5 @@
 package optic.lua.io;
 
-import optic.lua.*;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 
@@ -20,7 +19,7 @@ public class BundleCompiler {
 		long start = System.nanoTime();
 		Map<Path, Method> map = new HashMap<>(paths.size());
 		for (Path path : paths) {
-			map.put(path, compile(path));
+			map.put(path, compileFile(path));
 		}
 		long nanos = System.nanoTime() - start;
 		context.reporter().report(compiledFiles(paths.size(), nanos));
@@ -34,14 +33,13 @@ public class BundleCompiler {
 		return msg;
 	}
 
-	private Method compile(Path path) throws CompilationFailure {
-		var pipeline = new Pipeline(
-				context.options(),
-				context.reporter(),
-				CodeSource.ofFile(path.toString())
-		);
+	private Method compileFile(Path path) throws CompilationFailure {
 		var buffer = new ByteArrayOutputStream();
-		pipeline.registerPlugin(JavaCodeOutput.writingTo(buffer));
+		var pipeline = new SingleSourceCompiler(
+				context,
+				CodeSource.ofFile(path.toString()),
+				List.of(JavaCodeOutput.writingTo(buffer))
+		);
 		try {
 			pipeline.run();
 		} catch (CompilationFailure e) {
@@ -49,6 +47,6 @@ public class BundleCompiler {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		return new Compiler(context).compile(buffer.toByteArray());
+		return new JavaCompiler(context).compile(buffer.toByteArray());
 	}
 }

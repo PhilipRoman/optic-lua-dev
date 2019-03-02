@@ -1,6 +1,6 @@
 package optic.lua.messages
 
-import optic.lua.CodeSource
+import optic.lua.io.CodeSource
 
 class Context(private val options: Options, private val reporter: MessageReporter) {
     fun options(): Options = options
