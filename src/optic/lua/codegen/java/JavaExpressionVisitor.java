@@ -11,10 +11,12 @@ import org.jetbrains.annotations.NotNull;
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
+	private static AtomicInteger idCounter = new AtomicInteger();
 
 	JavaExpressionVisitor(NestedData data, JavaCodeOutput visitor) {
 		nestedData = Objects.requireNonNull(data);
@@ -74,9 +76,13 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 		ResultBuffer buffer = new ResultBuffer();
 		var params = t.parameters().list();
 		var argsName = "args" + UniqueNames.next();
+		String functionCreationSiteName = "func_cr_site_" + UniqueNames.next();
+		statementVisitor.addConstant(
+				"FunctionConstructionSite",
+				functionCreationSiteName,
+				nestedData.rootContextName() + ".functionConstructionSite(" + idCounter.incrementAndGet() + ")");
 		var contextName = nestedData.pushNewContextName();
-		String functionCreationSiteId = "anon_func_" + UniqueNames.next();
-		buffer.add("new LuaFunction(\"", functionCreationSiteId, "\"){ Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
+		buffer.add("new LuaFunction(", functionCreationSiteName, "){ Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
 		for (var p : params) {
 			if (p.equals("...")) {
 				var varargName = nestedData.pushNewVarargName();
@@ -212,17 +218,22 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 
 	private String compileFunctionCall(RValue function, List<RValue> arguments) throws CompilationFailure {
 		var argList = new ArrayList<>(arguments);
+		String callSiteName = "call_site_" + UniqueNames.next();
+		statementVisitor.addConstant(
+				"CallSite",
+				callSiteName,
+				nestedData.rootContextName() + ".callSite(" + idCounter.incrementAndGet() + ")"
+		);
 		boolean isVararg = !argList.isEmpty() && argList.get(argList.size() - 1).isVararg();
 		if (isVararg) {
 			// put the last element in the first position
 			argList.add(0, argList.remove(argList.size() - 1));
 		}
+		var contextName = nestedData.contextName();
 		var args = isVararg
 				? "ListOps.concat(" + commaList(argList) + ")"
 				: "ListOps.create(" + commaList(argList) + ")";
-		var context = nestedData.contextName();
-		String callSiteId = "call_site_" + UniqueNames.next();
-		return "FunctionOps.call(\"" + callSiteId + "\", " + function.accept(this) + ", " + context + "," + args + ")";
+		return callSiteName + ".invoke(" + contextName + ", " + function.accept(this) + "," + args + ")";
 	}
 
 	private CharSequence commaList(List<RValue> args) throws CompilationFailure {

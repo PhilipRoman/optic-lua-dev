@@ -1,8 +1,8 @@
 package optic.lua.codegen.java;
 
-import optic.lua.io.CompilerPlugin;
 import optic.lua.asm.*;
 import optic.lua.codegen.ResultBuffer;
+import optic.lua.io.CompilerPlugin;
 import optic.lua.messages.*;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
@@ -35,6 +35,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	private static final boolean USE_INJECTED_CONTEXT = true;
 	private static final boolean USE_INJECTED_ARGS = true;
 	final Context context;
+	private final List<String> constants = new ArrayList<>();
 	private final PrintStream out;
 	private final AsmBlock block;
 	private final NestedData nestedData = new NestedData();
@@ -266,17 +267,25 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 			msg.setLevel(Level.WARNING);
 			context.reporter().report(msg);
 		}
-		buffer.add("import optic.lua.runtime.*;");
-		buffer.add("import java.util.Iterator;");
+		out.println("import optic.lua.runtime.*;");
+		out.println("import optic.lua.runtime.invoke.*;");
+		out.println("import java.util.Iterator;");
 		var contextName = nestedData.pushNewContextName();
-		buffer.add("static Object[] main(final LuaContext ", contextName, ", Object[] args) { if(1 == 1) {");
+		out.println("static Object[] main(final LuaContext " + contextName + ", Object[] args) { if(1 == 1) {");
+
 		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("} return ListOps.empty(); }");
 		String context = USE_INJECTED_CONTEXT ? INJECTED_CONTEXT_PARAM_NAME : "LuaContext.create()";
 		String args = USE_INJECTED_ARGS ? INJECTED_ARGS_PARAM_NAME : "new Object[0]";
 		buffer.add("return main(", context, ", ", args, ");");
+
+		constants.forEach(out::println);
 		buffer.writeTo(out, this.context.options().get(Option.INDENT));
 		out.flush();
+	}
+
+	void addConstant(String type, String name, String value) {
+		constants.add("final " + type + " " + name + " = " + value + ";");
 	}
 
 	@Override

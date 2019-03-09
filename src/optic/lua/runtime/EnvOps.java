@@ -57,13 +57,13 @@ public class EnvOps {
 				return ListOps.create(StandardLibrary.type(value));
 			}
 		});
-		env.set("tostring", new LuaFunction() {
+		env.set("tostring", new LuaFunction("tostring") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
 				return ListOps.create(StandardLibrary.toString(args[0]));
 			}
 		});
-		env.set("tonumber", new LuaFunction() {
+		env.set("tonumber", new LuaFunction("tonumber") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
 				return ListOps.create(StandardLibrary.toNumber(args[0]));
@@ -110,7 +110,7 @@ public class EnvOps {
 				Object f = args[0];
 				Object[] params = ListOps.sublist(args, 1);
 				try {
-					Object[] result = FunctionOps.call("pcall_call_site", f, context, params);
+					Object[] result = FunctionOps.call(context, f, params);
 					return ListOps.concat(result, true);
 				} catch (RuntimeException e) {
 					String msg = e.getMessage();

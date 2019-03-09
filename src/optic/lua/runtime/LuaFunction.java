@@ -1,40 +1,18 @@
 package optic.lua.runtime;
 
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
-import java.util.function.*;
+import optic.lua.runtime.invoke.*;
 
 @RuntimeApi
 public abstract class LuaFunction {
-	@Nullable
-	private final String friendlyName;
+	private final FunctionConstructionSite site;
 
 	@RuntimeApi
-	public LuaFunction() {
-		friendlyName = null;
+	public LuaFunction(FunctionConstructionSite site) {
+		this.site = site;
 	}
 
-	public LuaFunction(String friendlyName) {
-		this.friendlyName = friendlyName;
-	}
-
-	public static LuaFunction of(Function<Object[], Object[]> fun) {
-		return new LuaFunction() {
-			@Override
-			public Object[] call(LuaContext context, Object... args) {
-				return fun.apply(args);
-			}
-		};
-	}
-
-	public static LuaFunction of(BiFunction<LuaContext, Object[], Object[]> fun) {
-		return new LuaFunction() {
-			@Override
-			public Object[] call(LuaContext context, Object... args) {
-				return fun.apply(context, args);
-			}
-		};
+	LuaFunction(String friendlyName) {
+		this.site = new SimpleFunctionConstructionSite(friendlyName);
 	}
 
 	@RuntimeApi
@@ -42,17 +20,10 @@ public abstract class LuaFunction {
 
 	@Override
 	public String toString() {
-		if (friendlyName == null) {
-			return "function 0x" + Integer.toHexString(hashCode());
-		}
-		return "function " + friendlyName;
+		return "function 0x" + Integer.toHexString(hashCode());
 	}
 
-	public boolean sameCreationSite(LuaFunction function) {
-		return Objects.equals(function.friendlyName, friendlyName);
-	}
-
-	public int creationSiteHash() {
-		return Objects.hashCode(friendlyName);
+	public FunctionConstructionSite constructionSite() {
+		return site;
 	}
 }

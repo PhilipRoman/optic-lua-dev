@@ -65,4 +65,8 @@ class NestedData {
 		}
 		return Optional.empty();
 	}
+
+	String rootContextName() {
+		return Objects.requireNonNull(contextNamesInFunction.peekLast());
+	}
 }
