@@ -61,13 +61,19 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 			joiner.add(e.getValue().accept(this));
 		}
 		String list = joiner.toString();
+		String creationSiteName = "table_cr_site_" + UniqueNames.next();
+		statementVisitor.addConstant(
+				"TableCreationSite",
+				creationSiteName,
+				nestedData.rootContextName() + ".tableCreationSite(" + idCounter.incrementAndGet() + ")"
+		);
 		if (vararg.isPresent()) {
 			var v = vararg.get();
 			var offset = v.getKey().accept(this);
 			var value = v.getValue().accept(this);
-			return "TableOps.createWithVararg(" + offset + ", " + value + (map.isEmpty() ? "" : ", ") + list + ")";
+			return creationSiteName + ".createWithVararg(" + offset + ", " + value + (map.isEmpty() ? "" : ", ") + list + ")";
 		} else {
-			return "TableOps.create(" + list + ")";
+			return creationSiteName + ".create(" + list + ")";
 		}
 	}
 

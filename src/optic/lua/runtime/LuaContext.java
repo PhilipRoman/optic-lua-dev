@@ -13,6 +13,7 @@ public class LuaContext {
 	public Bundle bundle = null;
 	private CallSiteFactory callSiteFactory = new InstrumentedCallSiteFactory();
 	private FunctionConstructionSiteFactory functionConstructionSiteFactory = new SimpleFunctionConstructionSiteFactory();
+	private TableCreationSiteFactory tableCreationFactory = new SimpleTableCreationSiteFactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
 	@RuntimeApi
 	public Object _ENV;
@@ -48,6 +49,11 @@ public class LuaContext {
 	@RuntimeApi
 	public FunctionConstructionSite functionConstructionSite(int id) {
 		return functionConstructionSiteFactory.create(id);
+	}
+
+	@RuntimeApi
+	public TableCreationSite tableCreationSite(int id) {
+		return tableCreationFactory.create(id);
 	}
 
 	public Collection<CallSite> getCallSites() {
