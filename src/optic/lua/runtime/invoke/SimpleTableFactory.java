@@ -2,8 +2,8 @@ package optic.lua.runtime.invoke;
 
 import optic.lua.runtime.*;
 
-public final class SimpleTableCreationSite implements TableCreationSite {
-	public SimpleTableCreationSite(int id) {
+public final class SimpleTableFactory implements TableFactory {
+	public SimpleTableFactory(int id) {
 	}
 
 	@Override

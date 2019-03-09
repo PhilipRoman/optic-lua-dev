@@ -61,11 +61,11 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 			joiner.add(e.getValue().accept(this));
 		}
 		String list = joiner.toString();
-		String creationSiteName = "table_cr_site_" + UniqueNames.next();
+		String creationSiteName = "table_factory_" + UniqueNames.next();
 		statementVisitor.addConstant(
-				"TableCreationSite",
+				"TableFactory",
 				creationSiteName,
-				nestedData.rootContextName() + ".tableCreationSite(" + idCounter.incrementAndGet() + ")"
+				nestedData.rootContextName() + ".tableFactory(" + idCounter.incrementAndGet() + ")"
 		);
 		if (vararg.isPresent()) {
 			var v = vararg.get();
@@ -82,11 +82,11 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 		ResultBuffer buffer = new ResultBuffer();
 		var params = t.parameters().list();
 		var argsName = "args" + UniqueNames.next();
-		String functionCreationSiteName = "func_cr_site_" + UniqueNames.next();
+		String functionCreationSiteName = "function_factory_" + UniqueNames.next();
 		statementVisitor.addConstant(
-				"FunctionConstructionSite",
+				"FunctionFactory",
 				functionCreationSiteName,
-				nestedData.rootContextName() + ".functionConstructionSite(" + idCounter.incrementAndGet() + ")");
+				nestedData.rootContextName() + ".functionFactory(" + idCounter.incrementAndGet() + ")");
 		var contextName = nestedData.pushNewContextName();
 		buffer.add("new LuaFunction(", functionCreationSiteName, "){ Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
 		for (var p : params) {

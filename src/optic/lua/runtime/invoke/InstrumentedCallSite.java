@@ -54,12 +54,12 @@ public class InstrumentedCallSite implements CallSite {
 	}
 
 	private static final class HistoryEntry {
-		private final FunctionConstructionSite site;
+		private final FunctionFactory site;
 		private final boolean[] args;
 		private final boolean[] results;
 		private final int hash;
 
-		private HistoryEntry(FunctionConstructionSite site, boolean[] args, boolean[] results) {
+		private HistoryEntry(FunctionFactory site, boolean[] args, boolean[] results) {
 			this.site = site;
 			this.args = args;
 			this.results = results;

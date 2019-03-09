@@ -4,15 +4,15 @@ import optic.lua.runtime.invoke.*;
 
 @RuntimeApi
 public abstract class LuaFunction {
-	private final FunctionConstructionSite site;
+	private final FunctionFactory site;
 
 	@RuntimeApi
-	public LuaFunction(FunctionConstructionSite site) {
+	public LuaFunction(FunctionFactory site) {
 		this.site = site;
 	}
 
 	LuaFunction(String friendlyName) {
-		this.site = new SimpleFunctionConstructionSite(friendlyName);
+		this.site = new SimpleFunctionFactory(friendlyName);
 	}
 
 	@RuntimeApi
@@ -23,7 +23,7 @@ public abstract class LuaFunction {
 		return "function 0x" + Integer.toHexString(hashCode());
 	}
 
-	public FunctionConstructionSite constructionSite() {
+	public FunctionFactory constructionSite() {
 		return site;
 	}
 }

@@ -12,8 +12,8 @@ public class LuaContext {
 	public PrintWriter err = new PrintWriter(System.err);
 	public Bundle bundle = null;
 	private CallSiteFactory callSiteFactory = new InstrumentedCallSiteFactory();
-	private FunctionConstructionSiteFactory functionConstructionSiteFactory = new SimpleFunctionConstructionSiteFactory();
-	private TableCreationSiteFactory tableCreationFactory = new SimpleTableCreationSiteFactory();
+	private FunctionMetafactory functionMetafactory = new SimpleFunctionMetafactory();
+	private TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
 	@RuntimeApi
 	public Object _ENV;
@@ -47,12 +47,12 @@ public class LuaContext {
 	}
 
 	@RuntimeApi
-	public FunctionConstructionSite functionConstructionSite(int id) {
-		return functionConstructionSiteFactory.create(id);
+	public FunctionFactory functionFactory(int id) {
+		return functionMetafactory.create(id);
 	}
 
 	@RuntimeApi
-	public TableCreationSite tableCreationSite(int id) {
+	public TableFactory tableFactory(int id) {
 		return tableCreationFactory.create(id);
 	}
 
