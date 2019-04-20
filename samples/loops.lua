@@ -74,4 +74,4 @@ local keys = {}
 for k, v in pairs {a = 1, b = 2, c = 3} do
     keys[#keys + 1] = k
 end
-assert(table.concat(keys) == "abc")
+assert(#keys == 3)
