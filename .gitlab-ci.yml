@@ -3,15 +3,19 @@ stages:
 
 build:
   stage: build
-  image: gradle:5.2-jre11-slim
+  image: gradle:5.4.0-jre11-slim
   script:
     - java -version
-    # - chmod +x gradlew
-    - gradle build
+    - gradle --console=verbose build test jar
+    # show jar size in log
+    - du -sbh build/libs/*.jar
   artifacts:
     reports:
       junit:
         - build/test-results/test/TEST-*.xml
     paths:
+      # only applies if benchmarks are run
       - build/reports/jmh
       - build/reports/tests
+      # jars
+      - build/libs/
