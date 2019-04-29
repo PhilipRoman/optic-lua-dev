@@ -43,9 +43,9 @@ jar {
     manifest {
         attributes 'Main-Class': 'optic.lua.Main'
     }
-    from {
+    /*from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+    }*/
 }
 
 run {
@@ -58,9 +58,6 @@ tasks.withType(JavaExec) {
             systemProperty(entry.key.toString(), entry.value)
         }
     }
-    jvmArgs(["-XX:+UnlockExperimentalVMOptions"])
-    jvmArgs(["-XX:+UnlockDiagnosticVMOptions"])
-    jvmArgs(System.getProperty("jvmflags", "").split(";"))
 }
 
 dependencies {
