@@ -10,6 +10,7 @@ buildscript {
 
 plugins {
     id "me.champeau.gradle.jmh" version "0.4.8"
+    id 'com.github.johnrengelman.shadow' version '5.0.0'
 }
 
 apply plugin: 'java'
@@ -40,12 +41,12 @@ sourceSets {
 mainClassName = 'optic.lua.Main'
 
 jar {
-    manifest {
-        attributes 'Main-Class': 'optic.lua.Main'
-    }
-    from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+    baseName = 'optic-lua-lib'
+}
+
+shadowJar {
+    baseName = 'optic-lua'
+    classifier = null
 }
 
 run {
@@ -53,11 +54,10 @@ run {
 }
 
 tasks.withType(JavaExec) {
-    for (def entry : System.getProperties()) {
-        if (entry.key.toString().startsWith("optic.")) {
+    // pass any environment variables beginning with "optic." to java process, for example: "gradle run -Doptic.shell=true"
+    for (def entry : System.getProperties())
+        if (entry.key.toString().startsWith("optic."))
             systemProperty(entry.key.toString(), entry.value)
-        }
-    }
 }
 
 dependencies {
