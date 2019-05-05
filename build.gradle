@@ -47,6 +47,18 @@ jar {
 shadowJar {
     baseName = 'optic-lua'
     classifier = null
+    dependencies {
+        exclude(dependency('org.codehaus.groovy::'))
+        exclude(dependency('junit::'))
+        exclude(dependency('org.junit.platform::'))
+        exclude(dependency('org.testng::'))
+        exclude(dependency('jline::'))
+        exclude(dependency('org.apache.ant::'))
+        exclude(dependency('org.opentest4j::'))
+        exclude(dependency('org.apiguardian::'))
+        exclude(dependency('com.thoughtworks.qdox::'))
+        exclude(dependency('com.sun.mail::'))
+    }
 }
 
 run {
