@@ -56,13 +56,6 @@ run {
     standardInput = System.in
 }
 
-tasks.withType(JavaExec) {
-    // pass any environment variables beginning with "optic." to java process, for example: "gradle run -Doptic.shell=true"
-    for (def entry : System.getProperties())
-        if (entry.key.toString().startsWith("optic."))
-            systemProperty(entry.key.toString(), entry.value)
-}
-
 dependencies {
     // At the start I ran into some issues (see https://github.com/melix/jmh-gradle-plugin/issues/111)
     // Currently it works fine for me, but just in case if it ever happens again, try uncommenting this:
@@ -71,6 +64,7 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.8.0-beta2'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.3.0-alpha4'
     compile group: 'ch.qos.logback', name: 'logback-core', version: '1.3.0-alpha4'
+    compile 'info.picocli:picocli:4.0.0-alpha-2'
     compile group: 'org.jetbrains', name: 'annotations', version: '16.0.2'
     compile 'com.github.bkiers:lua-parser:-SNAPSHOT'
     testCompile 'org.codehaus.groovy:groovy-all:2.5.4'

@@ -14,23 +14,15 @@ public final class InteractiveShell {
 	private final Bundle bundle;
 	private final WeakHashMap<String, byte[]> scriptCache = new WeakHashMap<>();
 	private final MessageReporter reporter = new StandardMessageReporter(System.err)
-			.filter(msg -> msg.level().compareTo(Level.WARNING) >= 0);
-	private final Options options = new Options();
+			.filter(Level.HINT);
+	private final Options options;
 
-	{
-		options.enable(StandardFlags.CACHE_JAVA_COMPILING);
-		options.enable(StandardFlags.CACHE_LUA_COMPILING);
-		options.disable(StandardFlags.LOOP_SPLIT);
-		options.disable(StandardFlags.PARALLEL);
-		options.disable(StandardFlags.VERIFY);
-		options.disable(StandardFlags.DEBUG_COMMENTS);
-	}
-
-	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle) {
+	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle, Options options) {
 		this.in = new InputStreamReader(in);
 		this.out = new PrintWriter(new OutputStreamWriter(out));
 		this.err = new PrintWriter(new OutputStreamWriter(err));
 		this.bundle = bundle;
+		this.options = options;
 	}
 
 	public void run() {
@@ -75,9 +67,28 @@ public final class InteractiveShell {
 		out.flush();
 	}
 
+	/**
+	 * Returns the {@link Options} used by this shell.
+	 * The returned object may be freely modified; changes will be reflected in the behavior of this shell.
+	 */
+	public Options options() {
+		return options;
+	}
+
+	private static Message tookTime(long nanos) {
+		long millis = nanos / (long) 1e6;
+		var msg = Message.createInfo("Compiled expression in " + millis + "ms");
+		msg.setPhase(Phase.COMPILING);
+		return msg;
+	}
+
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
+		long start = System.nanoTime();
 		JaninoCompiler compiler = new JaninoCompiler(new Context(options, reporter));
 		ByteArrayInputStream input = new ByteArrayInputStream(compileToJava(line));
+		if (options.get(StandardFlags.SHOW_TIME)) {
+			reporter.report(tookTime(System.nanoTime() - start));
+		}
 		return compiler.run(input, 1, context, List.of());
 	}
 

@@ -39,14 +39,6 @@ final class JaninoCompiler {
 			evaluator = createEvaluator(data);
 		} catch (CompileException e) {
 			context.reporter().report(compilationError(data, e));
-			if (context.options().get(StandardFlags.DUMP_ON_INTERNAL_ERROR)) {
-				try {
-					var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
-					Files.write(debugFile, data);
-				} catch (IOException e1) {
-					throw new UncheckedIOException("IOException during debug data dump", e1);
-				}
-			}
 			throw new CompilationFailure(Tag.BUG);
 		}
 		return evaluator.getMethod();
@@ -60,9 +52,19 @@ final class JaninoCompiler {
 			context.reporter().report(ioError(e));
 			throw new CompilationFailure(Tag.IO_ERROR);
 		}
+
+		if (context.options().get(StandardFlags.DUMP_JAVA)) {
+			try {
+				var debugFile = Files.createTempFile(Paths.get(""), "dump_", ".out");
+				Files.write(debugFile, data);
+			} catch (IOException e1) {
+				throw new UncheckedIOException("IOException during debug data dump", e1);
+			}
+		}
+
 		var method = compile(data);
 		Object[] result = null;
-		var runner = new Runner();
+		var runner = new Runner(context);
 		for (int i = 0; i < nTimes; i++) {
 			result = runner.run(method, luaContext, args);
 		}

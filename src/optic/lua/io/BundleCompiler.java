@@ -3,9 +3,9 @@ package optic.lua.io;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 import java.lang.reflect.Method;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.*;
 
 public final class BundleCompiler {
@@ -34,11 +34,11 @@ public final class BundleCompiler {
 	}
 
 	private Method compileFile(Path path) throws CompilationFailure {
-		var buffer = new ByteArrayOutputStream();
+		var javaBuffer = new ByteArrayOutputStream();
 		var pipeline = new SingleSourceCompiler(
 				context,
 				CodeSource.ofFile(path.toString()),
-				List.of(JavaCodeOutput.writingTo(buffer))
+				List.of(JavaCodeOutput.writingTo(javaBuffer))
 		);
 		try {
 			pipeline.run();
@@ -47,6 +47,17 @@ public final class BundleCompiler {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		return new JaninoCompiler(context).compile(buffer.toByteArray());
+		byte[] javaSourceBytes = javaBuffer.toByteArray();
+
+		if (context.options().get(StandardFlags.DUMP_JAVA)) {
+			try {
+				var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
+				Files.write(debugFile, javaSourceBytes);
+			} catch (IOException e1) {
+				throw new UncheckedIOException("IOException during debug data dump", e1);
+			}
+		}
+
+		return new JaninoCompiler(context).compile(javaSourceBytes);
 	}
 }

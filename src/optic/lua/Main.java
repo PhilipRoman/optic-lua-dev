@@ -4,10 +4,10 @@ import optic.lua.io.*;
 import optic.lua.messages.*;
 import optic.lua.runtime.LuaContext;
 import org.slf4j.*;
+import picocli.CommandLine;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
@@ -18,21 +18,60 @@ public class Main {
 				.filter(Level.HINT);
 		var context = new Context(options, reporter);
 		var bundleCompiler = new BundleCompiler(context);
-		var allSamples = Objects.requireNonNull(new File("samples").listFiles());
-		Bundle bundle = bundleCompiler.compile(Arrays.stream(allSamples).map(File::toPath).collect(Collectors.toList()));
-		if (Boolean.getBoolean("optic.shell")) {
+
+		OpticLua opticLua = new OpticLua();
+		CommandLine commandLine = new CommandLine(opticLua);
+		commandLine.parse(args);
+
+		if (commandLine.isUsageHelpRequested()) {
+			commandLine.usage(System.err);
+			return;
+		}
+
+		if (commandLine.isVersionHelpRequested()) {
+			commandLine.printVersionHelp(System.err);
+			return;
+		}
+
+		opticLua.compilerFlags.forEach((option, enabled) -> {
+			if (enabled)
+				options.enable(option);
+			else
+				options.disable(option);
+		});
+		if (opticLua.javaCodeDump)
+			options.enable(StandardFlags.DUMP_JAVA);
+		if (opticLua.showTime)
+			options.enable(StandardFlags.SHOW_TIME);
+		if (opticLua.showRtStats)
+			options.enable(StandardFlags.SHOW_RT_STATS);
+
+		Set<Path> sources = new HashSet<>(opticLua.sources);
+		if (opticLua.mainSource != null) {
+			sources.add(opticLua.mainSource);
+		}
+		Bundle bundle = bundleCompiler.compile(sources);
+
+		if (opticLua.interactiveShell) {
 			// interactive session
-			var shell = new InteractiveShell(System.in, System.out, System.err, bundle);
+			var shell = new InteractiveShell(System.in, System.out, System.err, bundle, options);
 			shell.run();
 			return;
 		}
-		// run a file
-		String fileName = System.getProperty("optic.source");
-		int nTimes = Integer.parseInt(System.getProperty("optic.n", "10"));
+
+		if (opticLua.mainSource == null) {
+			commandLine.usage(System.err);
+			return;
+		}
+
+		String fileName = opticLua.mainSource.toString();
+		int nTimes = opticLua.nTimes;
 		for (int i = 0; i < nTimes; i++) {
 			long start = System.nanoTime();
 			bundle.doFile(fileName, LuaContext.create(bundle), List.of());
-			context.reporter().report(durationInfo(System.nanoTime() - start));
+			if (options.get(StandardFlags.SHOW_TIME)) {
+				context.reporter().report(durationInfo(System.nanoTime() - start));
+			}
 		}
 	}
 
