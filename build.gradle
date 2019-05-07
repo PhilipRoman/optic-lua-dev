@@ -47,7 +47,9 @@ jar {
 shadowJar {
     baseName = 'optic-lua'
     classifier = null
-    minimize()
+    minimize {
+        exclude(dependency('ch.qos.logback:.*:.*'))
+    }
 }
 
 run {
