@@ -10,6 +10,7 @@ build:
     # show jar size in log
     - du -sbh build/libs/*.jar
     # verify that launch script and fat jar is working
+    - chmod +x optic-lua
     - ./optic-lua --version
   artifacts:
     reports:
