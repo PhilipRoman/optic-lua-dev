@@ -119,9 +119,9 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 	@Override
 	public String visitRegister(Register r) {
 		if (options().get(StandardFlags.DEBUG_COMMENTS)) {
-			return r.getName() + " /* " + r.toDebugString() + " */";
+			return r.name() + " /* " + r.toDebugString() + " */";
 		} else {
-			return r.getName();
+			return r.name();
 		}
 	}
 

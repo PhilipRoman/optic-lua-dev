@@ -251,7 +251,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	@Override
 	public ResultBuffer visitAssignment(Register register, RValue value) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		buffer.add(JavaUtils.typeName(register), " ", register.getName(), " = ", expression(value), ";");
+		buffer.add(JavaUtils.typeName(register), " ", register.name(), " = ", expression(value), ";");
 		return buffer;
 	}
 

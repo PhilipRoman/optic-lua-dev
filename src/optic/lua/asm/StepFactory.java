@@ -7,7 +7,7 @@ import java.util.*;
 class StepFactory {
 	static Step tableWrite(LValue.TableField target, RValue value) {
 		checkVararg(false, value);
-		return discard(RValue.invocation(target.getTable(), InvocationMethod.SET_INDEX, List.of(target.getKey(), value)));
+		return discard(RValue.invocation(target.table(), InvocationMethod.SET_INDEX, List.of(target.key(), value)));
 	}
 
 	static Step declareLocal(VariableInfo info) {
