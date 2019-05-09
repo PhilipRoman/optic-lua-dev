@@ -111,7 +111,7 @@ public interface RValue {
 		}
 	}
 
-	class NilConstant extends Constant<Void> {
+	class NilConstant extends Constant<Step.Void> {
 		private NilConstant() {
 			super(null);
 		}
