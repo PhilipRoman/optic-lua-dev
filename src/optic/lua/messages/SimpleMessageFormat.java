@@ -3,6 +3,7 @@ package optic.lua.messages;
 import optic.lua.io.CodeSource;
 import org.jetbrains.annotations.NotNull;
 
+@Deprecated
 public class SimpleMessageFormat implements MessageFormat<String> {
 	@NotNull
 	@Override

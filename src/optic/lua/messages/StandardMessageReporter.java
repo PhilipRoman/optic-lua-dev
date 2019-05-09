@@ -2,6 +2,7 @@ package optic.lua.messages;
 
 import java.io.PrintStream;
 
+@Deprecated
 public class StandardMessageReporter implements MessageReporter {
 	private final PrintStream stream;
 	private final MessageFormat<? extends CharSequence> format;

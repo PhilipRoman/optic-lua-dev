@@ -4,6 +4,7 @@ import optic.lua.io.CodeSource;
 
 import java.util.function.*;
 
+@Deprecated
 public class NullMessageReporter implements MessageReporter {
 	@Override
 	public void report(Message message) {

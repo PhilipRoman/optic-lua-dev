@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <T> The type to which this {@link MessageFormat} converts messages
  */
 @FunctionalInterface
+@Deprecated
 public interface MessageFormat<T> {
 	@NotNull
 	T format(Message message);

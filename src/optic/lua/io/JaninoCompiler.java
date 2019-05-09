@@ -5,6 +5,7 @@ import optic.lua.messages.*;
 import optic.lua.runtime.LuaContext;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
+import org.slf4j.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -13,16 +14,18 @@ import java.nio.file.*;
 import java.util.*;
 
 final class JaninoCompiler {
+	private static final Logger log = LoggerFactory.getLogger(JaninoCompiler.class);
+
 	public static final String GENERATED_CLASS_NAME = "LuaSource";
 	public static final String GENERATED_METHOD_NAME = "mainChunk";
 	private static final WeakHashMap<ByteBuffer, ScriptEvaluator> scriptCache = new WeakHashMap<>();
 	private static final int MAX_CACHED_SIZE = 4096;
-	private final Context context;
+	private final Options options;
 	private final boolean useCache;
 
-	public JaninoCompiler(Context context) {
-		this.context = context;
-		this.useCache = context.options().get(StandardFlags.CACHE_JAVA_COMPILING);
+	public JaninoCompiler(Options options) {
+		this.options = options;
+		this.useCache = options.get(StandardFlags.CACHE_JAVA_COMPILING);
 	}
 
 	private static String findLine(byte[] source, int line) {
@@ -38,22 +41,23 @@ final class JaninoCompiler {
 		try {
 			evaluator = createEvaluator(data);
 		} catch (CompileException e) {
-			context.reporter().report(compilationError(data, e));
-			throw new CompilationFailure(Tag.BUG);
+			logCompilationError(data, e);
+			throw new CompilationFailure();
 		}
 		return evaluator.getMethod();
 	}
 
 	public Object[] run(InputStream input, int nTimes, LuaContext luaContext, List<Object> args) throws CompilationFailure {
 		final byte[] data;
+		Objects.requireNonNull(input);
 		try {
 			data = input.readAllBytes();
 		} catch (IOException e) {
-			context.reporter().report(ioError(e));
-			throw new CompilationFailure(Tag.IO_ERROR);
+			log.error("IO error while reading from input stream (" + input.getClass() + ")", e);
+			throw new CompilationFailure();
 		}
 
-		if (context.options().get(StandardFlags.DUMP_JAVA)) {
+		if (options.get(StandardFlags.DUMP_JAVA)) {
 			try {
 				var debugFile = Files.createTempFile(Paths.get(""), "dump_", ".out");
 				Files.write(debugFile, data);
@@ -64,7 +68,7 @@ final class JaninoCompiler {
 
 		var method = compile(data);
 		Object[] result = null;
-		var runner = new Runner(context);
+		var runner = new Runner(options);
 		for (int i = 0; i < nTimes; i++) {
 			result = runner.run(method, luaContext, args);
 		}
@@ -98,22 +102,12 @@ final class JaninoCompiler {
 		return evaluator;
 	}
 
-	private Message ioError(IOException e) {
-		var msg = Message.create("IOException: " + e.getMessage());
-		msg.setCause(e);
-		msg.setPhase(Phase.RUNTIME);
-		msg.setLevel(Level.ERROR);
-		return msg;
-	}
-
-	private Message compilationError(byte[] source, CompileException e) {
+	private void logCompilationError(byte[] source, CompileException e) {
+		if (!log.isErrorEnabled())
+			return;
 		boolean hasLocation = e.getLocation() != null;
 		String sourceInfo = hasLocation ? ", source code: " + findLine(source, e.getLocation().getLineNumber()) : "";
 		String lineInfo = hasLocation ? " (line " + e.getLocation().getLineNumber() + ")" : "";
-		var msg = Message.create("Compilation error" + lineInfo + " " + sourceInfo);
-		msg.setCause(e);
-		msg.setPhase(Phase.COMPILING);
-		msg.setLevel(Level.ERROR);
-		return msg;
+		log.error("Compilation error" + lineInfo + " " + sourceInfo, e);
 	}
 }

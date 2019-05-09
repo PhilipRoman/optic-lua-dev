@@ -11,7 +11,6 @@ import java.lang.String;
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua52Walker.Number;
-import static nl.bigo.luaparser.Lua52Walker.Return;
 import static nl.bigo.luaparser.Lua52Walker.String;
 import static nl.bigo.luaparser.Lua52Walker.*;
 
@@ -29,24 +28,24 @@ public class MutableFlattener implements VariableResolver {
 	// whether or not local variables from parent are accessed as upvalues
 	private final boolean lexicalBoundary;
 	private final VariableInfo _ENV = VariableInfo.createEnv();
-	private final Context context;
+	private final Options options;
 	private final BlockMeaning meaning;
 
-	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Context context, BlockMeaning meaning) {
+	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Options options, BlockMeaning meaning) {
 		this.parent = parent;
 		lexicalBoundary = boundary;
 		this.meaning = meaning;
 		Objects.requireNonNull(steps);
-		Objects.requireNonNull(context);
-		this.context = context;
+		Objects.requireNonNull(options);
+		this.options = options;
 		this.steps = steps;
 	}
 
-	public static AsmBlock flatten(CommonTree tree, Context context) throws CompilationFailure {
+	public static AsmBlock flatten(CommonTree tree, Options context) throws CompilationFailure {
 		return flatten(tree, context, null, List.of(), BlockMeaning.MAIN_CHUNK);
 	}
 
-	private static AsmBlock flatten(CommonTree tree, Context context, MutableFlattener parent, List<VariableInfo> locals, BlockMeaning kind) throws CompilationFailure {
+	private static AsmBlock flatten(CommonTree tree, Options context, MutableFlattener parent, List<VariableInfo> locals, BlockMeaning kind) throws CompilationFailure {
 		Objects.requireNonNull(tree);
 		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
 		int expectedSize = statements.size() * 4 + 10;
@@ -59,8 +58,8 @@ public class MutableFlattener implements VariableResolver {
 			try {
 				f.flattenStatement((Tree) stat);
 			} catch (RuntimeException e) {
-				f.emit(Level.ERROR, "Unhandled exception", ((Tree) stat), e);
-				throw new CompilationFailure(Tag.BUG);
+				log.error(((Tree) stat).toStringTree(), e);
+				throw new CompilationFailure();
 			}
 		}
 		return new AsmBlock(f.steps, f.locals);
@@ -70,13 +69,13 @@ public class MutableFlattener implements VariableResolver {
 		return new Flattener() {
 			@Override
 			public AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure {
-				return MutableFlattener.flatten(tree, context, MutableFlattener.this, locals, meaning);
+				return MutableFlattener.flatten(tree, options, MutableFlattener.this, locals, meaning);
 			}
 
 			@Override
 			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
 				List<Step> steps = new ArrayList<>();
-				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, context, meaning);
+				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, options, meaning);
 				RValue result = flattener.flattenExpression(tree);
 				return new FlatExpr(flattener.steps, result);
 			}
@@ -84,21 +83,21 @@ public class MutableFlattener implements VariableResolver {
 	}
 
 	private AsmBlock flattenDoBlock(CommonTree tree) throws CompilationFailure {
-		return flatten(tree, context, this, List.of(), BlockMeaning.DO_BLOCK);
+		return flatten(tree, options, this, List.of(), BlockMeaning.DO_BLOCK);
 	}
 
 	private AsmBlock flattenLoopBody(CommonTree tree) throws CompilationFailure {
-		return flatten(tree, context, this, List.of(), BlockMeaning.LOOP_BODY);
+		return flatten(tree, options, this, List.of(), BlockMeaning.LOOP_BODY);
 	}
 
 	private AsmBlock flattenForInLoopBody(CommonTree tree, List<VariableInfo> variables) throws CompilationFailure {
-		return flatten(tree, context, this, variables, BlockMeaning.LOOP_BODY);
+		return flatten(tree, options, this, variables, BlockMeaning.LOOP_BODY);
 	}
 
 	private AsmBlock flattenForRangeBody(CommonTree tree, ProvenType counterType, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.update(counterType);
-		return flatten(tree, context, this, List.of(info), BlockMeaning.LOOP_BODY);
+		return flatten(tree, options, this, List.of(info), BlockMeaning.LOOP_BODY);
 	}
 
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
@@ -109,7 +108,7 @@ public class MutableFlattener implements VariableResolver {
 			info.enableNumbers();
 			infos.add(info);
 		}
-		return flatten(tree, context, this, infos, BlockMeaning.FUNCTION_BODY);
+		return flatten(tree, options, this, infos, BlockMeaning.FUNCTION_BODY);
 	}
 
 	@Nullable
@@ -194,7 +193,7 @@ public class MutableFlattener implements VariableResolver {
 					variables.add(new VariableInfo(name.toString()));
 				}
 				if (t.getChild(1).getChildCount() > 1) {
-					emit(Level.WARNING, "for loop iterator should be a single expression; additional expressions will be ignored!", t);
+					log.warn("for loop iterator should be a single expression; additional expressions will be ignored! {}", t.toStringTree());
 				}
 				var iterator = evaluateOnce(discardRemaining(flattenExpression(Trees.expectChild(EXPR_LIST, t, 1).getChild(0))));
 				var body = flattenForInLoopBody((CommonTree) Trees.expectChild(Do, t, 2), variables);
@@ -255,8 +254,8 @@ public class MutableFlattener implements VariableResolver {
 				return;
 			}
 		}
-		emit(Level.ERROR, "Unknown statement: " + t.toStringTree(), t);
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+		log.error("Unknown statement: " + t.toStringTree());
+		throw new CompilationFailure();
 	}
 
 	private RValue flattenExpression(Tree t) throws CompilationFailure {
@@ -332,8 +331,8 @@ public class MutableFlattener implements VariableResolver {
 				return RValue.bool(false);
 			}
 		}
-		emit(Level.ERROR, "Unknown expression: " + t + " in " + t.getParent().toStringTree(), t);
-		throw new CompilationFailure(Tag.UNSUPPORTED_FEATURE);
+		log.error("Unknown expression: {} in {}", t, t.getParent().toStringTree());
+		throw new CompilationFailure();
 	}
 
 	@Contract(mutates = "this")
@@ -447,7 +446,7 @@ public class MutableFlattener implements VariableResolver {
 					locals.put(name.toString(), variable);
 					declare(variable);
 				}
-			} else if (locals.containsKey(info.getName()) && context.options().get(StandardFlags.SSA_SPLIT)) {
+			} else if (locals.containsKey(info.getName()) && options.get(StandardFlags.SSA_SPLIT)) {
 				// if variable is already a local variable
 				var next = info.nextIncarnation();
 				locals.put(name.toString(), next);
@@ -490,18 +489,5 @@ public class MutableFlattener implements VariableResolver {
 		Tree chunk = Trees.expectChild(CHUNK, t, 1);
 		AsmBlock body = flattenFunctionBody((CommonTree) chunk, params);
 		return RValue.function(params, body);
-	}
-
-	private void emit(Level level, String msg, Tree location) {
-		emit(level, msg, location, null);
-	}
-
-	private void emit(Level level, String msg, Tree location, Throwable cause) {
-		var warning = Message.create(msg);
-		warning.setLine(location.getLine());
-		warning.setColumn(location.getCharPositionInLine());
-		warning.setLevel(level);
-		warning.setCause(cause);
-		context.reporter().report(warning);
 	}
 }

@@ -3,6 +3,7 @@ package optic.lua.io;
 import optic.lua.messages.*;
 import org.antlr.runtime.*;
 import org.jetbrains.annotations.*;
+import org.slf4j.*;
 
 import java.nio.file.*;
 import java.util.*;
@@ -28,7 +29,7 @@ public interface CodeSource {
 	 * for purposes such as error reporting, benchmarking, etc.
 	 */
 	@NotNull
-	CharStream newCharStream(Context context) throws CompilationFailure;
+	CharStream newCharStream(Options options) throws CompilationFailure;
 
 	/**
 	 * @return a human-friendly, short name which identifies this source. The name
@@ -54,6 +55,8 @@ public interface CodeSource {
 	}
 
 	class CodeSourceImpl implements CodeSource {
+		private static final Logger log = LoggerFactory.getLogger(CodeSource.class);
+
 		private final String name;
 		private final CharStreamSupplier streamSupplier;
 		@Nullable
@@ -72,16 +75,13 @@ public interface CodeSource {
 
 		@NotNull
 		@Override
-		public CharStream newCharStream(Context context) throws CompilationFailure {
+		public CharStream newCharStream(Options options) throws CompilationFailure {
 			final CharStream stream;
 			try {
 				stream = streamSupplier.get();
 			} catch (Exception e) {
-				var msg = Message.create("Could not obtain character stream");
-				msg.setCause(e);
-				msg.setLevel(Level.ERROR);
-				context.reporter().report(msg);
-				throw new CompilationFailure(Tag.USER_CODE);
+				log.error("Could not obtain character stream", e);
+				throw new CompilationFailure();
 			}
 			return Objects.requireNonNull(stream);
 		}

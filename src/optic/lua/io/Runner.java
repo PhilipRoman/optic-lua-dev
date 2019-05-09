@@ -3,19 +3,27 @@ package optic.lua.io;
 import optic.lua.messages.*;
 import optic.lua.runtime.LuaContext;
 import optic.lua.runtime.invoke.*;
+import org.slf4j.*;
 
 import java.lang.reflect.*;
 import java.util.List;
 
 public final class Runner {
-	private final Context context;
+	private static final Logger log = LoggerFactory.getLogger(Runner.class);
 
-	public Runner(Context context) {
-		this.context = context;
+	private final Options options;
+
+	public Runner(Options options) {
+		this.options = options;
 	}
 
 	public Runner() {
-		context = new Context(new Options(), new NullMessageReporter());
+		options = new Options();
+	}
+
+	private static void logTimeTaken(long nanos) {
+		long millis = nanos / (long) 1e6;
+		log.info("Finished in {}ms", millis);
 	}
 
 	public Object[] run(Method method, LuaContext luaContext, List<Object> args) {
@@ -23,8 +31,8 @@ public final class Runner {
 		long start = System.nanoTime();
 		try {
 			result = (Object[]) method.invoke(null, new Object[]{luaContext, args.toArray()});
-			if (context.options().get(StandardFlags.SHOW_TIME)) {
-				context.reporter().report(tookTime(System.nanoTime() - start));
+			if (options.get(StandardFlags.SHOW_TIME)) {
+				logTimeTaken(System.nanoTime() - start);
 			}
 		} catch (InvocationTargetException e) {
 			if (e.getCause() instanceof Error) {
@@ -38,7 +46,7 @@ public final class Runner {
 			throw new AssertionError(e);
 		}
 
-		if (context.options().get(StandardFlags.SHOW_RT_STATS)) {
+		if (options.get(StandardFlags.SHOW_RT_STATS)) {
 			// show information about call sites:
 			int skippedSites = 0;
 			for (CallSite site : luaContext.getCallSites()) {
@@ -55,12 +63,5 @@ public final class Runner {
 			System.err.println(skippedSites + " call sites skipped");
 		}
 		return result;
-	}
-
-	private static Message tookTime(long nanos) {
-		long millis = nanos / (long) 1e6;
-		var msg = Message.createInfo("Finished in " + millis + "ms");
-		msg.setPhase(Phase.RUNTIME);
-		return msg;
 	}
 }

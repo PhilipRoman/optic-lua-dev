@@ -2,6 +2,7 @@ package optic.lua.io;
 
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
+import org.slf4j.*;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -9,10 +10,17 @@ import java.nio.file.*;
 import java.util.*;
 
 public final class BundleCompiler {
-	private final Context context;
+	private static final Logger log = LoggerFactory.getLogger(BundleCompiler.class);
 
-	public BundleCompiler(Context context) {
-		this.context = context;
+	private final Options options;
+
+	public BundleCompiler(Options options) {
+		this.options = options;
+	}
+
+	private static void logTimeTaken(int numberOfFiles, long nanos) {
+		long millis = nanos / (long) 1e6;
+		log.info("Compiled {} files in {}ms", numberOfFiles, millis);
 	}
 
 	public Bundle compile(Collection<Path> paths) throws CompilationFailure {
@@ -22,21 +30,15 @@ public final class BundleCompiler {
 			map.put(path, compileFile(path));
 		}
 		long nanos = System.nanoTime() - start;
-		context.reporter().report(compiledFiles(paths.size(), nanos));
+		if (options.get(StandardFlags.SHOW_TIME))
+			logTimeTaken(paths.size(), nanos);
 		return new Bundle(map);
-	}
-
-	private static Message compiledFiles(int numberOfFiles, long nanos) {
-		long millis = nanos / (long) 1e6;
-		var msg = Message.createInfo("Compiled " + numberOfFiles + " files in " + millis + "ms");
-		msg.setPhase(Phase.COMPILING);
-		return msg;
 	}
 
 	private Method compileFile(Path path) throws CompilationFailure {
 		var javaBuffer = new ByteArrayOutputStream();
 		var pipeline = new SingleSourceCompiler(
-				context,
+				options,
 				CodeSource.ofFile(path.toString()),
 				List.of(JavaCodeOutput.writingTo(javaBuffer))
 		);
@@ -49,7 +51,7 @@ public final class BundleCompiler {
 		}
 		byte[] javaSourceBytes = javaBuffer.toByteArray();
 
-		if (context.options().get(StandardFlags.DUMP_JAVA)) {
+		if (options.get(StandardFlags.DUMP_JAVA)) {
 			try {
 				var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
 				Files.write(debugFile, javaSourceBytes);
@@ -58,6 +60,6 @@ public final class BundleCompiler {
 			}
 		}
 
-		return new JaninoCompiler(context).compile(javaSourceBytes);
+		return new JaninoCompiler(options).compile(javaSourceBytes);
 	}
 }

@@ -2,6 +2,7 @@ package optic.lua.messages;
 
 import optic.lua.io.CodeSource;
 
+@Deprecated
 public final class Context {
 	private final Options options;
 	private final MessageReporter reporter;

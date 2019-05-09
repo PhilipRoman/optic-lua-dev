@@ -3,6 +3,7 @@ package optic.lua.messages;
 import optic.lua.io.CodeSource;
 import org.jetbrains.annotations.*;
 
+@Deprecated
 public interface MessageBuilder extends Message {
 	/**
 	 * @return mutable (not necessarily new) message containing the same information as original

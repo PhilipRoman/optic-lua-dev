@@ -7,6 +7,7 @@ import optic.lua.messages.*;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.*;
 
 import java.io.*;
 import java.util.*;
@@ -34,17 +35,18 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
 	private static final boolean USE_INJECTED_CONTEXT = true;
 	private static final boolean USE_INJECTED_ARGS = true;
-	final Context context;
+	private static final Logger log = LoggerFactory.getLogger(JavaCodeOutput.class);
+	final Options options;
 	private final List<String> constants = new ArrayList<>();
 	private final PrintStream out;
 	private final AsmBlock block;
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
 
-	private JavaCodeOutput(PrintStream out, AsmBlock block, Context context) {
+	private JavaCodeOutput(PrintStream out, AsmBlock block, Options options) {
 		this.out = out;
 		this.block = block;
-		this.context = context;
+		this.options = options;
 	}
 
 	public static CompilerPlugin.Factory writingTo(OutputStream stream) {
@@ -111,7 +113,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		var realCounterName = "i_" + counter.getName();
 		ProvenType realCounterType = from.typeInfo().and(step.typeInfo());
 		if (realCounterType == ProvenType.INTEGER
-				&& context.options().get(StandardFlags.LOOP_SPLIT)) {
+				&& options.get(StandardFlags.LOOP_SPLIT)) {
 			// we optimize integer loops at runtime by checking if the range is within int bounds
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
@@ -139,7 +141,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		if (variable.getMode() == VariableMode.LOCAL) {
 			// local variable
 			String finalPrefix = variable.isFinal() ? "final " : "";
-			boolean debug = context.options().get(StandardFlags.DEBUG_COMMENTS);
+			boolean debug = options.get(StandardFlags.DEBUG_COMMENTS);
 			String debugSuffix = debug ? (" /* " + variable.toDebugString() + " */") : "";
 			buffer.add(finalPrefix, JavaUtils.typeName(variable), " ", name, ";", debugSuffix);
 		} else if (variable.isFinal()) {
@@ -242,7 +244,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	@Override
 	public ResultBuffer visitComment(String comment) {
 		var buffer = new ResultBuffer();
-		if (context.options().get(StandardFlags.KEEP_COMMENTS)) {
+		if (options.get(StandardFlags.KEEP_COMMENTS)) {
 			buffer.add("// ", comment);
 		}
 		return buffer;
@@ -257,15 +259,8 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 
 	private void execute() throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		{
-			var msg = Message.create("Java code output still in development");
-			msg.setLevel(Level.DEBUG);
-			context.reporter().report(msg);
-		}
-		if (context.options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
-			var msg = Message.create("Use of ALLOW_UPVALUE_VARARGS is not officially supported");
-			msg.setLevel(Level.WARNING);
-			context.reporter().report(msg);
+		if (options.get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
+			log.warn("Use of {} is not officially supported", StandardFlags.ALLOW_UPVALUE_VARARGS);
 		}
 		out.println("import optic.lua.runtime.*;");
 		out.println("import optic.lua.runtime.invoke.*;");
@@ -280,7 +275,7 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		buffer.add("return main(", context, ", ", args, ");");
 
 		constants.forEach(out::println);
-		buffer.writeTo(out, this.context.options().get(Option.INDENT));
+		buffer.writeTo(out, options.get(Option.INDENT));
 		out.flush();
 	}
 

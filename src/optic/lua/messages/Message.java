@@ -8,6 +8,7 @@ import java.util.*;
 /**
  * Compiler message to be used with {@link MessageReporter}
  */
+@Deprecated
 public interface Message {
 	/**
 	 * @return mutable message with the given text

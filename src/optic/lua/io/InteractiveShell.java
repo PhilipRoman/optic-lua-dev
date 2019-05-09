@@ -3,18 +3,18 @@ package optic.lua.io;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 import optic.lua.runtime.*;
+import org.slf4j.*;
 
 import java.io.*;
 import java.util.*;
 
 public final class InteractiveShell {
+	private static final Logger log = LoggerFactory.getLogger(InteractiveShell.class);
 	private final Reader in;
 	private final PrintWriter out;
 	private final PrintWriter err;
 	private final Bundle bundle;
 	private final WeakHashMap<String, byte[]> scriptCache = new WeakHashMap<>();
-	private final MessageReporter reporter = new StandardMessageReporter(System.err)
-			.filter(Level.HINT);
 	private final Options options;
 
 	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle, Options options) {
@@ -23,6 +23,19 @@ public final class InteractiveShell {
 		this.err = new PrintWriter(new OutputStreamWriter(err));
 		this.bundle = bundle;
 		this.options = options;
+	}
+
+	private static void logTimeTaken(long nanos) {
+		long millis = nanos / (long) 1e6;
+		log.info("Compiled expression in {}ms", millis);
+	}
+
+	/**
+	 * Returns the {@link Options} used by this shell.
+	 * The returned object may be freely modified; changes will be reflected in the behavior of this shell.
+	 */
+	public Options options() {
+		return options;
 	}
 
 	public void run() {
@@ -54,7 +67,7 @@ public final class InteractiveShell {
 				continue;
 			} catch (RuntimeException e) {
 				shortenStackTrace(e);
-				reporter.report(Message.createError("Uncaught error", e));
+				log.error("Uncaught error", e);
 				continue;
 			}
 			if (result != null && result.length > 0) {
@@ -67,27 +80,12 @@ public final class InteractiveShell {
 		out.flush();
 	}
 
-	/**
-	 * Returns the {@link Options} used by this shell.
-	 * The returned object may be freely modified; changes will be reflected in the behavior of this shell.
-	 */
-	public Options options() {
-		return options;
-	}
-
-	private static Message tookTime(long nanos) {
-		long millis = nanos / (long) 1e6;
-		var msg = Message.createInfo("Compiled expression in " + millis + "ms");
-		msg.setPhase(Phase.COMPILING);
-		return msg;
-	}
-
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
 		long start = System.nanoTime();
-		JaninoCompiler compiler = new JaninoCompiler(new Context(options, reporter));
+		JaninoCompiler compiler = new JaninoCompiler(options);
 		ByteArrayInputStream input = new ByteArrayInputStream(compileToJava(line));
 		if (options.get(StandardFlags.SHOW_TIME)) {
-			reporter.report(tookTime(System.nanoTime() - start));
+			logTimeTaken(System.nanoTime() - start);
 		}
 		return compiler.run(input, 1, context, List.of());
 	}
@@ -99,7 +97,7 @@ public final class InteractiveShell {
 		}
 		var buffer = new ByteArrayOutputStream(512);
 		var pipeline = new SingleSourceCompiler(
-				new Context(options, reporter),
+				options,
 				CodeSource.ofString(script, "<stdin>"),
 				List.of(JavaCodeOutput.writingTo(buffer))
 		);

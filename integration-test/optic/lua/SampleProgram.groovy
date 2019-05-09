@@ -3,7 +3,8 @@ package optic.lua
 import groovy.transform.CompileStatic
 import optic.lua.io.BundleCompiler
 import optic.lua.io.Runner
-import optic.lua.messages.*
+import optic.lua.messages.Options
+import optic.lua.messages.StandardFlags
 import optic.lua.runtime.LuaContext
 import optic.lua.runtime.invoke.InstrumentedCallSite
 
@@ -12,7 +13,6 @@ import java.nio.file.Paths
 @CompileStatic
 final class SampleProgram {
     private final String filePath
-    private static final MessageReporter reporter = new StandardMessageReporter()
 
     SampleProgram(String filePath) {
         this.filePath = filePath
@@ -25,7 +25,7 @@ final class SampleProgram {
                 (StandardFlags.SSA_SPLIT)     : true,
                 (StandardFlags.DEBUG_COMMENTS): true,
         ])
-        def bundle = new BundleCompiler(new Context(options, reporter)).compile([Paths.get(filePath)])
+        def bundle = new BundleCompiler(options).compile([Paths.get(filePath)])
         def luaContext = LuaContext.create(bundle)
         def out = new StringWriter()
         luaContext.out = new PrintWriter(out)

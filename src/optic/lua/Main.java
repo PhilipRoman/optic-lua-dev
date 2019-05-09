@@ -14,10 +14,7 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		var options = new Options();
-		MessageReporter reporter = new LogMessageReporter(log, new SimpleMessageFormat())
-				.filter(Level.HINT);
-		var context = new Context(options, reporter);
-		var bundleCompiler = new BundleCompiler(context);
+		var bundleCompiler = new BundleCompiler(options);
 
 		OpticLua opticLua = new OpticLua();
 		CommandLine commandLine = new CommandLine(opticLua);
@@ -70,16 +67,12 @@ public class Main {
 			long start = System.nanoTime();
 			bundle.doFile(fileName, LuaContext.create(bundle), List.of());
 			if (options.get(StandardFlags.SHOW_TIME)) {
-				context.reporter().report(durationInfo(System.nanoTime() - start));
+				logDurationInfo(System.nanoTime() - start);
 			}
 		}
 	}
 
-	private static Message durationInfo(long nanos) {
-		var msg = Message.create("Program took " + (nanos / (int) 1e6) + " ms");
-		msg.setLevel(Level.HINT);
-		msg.setPhase(Phase.RUNTIME);
-		msg.addTag(Tag.STATISTICS);
-		return msg;
+	private static void logDurationInfo(long nanos) {
+		log.info("Program took {}ms", (nanos / (int) 1e6));
 	}
 }

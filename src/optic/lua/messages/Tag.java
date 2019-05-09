@@ -1,5 +1,6 @@
 package optic.lua.messages;
 
+@Deprecated
 public enum Tag {
 	UNSUPPORTED_FEATURE,
 	USER_CODE,

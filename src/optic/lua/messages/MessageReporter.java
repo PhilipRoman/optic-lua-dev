@@ -10,6 +10,7 @@ import java.util.function.*;
  * specialized variants such as {@link #withSource} and {@link #withPhase}
  */
 @FunctionalInterface
+@Deprecated
 public interface MessageReporter {
 	void report(Message message);
 

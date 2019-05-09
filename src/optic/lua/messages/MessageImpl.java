@@ -5,6 +5,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+@Deprecated
 class MessageImpl implements Message, MessageBuilder {
 	@NotNull
 	private final String message;

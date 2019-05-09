@@ -2,6 +2,7 @@ package optic.lua.messages;
 
 import org.slf4j.Logger;
 
+@Deprecated
 public class LogMessageReporter implements MessageReporter {
 	private final Logger log;
 	private final MessageFormat<String> format;

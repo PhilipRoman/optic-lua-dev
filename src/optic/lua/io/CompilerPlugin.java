@@ -17,6 +17,6 @@ public interface CompilerPlugin {
 
 	@FunctionalInterface
 	interface Factory {
-		CompilerPlugin create(AsmBlock block, Context context);
+		CompilerPlugin create(AsmBlock block, Options options);
 	}
 }

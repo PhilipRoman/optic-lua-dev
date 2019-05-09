@@ -7,6 +7,7 @@ import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.*;
 
 import java.io.*;
 import java.util.*;
@@ -14,6 +15,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
+	private static final Logger log = LoggerFactory.getLogger(JavaExpressionVisitor.class);
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
 	private static AtomicInteger idCounter = new AtomicInteger();
@@ -24,7 +26,7 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 	}
 
 	private Options options() {
-		return statementVisitor.context.options();
+		return statementVisitor.options;
 	}
 
 	@Override
@@ -178,10 +180,11 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 
 	@Override
 	public String visitVarargs() throws CompilationFailure {
+		// TODO log illegal vararg usage
 		if (options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
-			return nestedData.firstNestedVarargName().orElseThrow(this::illegalVarargUsage);
+			nestedData.firstNestedVarargName().orElseThrow(CompilationFailure::new);
 		}
-		return nestedData.varargName().orElseThrow(this::illegalVarargUsage);
+		return nestedData.varargName().orElseThrow(CompilationFailure::new);
 	}
 
 	private String compileToNumber(RValue value) throws CompilationFailure {
@@ -254,10 +257,7 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 		return builder;
 	}
 
-	private CompilationFailure illegalVarargUsage() {
-		var msg = Message.create("Cannot use ... outside of vararg function");
-		msg.setLevel(Level.ERROR);
-		statementVisitor.context.reporter().report(msg);
-		return new CompilationFailure(Tag.BAD_INPUT);
+	private void logIllegalVarargUsageError() {
+		log.error("Cannot use ... outside of vararg function");
 	}
 }
