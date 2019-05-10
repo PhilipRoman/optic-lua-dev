@@ -25,6 +25,7 @@ class LuaTableTest extends GroovyTestCase {
         assert table.get("key2") == "value2"
         assert table.get("key3") == "value3"
         assert table.get("key4") == null
+        assert table.length() == 3
         assert table.get(1) == "i1"
         assert table.get(2) == "i2"
         assert table.get(3) == "i3"
@@ -52,6 +53,16 @@ class LuaTableTest extends GroovyTestCase {
         assert table.length() == 49
         table.set(11, null)
         assert table.length() == 10
+        table.set(11, "11")
+        assert table.length() == 49
+        table.set(51, "51")
+        assert table.length() == 49
+        table.set(50, "50")
+        assert table.length() == 51
+        for (int i = -50; i <= 51; i++) {
+            table.set(i, null)
+        }
+        assert table.length() == 0
     }
 
     void testNullValues() {

@@ -4,7 +4,7 @@ package optic.lua.runtime;
 public final class TableOps {
 	@RuntimeApi
 	public static LuaTable create(Object... entries) {
-		LuaTable table = LuaTable.allocate(entries.length >> 1);
+		LuaTable table = new LuaTable();
 		for (int i = 0; i < entries.length; i += 2) {
 			table.set(entries[i], entries[i + 1]);
 		}
@@ -13,7 +13,7 @@ public final class TableOps {
 
 	@RuntimeApi
 	public static LuaTable createWithVararg(Object key, Object[] trailing, Object... entries) {
-		LuaTable table = LuaTable.allocate((entries.length / 2) + trailing.length);
+		LuaTable table = new LuaTable();
 		for (int i = 0; i < entries.length; i += 2) {
 			table.set(entries[i], entries[i + 1]);
 		}

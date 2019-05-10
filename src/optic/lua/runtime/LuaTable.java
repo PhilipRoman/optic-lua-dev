@@ -1,34 +1,31 @@
 package optic.lua.runtime;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.*;
 
 public class LuaTable {
+	private static final Object[] EMPTY_ARRAY = {};
+	@NotNull
 	private final HashMap<Object, Object> hash;
+	// entries with keys of [1 .. length] are stored in array part
+	// remember that array part is zero-indexed
+	private Object[] array = EMPTY_ARRAY;
 	private int length;
-	private int maxIndex;
-	private boolean staleLength = true;
-	private boolean staleMaxIndex = true;
 
-	private LuaTable(int hashSize) {
-		hash = new HashMap<>(hashSize);
+	LuaTable() {
+		hash = new HashMap<>();
 		length = 0;
-		maxIndex = 0;
 	}
 
-	private LuaTable(HashMap<Object, Object> hash, int length, int maxIndex) {
-		this.hash = hash;
-		this.length = length;
-		this.maxIndex = maxIndex;
-	}
-
-	public static LuaTable ofMap(Map<?, ?> entries) {
-		LuaTable table = new LuaTable(entries.size());
+	static LuaTable ofMap(Map<?, ?> entries) {
+		LuaTable table = new LuaTable();
 		entries.forEach(table::set);
 		return table;
 	}
 
-	public static LuaTable ofArray(List<?> values) {
-		LuaTable table = new LuaTable(values.size());
+	static LuaTable ofArray(List<?> values) {
+		LuaTable table = new LuaTable();
 		for (int i = 0; i < values.size(); i++) {
 			Object val = values.get(i);
 			if (val != null) {
@@ -38,18 +35,15 @@ public class LuaTable {
 		return table;
 	}
 
-	public static LuaTable copyOf(LuaTable src) {
-		return new LuaTable(new HashMap<>(src.hash), src.length, src.maxIndex);
-	}
-
-	public static LuaTable allocate(int size) {
-		return new LuaTable(size);
-	}
-
 	public Object get(Object key) {
-		Objects.requireNonNull(key);
-		if (key.getClass() != Double.class && key instanceof Number) {
-			key = ((Number) key).doubleValue();
+		if (key instanceof Number) {
+			double d = ((Number) key).doubleValue();
+			int i = (int) d;
+			if (i == d && i <= length && i >= 1)
+				return array[i - 1];
+			// key is a Number but not a Double
+			if (key.getClass() != Double.class)
+				key = d; // autobox to Double
 		}
 		return hash.get(key);
 	}
@@ -59,74 +53,78 @@ public class LuaTable {
 	}
 
 	public Object get(int key) {
+		if (key <= length && key >= 1)
+			return array[key - 1];
 		return hash.get((double) key);
 	}
 
 	public void set(Object key, Object value) {
-		Objects.requireNonNull(key);
-		if (key.getClass() != Double.class && key instanceof Number) {
-			key = ((Number) key).doubleValue();
+		if (key == null)
+			throw new NullPointerException();
+		if (key instanceof Number) {
+			double d = ((Number) key).doubleValue();
+			int i = (int) d;
+			if (i == d && i <= length + 1 && i >= 1) {
+				setArray(i, value);
+				return;
+			}
+			// key is a Number but not a Double
+			if (key.getClass() != Double.class)
+				key = d; // autobox to Double
 		}
+		if (value == null)
+			hash.remove(key);
+		else
+			hash.put(key, value);
+	}
+
+	public void set(String key, Object value) {
 		if (value == null) {
 			hash.remove(key);
 		} else {
 			hash.put(key, value);
 		}
-		if (isInt(key)) {
-			staleLength = true;
-			staleMaxIndex = true;
-		}
 	}
 
-	public void set(String key, Object value) {
-		set((Object) key, value);
+	private void setArray(int key, Object value) {
+		if (value == null) {
+			removeFromArray(key);
+			return;
+		}
+		if (key == length + 1) {
+			appendToArray(value);
+			return;
+		}
+		array[key - 1] = value;
+	}
+
+	private void appendToArray(Object value) {
+		if (array.length <= length) {
+			int newLength = array.length == 0 ? 4 : array.length * 2;
+			array = Arrays.copyOf(array, newLength);
+		}
+		// example:
+		// array: [1, 2, 3]; length = 3
+		array[length++] = value;
+		// array: [1, 2, 3, 4]; length = 4
+		// check if hash part contains entry for 5:
+		Object next = hash.remove((double) length + 1);
+		// recursively append
+		if (next != null)
+			appendToArray(next);
+	}
+
+	private void removeFromArray(int key) {
+		int oldLength = length;
+		length = key - 1;
+		for (int i = key; i < oldLength; i++)
+			hash.put((double) (i + 1), array[i]);
+		for (int i = key; i < array.length; i++)
+			array[i] = null;
 	}
 
 	int length() {
-		if (staleLength) {
-			updateLength();
-			staleLength = false;
-		}
 		return length;
-	}
-
-	int maxIndex() {
-		if (staleMaxIndex) {
-			updateMaxIndex();
-			staleMaxIndex = false;
-		}
-		return maxIndex;
-	}
-
-	private void updateMaxIndex() {
-		double best = 0;
-		for (Object x : hash.keySet()) {
-			if (isInt(x)) {
-				double v = (double) x;
-				if (v > best) {
-					best = v;
-				}
-			}
-		}
-		maxIndex = (int) best;
-	}
-
-	private boolean isInt(Object o) {
-		if (!(o instanceof Number)) {
-			return false;
-		}
-		return ((Number) o).doubleValue() == ((Number) o).intValue();
-	}
-
-	private void updateLength() {
-		double found;
-		for (long i = 1; ; i++) {
-			if (!hash.containsKey((double) i)) {
-				found = i;
-				break;
-			}
-		}
-		length = (int) found - 1;
 	}
 
 	@Override
@@ -144,7 +142,7 @@ public class LuaTable {
 		return "table 0x" + Integer.toHexString(hashCode());
 	}
 
-	public Iterator pairsIterator() {
+	Iterator pairsIterator() {
 		var it = hash.entrySet().iterator();
 		return new Iterator() {
 			@Override

@@ -26,7 +26,7 @@ public class EnvOps {
 	}
 
 	public static LuaTable createEnv() {
-		LuaTable env = LuaTable.allocate(64);
+		LuaTable env = new LuaTable();
 		env.set("print", new LuaFunction("print") {
 			public Object[] call(LuaContext context1, Object... args) {
 				StandardLibrary.print(context1.out, args);
