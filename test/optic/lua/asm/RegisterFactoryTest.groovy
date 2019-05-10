@@ -1,6 +1,7 @@
 package optic.lua.asm
 
 import groovy.transform.CompileStatic
+import optic.lua.optimization.ProvenType
 
 @CompileStatic
 class RegisterFactoryTest extends GroovyTestCase {
@@ -12,10 +13,10 @@ class RegisterFactoryTest extends GroovyTestCase {
     }
 
     void testCreate() {
-        def r = RegisterFactory.create()
+        def r = RegisterFactory.create(ProvenType.INTEGER)
         assert !r.isVararg()
         assert !r.isUnused()
-        assert r != RegisterFactory.create()
+        assert r != RegisterFactory.create(ProvenType.INTEGER)
     }
 
     void testUnused() {

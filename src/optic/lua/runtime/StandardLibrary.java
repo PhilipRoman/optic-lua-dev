@@ -53,6 +53,10 @@ public class StandardLibrary {
 		if (o == null) {
 			return "nil";
 		}
+		if (o instanceof Number) {
+			double d = ((Number) o).doubleValue();
+			return ((long) d == d) ? Long.toString((long) d) : Double.toString(d);
+		}
 		if (o instanceof Object[]) {
 			return Arrays.stream((Object[]) o).map(StandardLibrary::toString).collect(Collectors.joining(", ", "[", "]"));
 		}
@@ -129,8 +133,12 @@ public class StandardLibrary {
 	}
 
 	public static String strictToString(Object x) {
-		if (x instanceof CharSequence || x instanceof Number || x instanceof Boolean) {
+		if (x instanceof CharSequence || x instanceof Boolean) {
 			return x.toString();
+		}
+		if (x instanceof Number) {
+			double d = ((Number) x).doubleValue();
+			return ((long) d == d) ? Long.toString((long) d) : Double.toString(d);
 		}
 		throw new IllegalArgumentException(toString(x));
 	}

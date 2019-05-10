@@ -45,7 +45,7 @@ public enum InvocationMethod {
 		return returnCount;
 	}
 
-	public ProvenType typeInfo(List<RValue> arguments) {
+	public ProvenType typeInfo(RValue object, List<RValue> arguments) {
 		switch (this) {
 			case INDEX:
 			case CALL:
@@ -56,10 +56,10 @@ public enum InvocationMethod {
 			default:
 				var luaOp = LuaOperator.valueOf(name());
 				if (luaOp.arity() == 2) {
-					return luaOp.resultType(arguments.get(0).typeInfo(), arguments.get(1).typeInfo());
+					return luaOp.resultType(object.typeInfo(), arguments.get(0).typeInfo());
 				} else {
 					assert luaOp.arity() == 1;
-					return luaOp.resultType(null, arguments.get(0).typeInfo());
+					return luaOp.resultType(null, object.typeInfo());
 				}
 		}
 	}

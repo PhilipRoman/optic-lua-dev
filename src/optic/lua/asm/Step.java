@@ -21,6 +21,9 @@ public interface Step {
 		Assign(Register result, RValue value) {
 			this.result = result;
 			this.value = value;
+			if (!value.typeInfo().subtypeOf(result.typeInfo())) {
+				throw new IllegalArgumentException(value + " not assignable to " + result);
+			}
 		}
 
 		@Override

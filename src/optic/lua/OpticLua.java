@@ -10,7 +10,7 @@ import java.util.*;
 @Command(description = "Lua to JVM compiler", version = "optic-lua [pre-alpha]")
 class OpticLua {
 	@Parameters(paramLabel = "FILE", description = "list of Lua source files to compile")
-	Set<Path> sources = Set.of();
+	Set<Path> sources = new HashSet<>();
 
 	@Nullable
 	@Option(names = {"-r", "--run"}, paramLabel = "FILE", description = "Lua source file to execute")
@@ -26,7 +26,7 @@ class OpticLua {
 	boolean javaCodeDump = false;
 
 	@Option(names = {"-F"}, hidden = true, description = "set advanced compiler options")
-	Map<StandardFlags, Boolean> compilerFlags = Map.of();
+	Map<StandardFlags, Boolean> compilerFlags = new HashMap<>();
 
 	@Option(names = {"-v", "--version"}, versionHelp = true, description = "display version information")
 	boolean versionRequested = false;

@@ -1,6 +1,6 @@
 package optic.lua.asm;
 
-import optic.lua.optimization.*;
+import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
 
 import java.util.List;
@@ -15,18 +15,21 @@ import java.util.function.Supplier;
  * Use [RegisterFactory] to obtain instances of this class.
  */
 public class Register implements RValue {
+	public static final Register UNUSED = new Register("_", true, ProvenType.OBJECT);
+
 	private final String name;
 
 	private final boolean vararg;
-	private final CombinedCommonType statusDependencies = new CombinedCommonType();
+	private final Supplier<ProvenType> type;
 
-	Register(String name, boolean vararg) {
+	private Register(String name, boolean vararg, Supplier<ProvenType> type) {
 		this.name = name;
 		this.vararg = vararg;
+		this.type = type;
 	}
 
-	Register(boolean isVararg) {
-		this(UniqueNames.next(), isVararg);
+	Register(boolean isVararg, Supplier<ProvenType> type) {
+		this(UniqueNames.next(), isVararg, type);
 	}
 
 	@Override
@@ -59,15 +62,7 @@ public class Register implements RValue {
 
 	@Override
 	public ProvenType typeInfo() {
-		return statusDependencies.get();
-	}
-
-	void updateStatus(ProvenType provenType) {
-		statusDependencies.add(provenType);
-	}
-
-	void addTypeDependency(Supplier<ProvenType> dependency) {
-		statusDependencies.add(dependency);
+		return type.get();
 	}
 
 	public String toDebugString() {
@@ -80,8 +75,7 @@ public class Register implements RValue {
 		if (!vararg) {
 			return new FlatExpr(List.of(), this);
 		}
-		var first = RegisterFactory.create();
-		first.updateStatus(ProvenType.OBJECT);
+		var first = RegisterFactory.create(ProvenType.OBJECT);
 		return new FlatExpr(List.of(StepFactory.select(first, this, 0)), first);
 	}
 }

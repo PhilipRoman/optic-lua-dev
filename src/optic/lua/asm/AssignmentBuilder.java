@@ -3,10 +3,12 @@ package optic.lua.asm;
 import optic.lua.asm.LValue.*;
 import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.*;
 
 import java.util.*;
 
 final class AssignmentBuilder {
+	private final Logger log = LoggerFactory.getLogger(AssignmentBuilder.class);
 	private final List<LValue> variables = new ArrayList<>(1);
 	private final List<RValue> values = new ArrayList<>(1);
 	private final VariableResolver resolver;
@@ -38,9 +40,8 @@ final class AssignmentBuilder {
 			} else if (vararg() == null) {
 				steps.add(createWriteStep(variable, RValue.nil()));
 			} else {
-				Register selected = RegisterFactory.create();
+				Register selected = RegisterFactory.create(ProvenType.OBJECT);
 				steps.add(StepFactory.select(selected, vararg(), overflow));
-				selected.updateStatus(ProvenType.OBJECT);
 				steps.add(createWriteStep(variable, selected));
 				overflow++;
 			}

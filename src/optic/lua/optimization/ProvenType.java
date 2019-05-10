@@ -1,6 +1,8 @@
 package optic.lua.optimization;
 
-public enum ProvenType {
+import java.util.function.Supplier;
+
+public enum ProvenType implements Supplier<ProvenType> {
 	INTEGER(1), NUMBER(3), OBJECT(7);
 
 	private static final ProvenType[] table = {null, INTEGER, null, NUMBER, null, null, null, OBJECT};
@@ -16,5 +18,14 @@ public enum ProvenType {
 
 	public boolean isNumeric() {
 		return this == INTEGER || this == NUMBER;
+	}
+
+	public boolean subtypeOf(ProvenType type) {
+		return this.code <= type.code;
+	}
+
+	@Override
+	public ProvenType get() {
+		return this;
 	}
 }

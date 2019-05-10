@@ -2,6 +2,7 @@ package optic.lua.asm;
 
 import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.messages.CompilationFailure;
+import optic.lua.optimization.ProvenType;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
 
@@ -28,7 +29,7 @@ final class NestedFieldBuilder {
 		RValue table = start;
 		for (var key : keys) {
 			steps.addAll(key.block());
-			Register next = RegisterFactory.create();
+			Register next = RegisterFactory.create(ProvenType.OBJECT);
 			steps.add(StepFactory.tableIndex(table, key.value(), next));
 			table = next;
 		}

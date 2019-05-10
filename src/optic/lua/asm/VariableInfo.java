@@ -81,11 +81,11 @@ public class VariableInfo {
 	}
 
 	void enableObjects() {
-		type.add(ProvenType.OBJECT);
+		update(ProvenType.OBJECT);
 	}
 
 	void enableNumbers() {
-		type.add(ProvenType.NUMBER);
+		update(ProvenType.NUMBER);
 	}
 
 	void update(ProvenType other) {

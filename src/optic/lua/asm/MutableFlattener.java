@@ -261,19 +261,17 @@ public class MutableFlattener implements VariableResolver {
 	private RValue flattenExpression(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
-			var register = RegisterFactory.create();
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			var a = discardRemaining(flattenExpression(t.getChild(0)));
 			var b = discardRemaining(flattenExpression(t.getChild(1)));
-			register.addTypeDependency(() -> op.resultType(a.typeInfo(), b.typeInfo()));
+			var register = RegisterFactory.create(() -> op.resultType(a.typeInfo(), b.typeInfo()));
 			steps.add(StepFactory.assign(register, RValue.invocation(a, op.invocationMethod(), List.of(b))));
 			return register;
 		}
 		if (Operators.isUnary(t)) {
-			var register = RegisterFactory.create();
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			RValue param = discardRemaining(flattenExpression(t.getChild(0)));
-			register.addTypeDependency(() -> op.resultType(null, param.typeInfo()));
+			var register = RegisterFactory.create(() -> op.resultType(null, param.typeInfo()));
 			steps.add(StepFactory.assign(register, RValue.invocation(param, op.invocationMethod(), List.of())));
 			return register;
 		}
@@ -360,8 +358,7 @@ public class MutableFlattener implements VariableResolver {
 		if (value.isPure()) {
 			return value;
 		}
-		var register = RegisterFactory.create();
-		register.updateStatus(value.typeInfo());
+		var register = RegisterFactory.create(value::typeInfo);
 		steps.add(StepFactory.assign(register, value));
 		return register;
 	}
@@ -369,7 +366,7 @@ public class MutableFlattener implements VariableResolver {
 	@Contract(mutates = "this")
 	private RValue discardRemaining(RValue vararg) {
 		if (vararg.isVararg()) {
-			Register r = RegisterFactory.create();
+			Register r = RegisterFactory.create(ProvenType.OBJECT);
 			steps.add(StepFactory.select(r, vararg, 0));
 			return r;
 		}

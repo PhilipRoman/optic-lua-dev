@@ -1,24 +1,24 @@
 package optic.lua.asm;
 
+import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.*;
 
-public class RegisterFactory {
-	private static final Register UNUSED_REGISTER = new Register("_", true);
+import java.util.function.Supplier;
 
-	@NotNull
+public class RegisterFactory {
 	@Contract(" -> new")
 	static Register createVararg() {
-		return new Register(true);
+		return new Register(true, ProvenType.OBJECT);
 	}
 
 	@NotNull
-	@Contract(" -> new")
-	public static Register create() {
-		return new Register(false);
+	@Contract("_ -> new")
+	public static Register create(Supplier<ProvenType> type) {
+		return new Register(false, type);
 	}
 
 	@NotNull
 	public static Register unused() {
-		return UNUSED_REGISTER;
+		return Register.UNUSED;
 	}
 }

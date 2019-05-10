@@ -63,7 +63,7 @@ public interface RValue {
 
 	default FlatExpr discardRemaining() {
 		if (this.isVararg()) {
-			var r = RegisterFactory.create();
+			var r = RegisterFactory.create(ProvenType.OBJECT);
 			return new FlatExpr(List.of(StepFactory.select(r, this, 0)), r);
 		}
 		return new FlatExpr(List.of(), this);
@@ -272,7 +272,7 @@ public interface RValue {
 
 		@Override
 		public ProvenType typeInfo() {
-			return method.typeInfo(arguments);
+			return method.typeInfo(object, arguments);
 		}
 	}
 
@@ -289,7 +289,7 @@ public interface RValue {
 
 		@Override
 		public FlatExpr discardRemaining() {
-			Register result = RegisterFactory.create();
+			Register result = RegisterFactory.create(ProvenType.OBJECT);
 			Step step = StepFactory.select(result, this, 0);
 			return new FlatExpr(List.of(step), result);
 		}
