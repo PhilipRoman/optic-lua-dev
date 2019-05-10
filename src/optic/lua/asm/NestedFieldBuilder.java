@@ -1,6 +1,6 @@
 package optic.lua.asm;
 
-import nl.bigo.luaparser.Lua52Walker;
+import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.messages.CompilationFailure;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
@@ -18,7 +18,7 @@ final class NestedFieldBuilder {
 	}
 
 	public void add(Tree t) throws CompilationFailure {
-		var tree = (CommonTree) Trees.expect(Lua52Walker.INDEX, t);
+		var tree = (CommonTree) Trees.expect(Lua53Walker.INDEX, t);
 		var expr = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		keys.add(expr);
 	}

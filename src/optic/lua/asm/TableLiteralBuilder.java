@@ -6,7 +6,7 @@ import org.antlr.runtime.tree.Tree;
 
 import java.util.*;
 
-import static nl.bigo.luaparser.Lua52Walker.FIELD;
+import static nl.bigo.luaparser.Lua53Walker.FIELD;
 
 public class TableLiteralBuilder {
 	private final LinkedHashMap<RValue, RValue> table = new LinkedHashMap<>(4);

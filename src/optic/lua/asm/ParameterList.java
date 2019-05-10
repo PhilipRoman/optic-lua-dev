@@ -1,15 +1,14 @@
 package optic.lua.asm;
 
-import nl.bigo.luaparser.Lua52Walker;
+import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
 
+import java.lang.String;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static nl.bigo.luaparser.Lua52Walker.*;
-
-import java.lang.String;
+import static nl.bigo.luaparser.Lua53Walker.*;
 
 /**
  * Represents a possibly empty list of named parameters, optionally followed by a vararg (...)
@@ -22,7 +21,7 @@ public final class ParameterList {
 	}
 
 	static ParameterList parse(CommonTree tree) {
-		Trees.expect(Lua52Walker.PARAM_LIST, tree);
+		Trees.expect(Lua53Walker.PARAM_LIST, tree);
 		var names = Optional.ofNullable(tree.getChildren())
 				.orElse(Collections.emptyList())
 				.stream()

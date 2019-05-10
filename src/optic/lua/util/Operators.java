@@ -1,6 +1,6 @@
 package optic.lua.util;
 
-import nl.bigo.luaparser.Lua52Walker;
+import nl.bigo.luaparser.Lua53Walker;
 import org.antlr.runtime.tree.Tree;
 
 import java.util.*;
@@ -11,33 +11,33 @@ public final class Operators {
 
 	static {
 		Set.of(
-				Lua52Walker.Add,
-				Lua52Walker.Minus,
-				Lua52Walker.Div,
-				Lua52Walker.FloorDiv,
-				Lua52Walker.Mult,
-				Lua52Walker.Mod,
-				Lua52Walker.Pow,
-				Lua52Walker.BitAnd,
-				Lua52Walker.BitOr,
-				Lua52Walker.Tilde,
-				Lua52Walker.BitLShift,
-				Lua52Walker.BitRShift,
-				Lua52Walker.DotDot,
-				Lua52Walker.Dot,
-				Lua52Walker.Eq,
-				Lua52Walker.GTEq,
-				Lua52Walker.LTEq,
-				Lua52Walker.LT,
-				Lua52Walker.GT,
-				Lua52Walker.NEq,
-				Lua52Walker.Or,
-				Lua52Walker.And
+				Lua53Walker.Add,
+				Lua53Walker.Minus,
+				Lua53Walker.Div,
+				Lua53Walker.FloorDiv,
+				Lua53Walker.Mult,
+				Lua53Walker.Mod,
+				Lua53Walker.Pow,
+				Lua53Walker.BitAnd,
+				Lua53Walker.BitOr,
+				Lua53Walker.Tilde,
+				Lua53Walker.BitLShift,
+				Lua53Walker.BitRShift,
+				Lua53Walker.DotDot,
+				Lua53Walker.Dot,
+				Lua53Walker.Eq,
+				Lua53Walker.GTEq,
+				Lua53Walker.LTEq,
+				Lua53Walker.LT,
+				Lua53Walker.GT,
+				Lua53Walker.NEq,
+				Lua53Walker.Or,
+				Lua53Walker.And
 		).forEach(binaryOperators::set);
 		Set.of(
-				Lua52Walker.BIT_NOT,
-				Lua52Walker.UNARY_MINUS,
-				Lua52Walker.Length
+				Lua53Walker.BIT_NOT,
+				Lua53Walker.UNARY_MINUS,
+				Lua53Walker.Length
 		).forEach(unaryOperators::set);
 	}
 

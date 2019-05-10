@@ -54,7 +54,7 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.8.0-beta2'
     compile 'info.picocli:picocli:4.0.0-alpha-2'
     compile group: 'org.jetbrains', name: 'annotations', version: '16.0.2'
-    compile 'com.github.bkiers:lua-parser:-SNAPSHOT'
+    compile 'com.github.PhilipRoman:lua-parser:1.0.0'
     testCompile 'org.codehaus.groovy:groovy-all:2.5.4'
     compile 'org.codehaus.janino:janino:3.0.11'
 }

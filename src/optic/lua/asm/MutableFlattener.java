@@ -10,9 +10,9 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
-import static nl.bigo.luaparser.Lua52Walker.Number;
-import static nl.bigo.luaparser.Lua52Walker.String;
-import static nl.bigo.luaparser.Lua52Walker.*;
+import static nl.bigo.luaparser.Lua53Walker.Number;
+import static nl.bigo.luaparser.Lua53Walker.String;
+import static nl.bigo.luaparser.Lua53Walker.*;
 
 /**
  * Mutable implementation of tree flattener. Good startup performance.

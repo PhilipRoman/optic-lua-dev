@@ -37,8 +37,8 @@ final class SingleSourceCompiler {
 
 	private CommonTree parse(CharStream charStream) throws CompilationFailure {
 		try {
-			var lexer = new Lua52Lexer(charStream);
-			var parser = new Lua52Parser(new CommonTokenStream(lexer));
+			var lexer = new Lua53Lexer(charStream);
+			var parser = new Lua53Parser(new CommonTokenStream(lexer));
 			return parser.parse().getTree();
 		} catch (RecognitionException e) {
 			logParsingError(e);

@@ -1,6 +1,6 @@
 package optic.lua.util;
 
-import nl.bigo.luaparser.Lua52Walker;
+import nl.bigo.luaparser.Lua53Walker;
 import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
 
@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class Trees {
-	public static final Field[] LUA_PARSER_FIELDS = Lua52Walker.class.getFields();
+	public static final Field[] LUA_PARSER_FIELDS = Lua53Walker.class.getFields();
 
 	private Trees() {
 	}

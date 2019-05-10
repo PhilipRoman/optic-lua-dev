@@ -1,12 +1,12 @@
 package optic.lua.optimization;
 
-import nl.bigo.luaparser.Lua52Walker;
+import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.asm.InvocationMethod;
 import optic.lua.util.Trees;
 
 import java.util.Objects;
 
-import static nl.bigo.luaparser.Lua52Walker.*;
+import static nl.bigo.luaparser.Lua53Walker.*;
 import static optic.lua.optimization.ProvenType.*;
 
 public enum LuaOperator {
@@ -48,13 +48,13 @@ public enum LuaOperator {
 				return EQ;
 			case Length:
 				return LEN;
-			case Lua52Walker.LT:
+			case Lua53Walker.LT:
 				return LT;
 			case GTEq:
 				return GE;
 			case LTEq:
 				return LE;
-			case Lua52Walker.GT:
+			case Lua53Walker.GT:
 				return GT;
 			default:
 				throw new IllegalArgumentException(Trees.reverseLookupName(type));

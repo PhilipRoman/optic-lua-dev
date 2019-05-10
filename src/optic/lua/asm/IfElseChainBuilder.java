@@ -1,6 +1,6 @@
 package optic.lua.asm;
 
-import nl.bigo.luaparser.Lua52Walker;
+import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.messages.CompilationFailure;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
@@ -16,10 +16,10 @@ class IfElseChainBuilder {
 	}
 
 	public void add(Tree tree) throws CompilationFailure {
-		Trees.expect(Lua52Walker.CONDITION, tree);
+		Trees.expect(Lua53Walker.CONDITION, tree);
 		assert tree.getChildCount() == 2 || tree.getChildCount() == 3;
 		FlatExpr condition = flattener.flattenExpression((CommonTree) tree.getChild(0)).discardRemaining();
-		AsmBlock body = flattener.flattenBlock((CommonTree) Trees.expectChild(Lua52Walker.CHUNK, tree, 1), BlockMeaning.IF_BODY);
+		AsmBlock body = flattener.flattenBlock((CommonTree) Trees.expectChild(Lua53Walker.CHUNK, tree, 1), BlockMeaning.IF_BODY);
 		chain.add(new Conditional(condition, body));
 	}
 
