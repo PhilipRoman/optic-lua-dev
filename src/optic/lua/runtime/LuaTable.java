@@ -3,6 +3,7 @@ package optic.lua.runtime;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 public class LuaTable {
 	private static final Object[] EMPTY_ARRAY = {};
@@ -142,24 +143,84 @@ public class LuaTable {
 		return "table 0x" + Integer.toHexString(hashCode());
 	}
 
-	Iterator pairsIterator() {
-		var it = hash.entrySet().iterator();
-		return new Iterator() {
-			@Override
-			public boolean hasNext() {
-				return it.hasNext();
-			}
+	Iterator<Object[]> pairsIterator() {
+		var hashIterator = hash.entrySet().iterator();
+		var arrayIterator = Arrays.asList(array).subList(0, length).iterator();
+		return new PairsIterator(hashIterator, arrayIterator);
+	}
 
-			@Override
-			public Object next() {
-				var next = it.next();
-				return new Object[]{next.getKey(), next.getValue()};
-			}
+	Iterator<Object[]> ipairsIterator() {
+		var arrayIterator = Arrays.asList(array).subList(0, length).iterator();
+		return new IpairsIterator(arrayIterator);
+	}
 
-			@Override
-			public String toString() {
-				return "[iterator pairs(" + LuaTable.this + ")]";
+	private class PairsIterator implements Iterator<Object[]> {
+		private final Object[] wrapper = new Object[2];
+		private final Iterator<Entry<Object, Object>> hashIterator;
+		private final Iterator<Object> arrayIterator;
+		private int arrayIndex = 0;
+
+		PairsIterator(Iterator<Entry<Object, Object>> hashIterator, Iterator<Object> arrayIterator) {
+			this.hashIterator = hashIterator;
+			this.arrayIterator = arrayIterator;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return hashIterator.hasNext() || arrayIterator.hasNext();
+		}
+
+		@Override
+		public Object[] next() {
+			if (hashIterator.hasNext()) {
+				var next = hashIterator.next();
+				wrapper[0] = next.getKey();
+				wrapper[1] = next.getValue();
+			} else if (arrayIterator.hasNext()) {
+				wrapper[0] = ++arrayIndex;
+				wrapper[1] = arrayIterator.next();
+			} else {
+				wrapper[0] = null;
+				wrapper[1] = null;
 			}
-		};
+			return wrapper;
+		}
+
+		@Override
+		public String toString() {
+			return "[iterator pairs(" + LuaTable.this + ")]";
+		}
+	}
+
+	private class IpairsIterator implements Iterator<Object[]> {
+		private final Object[] wrapper = new Object[2];
+		private final Iterator<Object> arrayIterator;
+		private int arrayIndex = 0;
+
+		IpairsIterator(Iterator<Object> arrayIterator) {
+			this.arrayIterator = arrayIterator;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return arrayIterator.hasNext();
+		}
+
+		@Override
+		public Object[] next() {
+			if (arrayIterator.hasNext()) {
+				wrapper[0] = ++arrayIndex;
+				wrapper[1] = arrayIterator.next();
+			} else {
+				wrapper[0] = null;
+				wrapper[1] = null;
+			}
+			return wrapper;
+		}
+
+		@Override
+		public String toString() {
+			return "[iterator ipairs(" + LuaTable.this + ")]";
+		}
 	}
 }

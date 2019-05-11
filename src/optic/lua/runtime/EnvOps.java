@@ -47,6 +47,13 @@ public class EnvOps {
 				return new Object[]{table.pairsIterator()};
 			}
 		});
+		env.set("ipairs", new LuaFunction("pairs") {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				var table = (LuaTable) args[0];
+				return new Object[]{table.ipairsIterator()};
+			}
+		});
 		env.set("type", new LuaFunction("type") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
