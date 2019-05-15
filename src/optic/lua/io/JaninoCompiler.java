@@ -80,6 +80,7 @@ final class JaninoCompiler {
 			return scriptCache.get(ByteBuffer.wrap(source));
 		}
 		var evaluator = new ScriptEvaluator();
+		evaluator.setDebuggingInformation(true, true, true);
 		evaluator.setReturnType(Object[].class);
 		evaluator.setClassName(GENERATED_CLASS_NAME);
 		evaluator.setMethodName(GENERATED_METHOD_NAME);
