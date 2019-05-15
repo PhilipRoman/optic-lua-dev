@@ -57,6 +57,7 @@ public class Main {
 		}
 
 		if (opticLua.mainSource == null) {
+			commandLine.usage(System.err);
 			return;
 		}
 
