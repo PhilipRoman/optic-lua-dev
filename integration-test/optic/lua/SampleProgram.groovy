@@ -29,7 +29,7 @@ final class SampleProgram {
         def luaContext = LuaContext.create(bundle)
         def out = new StringWriter()
         luaContext.out = new PrintWriter(out)
-        new Runner().run(bundle.findCompiled(filePath).get(), luaContext, [])
+        new Runner(options).run(bundle.findCompiled(filePath).get(), luaContext, [])
 
         // show information about call sites:
         int skippedSites = 0

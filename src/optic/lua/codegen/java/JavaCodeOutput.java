@@ -2,7 +2,6 @@ package optic.lua.codegen.java;
 
 import optic.lua.asm.*;
 import optic.lua.codegen.ResultBuffer;
-import optic.lua.io.CompilerPlugin;
 import optic.lua.messages.*;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
@@ -30,7 +29,7 @@ import java.util.*;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure>, CompilerPlugin {
+public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure> {
 	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
 	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
 	private static final boolean USE_INJECTED_CONTEXT = true;
@@ -38,20 +37,11 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 	private static final Logger log = LoggerFactory.getLogger(JavaCodeOutput.class);
 	final Options options;
 	private final List<String> constants = new ArrayList<>();
-	private final PrintStream out;
-	private final AsmBlock block;
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
 
-	private JavaCodeOutput(PrintStream out, AsmBlock block, Options options) {
-		this.out = out;
-		this.block = block;
-		this.options = options;
-	}
-
-	public static CompilerPlugin.Factory writingTo(OutputStream stream) {
-		PrintStream printStream = new PrintStream(new BufferedOutputStream(stream));
-		return (steps, context) -> new JavaCodeOutput(printStream, steps, context);
+	public JavaCodeOutput(Options options) {
+		this.options = Objects.requireNonNull(options);
 	}
 
 	@Override
@@ -257,11 +247,14 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		return buffer;
 	}
 
-	private void execute() throws CompilationFailure {
+	public String generate(AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		if (options.get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
 			log.warn("Use of {} is not officially supported", StandardFlags.ALLOW_UPVALUE_VARARGS);
 		}
+		var result = new ByteArrayOutputStream(4096);
+		var out = new PrintStream(result);
+
 		out.println("import optic.lua.runtime.*;");
 		out.println("import optic.lua.runtime.invoke.*;");
 		out.println("import java.util.Iterator;");
@@ -277,21 +270,11 @@ public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFail
 		constants.forEach(out::println);
 		buffer.writeTo(out, options.get(Option.INDENT));
 		out.flush();
+		return result.toString();
 	}
 
 	void addConstant(String type, String name, String value) {
 		constants.add("final " + type + " " + name + " = " + value + ";");
-	}
-
-	@Override
-	public AsmBlock apply() throws CompilationFailure {
-		execute();
-		return block;
-	}
-
-	@Override
-	public boolean concurrent() {
-		return true;
 	}
 
 	@Override

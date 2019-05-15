@@ -17,10 +17,6 @@ public final class Runner {
 		this.options = options;
 	}
 
-	public Runner() {
-		options = new Options();
-	}
-
 	private static void logTimeTaken(long nanos) {
 		long millis = nanos / (long) 1e6;
 		log.info("Finished in {}ms", millis);
@@ -54,8 +50,8 @@ public final class Runner {
 						.stream()
 						.reduce(0, Integer::sum);
 				if (numberOfInvocations > 1) {
-					site.printTo(System.err);
-					System.err.println();
+					site.printTo(System.out);
+					System.out.println();
 				} else {
 					skippedSites++;
 				}

@@ -1,6 +1,5 @@
 package optic.lua.io;
 
-import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 import optic.lua.runtime.*;
 import org.slf4j.*;
@@ -14,7 +13,6 @@ public final class InteractiveShell {
 	private final PrintWriter out;
 	private final PrintWriter err;
 	private final Bundle bundle;
-	private final WeakHashMap<String, byte[]> scriptCache = new WeakHashMap<>();
 	private final Options options;
 
 	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle, Options options) {
@@ -25,17 +23,9 @@ public final class InteractiveShell {
 		this.options = options;
 	}
 
-	private static void logTimeTaken(long nanos) {
+	private static void logTimeTakenToCompile(long nanos) {
 		long millis = nanos / (long) 1e6;
 		log.info("Compiled expression in {}ms", millis);
-	}
-
-	/**
-	 * Returns the {@link Options} used by this shell.
-	 * The returned object may be freely modified; changes will be reflected in the behavior of this shell.
-	 */
-	public Options options() {
-		return options;
 	}
 
 	public void run() {
@@ -74,7 +64,7 @@ public final class InteractiveShell {
 				StandardLibrary.print(out, result);
 			}
 			out.flush();
-//			System.err.println("(" + ((System.nanoTime() - startTime) / 1e6) + "ms)");
+			context.resetCallSites();
 		}
 		out.println("Exiting!");
 		out.flush();
@@ -82,38 +72,27 @@ public final class InteractiveShell {
 
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
 		long start = System.nanoTime();
-		JaninoCompiler compiler = new JaninoCompiler(options);
-		ByteArrayInputStream input = new ByteArrayInputStream(compileToJava(line));
+		String java = new LuaToJavaCompiler().compile(line, options);
 		if (options.get(StandardFlags.SHOW_TIME)) {
-			logTimeTaken(System.nanoTime() - start);
+			logTimeTakenToCompile(System.nanoTime() - start);
 		}
-		return compiler.run(input, 1, context, List.of());
+		var method = new JavaToMethodCompiler().compile(java);
+		return new Runner(options).run(method, context, List.of());
 	}
 
-	private byte[] compileToJava(String script) throws CompilationFailure {
-		boolean useCache = options.get(StandardFlags.CACHE_LUA_COMPILING);
-		if (useCache && scriptCache.containsKey(script)) {
-			return scriptCache.get(script);
-		}
-		var buffer = new ByteArrayOutputStream(512);
-		var pipeline = new SingleSourceCompiler(
-				options,
-				CodeSource.ofString(script, "<stdin>"),
-				List.of(JavaCodeOutput.writingTo(buffer))
-		);
-		pipeline.run();
-		byte[] bytes = buffer.toByteArray();
-		if (useCache) {
-			scriptCache.put(script, bytes);
-		}
-		return bytes;
+	/**
+	 * Returns the {@link Options} used by this shell.
+	 * The returned object may be freely modified; changes will be reflected in the behavior of this shell.
+	 */
+	public Options options() {
+		return options;
 	}
 
 	private void shortenStackTrace(RuntimeException e) {
 		// the name combination we're looking for
 		// any frames after these will be discarded
-		final String className = JaninoCompiler.GENERATED_CLASS_NAME;
-		final String methodName = JaninoCompiler.GENERATED_METHOD_NAME;
+		final String className = JaninoCompilerBase.GENERATED_CLASS_NAME;
+		final String methodName = JaninoCompilerBase.MAIN_METHOD_NAME;
 		var trace = e.getStackTrace();
 		for (int i = 0; i < trace.length; i++) {
 			var frame = trace[i];

@@ -16,9 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
 	private static final Logger log = LoggerFactory.getLogger(JavaExpressionVisitor.class);
+	private static AtomicInteger idCounter = new AtomicInteger();
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
-	private static AtomicInteger idCounter = new AtomicInteger();
 
 	JavaExpressionVisitor(NestedData data, JavaCodeOutput visitor) {
 		nestedData = Objects.requireNonNull(data);

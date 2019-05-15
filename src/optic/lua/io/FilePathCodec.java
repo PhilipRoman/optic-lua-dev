@@ -1,7 +1,9 @@
 package optic.lua.io;
 
 final class FilePathCodec {
-	private FilePathCodec(){}
+	private FilePathCodec() {
+	}
+
 	public static String encode(String name) {
 		if (name.isEmpty()) {
 			throw new IllegalArgumentException("Name must not be empty!");

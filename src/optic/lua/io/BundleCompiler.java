@@ -1,10 +1,9 @@
 package optic.lua.io;
 
-import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
 import org.slf4j.*;
 
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.*;
 import java.util.*;
@@ -36,30 +35,23 @@ public final class BundleCompiler {
 	}
 
 	private Method compileFile(Path path) throws CompilationFailure {
-		var javaBuffer = new ByteArrayOutputStream();
-		var pipeline = new SingleSourceCompiler(
-				options,
-				CodeSource.ofFile(path.toString()),
-				List.of(JavaCodeOutput.writingTo(javaBuffer))
-		);
+		final String lua;
 		try {
-			pipeline.run();
-		} catch (CompilationFailure e) {
-			System.err.print("Failed!");
-			e.printStackTrace();
-			System.exit(1);
+			lua = Files.readString(path);
+		} catch (IOException e) {
+			log.error("Couldn't read Lua file", e);
+			throw new CompilationFailure();
 		}
-		byte[] javaSourceBytes = javaBuffer.toByteArray();
-
+		String java = new LuaToJavaCompiler().compile(lua, options);
 		if (options.get(StandardFlags.DUMP_JAVA)) {
 			try {
 				var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
-				Files.write(debugFile, javaSourceBytes);
+				Files.writeString(debugFile, java);
 			} catch (IOException e1) {
-				throw new UncheckedIOException("IOException during debug data dump", e1);
+				log.error("Non-fatal exception while dumping debug data", e1);
 			}
 		}
 
-		return new JaninoCompiler(options).compile(javaSourceBytes);
+		return new JavaToMethodCompiler().compile(java);
 	}
 }

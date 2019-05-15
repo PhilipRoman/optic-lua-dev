@@ -5,7 +5,7 @@ import org.antlr.runtime.tree.*;
 
 import java.util.List;
 
-public interface Flattener {
+interface Flattener {
 	AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure;
 
 	FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure;

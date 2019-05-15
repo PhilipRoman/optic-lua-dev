@@ -56,16 +56,22 @@ public class Main {
 			return;
 		}
 
-		if (opticLua.mainSource == null) {
+		if (opticLua.sources.isEmpty() && opticLua.mainSource == null) {
 			commandLine.usage(System.err);
+			return;
+		}
+
+		if (opticLua.mainSource == null) {
+			log.info("Nothing to do, exiting!");
 			return;
 		}
 
 		String fileName = opticLua.mainSource.toString();
 		int nTimes = opticLua.nTimes;
+		var method = bundle.findCompiled(fileName).orElseThrow(() -> new NoSuchElementException(fileName));
 		for (int i = 0; i < nTimes; i++) {
 			long start = System.nanoTime();
-			bundle.doFile(fileName, LuaContext.create(bundle), List.of());
+			new Runner(options).run(method, LuaContext.create(bundle), List.of());
 			if (options.get(StandardFlags.SHOW_TIME)) {
 				logDurationInfo(System.nanoTime() - start);
 			}

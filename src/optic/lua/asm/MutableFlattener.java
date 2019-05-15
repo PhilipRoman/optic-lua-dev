@@ -65,7 +65,7 @@ public class MutableFlattener implements VariableResolver {
 		return new AsmBlock(f.steps, f.locals);
 	}
 
-	public Flattener getInterface() {
+	private Flattener getInterface() {
 		return new Flattener() {
 			@Override
 			public AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure {

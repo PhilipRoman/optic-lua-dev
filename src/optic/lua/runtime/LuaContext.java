@@ -11,12 +11,12 @@ public class LuaContext {
 	public PrintWriter out = new PrintWriter(System.out);
 	public PrintWriter err = new PrintWriter(System.err);
 	public Bundle bundle = null;
+	@RuntimeApi
+	public Object _ENV;
 	private CallSiteFactory callSiteFactory = new InstrumentedCallSiteFactory();
 	private FunctionMetafactory functionMetafactory = new SimpleFunctionMetafactory();
 	private TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
-	@RuntimeApi
-	public Object _ENV;
 
 	public static LuaContext create() {
 		return create(Bundle.emptyBundle());
@@ -58,5 +58,9 @@ public class LuaContext {
 
 	public Collection<CallSite> getCallSites() {
 		return List.copyOf(callSites);
+	}
+
+	public void resetCallSites() {
+		callSites.clear();
 	}
 }
