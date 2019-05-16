@@ -25,4 +25,9 @@ class FilePathCodecTest extends GroovyTestCase {
             assert s == decoded
         }
     }
+
+    void testSlashAndBackslash() {
+        assert encode("path/to/file") == encode("path\\to\\file")
+        assert encode("path/to\\file") == encode("path\\to/file")
+    }
 }

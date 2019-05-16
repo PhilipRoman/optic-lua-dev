@@ -40,10 +40,8 @@ final class FilePathCodec {
 				builder.append('d');
 				break;
 			case '/':
-				builder.append('s');
-				break;
 			case '\\':
-				builder.append('b');
+				builder.append('s');
 				break;
 			default:
 				String str = Integer.toString((int) c);
@@ -74,9 +72,6 @@ final class FilePathCodec {
 						break;
 					case 's':
 						builder.append('/');
-						break;
-					case 'b':
-						builder.append('\\');
 						break;
 					default:
 						int length = next - '0';
