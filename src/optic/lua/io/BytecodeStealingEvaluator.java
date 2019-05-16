@@ -1,8 +1,7 @@
 package optic.lua.io;
 
-import org.codehaus.commons.compiler.*;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 import org.codehaus.janino.*;
-import org.codehaus.janino.Java.CompilationUnit;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -25,7 +24,7 @@ import java.util.Map;
  *
  * @see #getBytecodes()
  */
-final class BytecodeStealingEvaluator extends ScriptEvaluator {
+final class BytecodeStealingEvaluator extends SimpleCompiler {
 	@Nullable
 	private Map<String, byte[]> classes = null;
 
@@ -46,11 +45,4 @@ final class BytecodeStealingEvaluator extends ScriptEvaluator {
 		// Instead of loading the bytecodes into a ClassLoader, store the bytecodes in "this.classes".
 		this.classes = classes;
 	}
-
-	// Override this method to prevent the retrieval of the generated java.lang.Classes.
-	@Override
-	protected void cook2(CompilationUnit compilationUnit) throws CompileException {
-		this.cook(compilationUnit);
-	}
-
 }

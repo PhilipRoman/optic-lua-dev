@@ -42,7 +42,8 @@ public final class BundleCompiler {
 			log.error("Couldn't read Lua file", e);
 			throw new CompilationFailure();
 		}
-		String java = new LuaToJavaCompiler().compile(lua, options);
+		String className = FilePathCodec.encode(path.toString());
+		String java = new LuaToJavaCompiler().compile(lua, className, options);
 		if (options.get(StandardFlags.DUMP_JAVA)) {
 			try {
 				var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
@@ -52,6 +53,6 @@ public final class BundleCompiler {
 			}
 		}
 
-		return new JavaToMethodCompiler().compile(java);
+		return new JavaToMethodCompiler().compile(java, className);
 	}
 }

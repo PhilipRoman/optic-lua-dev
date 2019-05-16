@@ -30,10 +30,6 @@ import java.util.*;
  *
  * */
 public final class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure> {
-	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
-	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
-	private static final boolean USE_INJECTED_CONTEXT = true;
-	private static final boolean USE_INJECTED_ARGS = true;
 	private static final Logger log = LoggerFactory.getLogger(JavaCodeOutput.class);
 	final Options options;
 	private final List<String> constants = new ArrayList<>();
@@ -247,7 +243,10 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		return buffer;
 	}
 
-	public String generate(AsmBlock block) throws CompilationFailure {
+	public String generate(String className, AsmBlock block) throws CompilationFailure {
+		Objects.requireNonNull(className);
+		Objects.requireNonNull(block);
+
 		var buffer = new ResultBuffer();
 		if (options.get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
 			log.warn("Use of {} is not officially supported", StandardFlags.ALLOW_UPVALUE_VARARGS);
@@ -258,14 +257,18 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		out.println("import optic.lua.runtime.*;");
 		out.println("import optic.lua.runtime.invoke.*;");
 		out.println("import java.util.Iterator;");
+		out.println("public class " + className + " {");
 		var contextName = nestedData.pushNewContextName();
-		out.println("static Object[] main(final LuaContext " + contextName + ", Object[] args) { if(1 == 1) {");
 
+		out.println("public static Object[] run(final LuaContext " + contextName + ", Object[] args) { if(1 == 1) {");
 		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("} return ListOps.empty(); }");
-		String context = USE_INJECTED_CONTEXT ? INJECTED_CONTEXT_PARAM_NAME : "LuaContext.create()";
-		String args = USE_INJECTED_ARGS ? INJECTED_ARGS_PARAM_NAME : "new Object[0]";
-		buffer.add("return main(", context, ", ", args, ");");
+
+		buffer.add("public static void main(String... args) {");
+		buffer.add("    run(LuaContext.create(), args);");
+		buffer.add("}");
+
+		buffer.add("}");
 
 		constants.forEach(out::println);
 		buffer.writeTo(out, options.get(Option.INDENT));

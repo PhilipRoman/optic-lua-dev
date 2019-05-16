@@ -14,6 +14,8 @@ public final class InteractiveShell {
 	private final PrintWriter err;
 	private final Bundle bundle;
 	private final Options options;
+	private static int sessionIndex = 1;
+	private int index = 1;
 
 	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle, Options options) {
 		this.in = new InputStreamReader(in);
@@ -43,7 +45,6 @@ public final class InteractiveShell {
 		out.flush();
 		while (scanner.hasNextLine()) {
 			String line = scanner.nextLine();
-//			long startTime = System.nanoTime();
 			if (line.equals("!exit")) {
 				break;
 			}
@@ -56,7 +57,6 @@ public final class InteractiveShell {
 			} catch (CompilationFailure failure) {
 				continue;
 			} catch (RuntimeException e) {
-				shortenStackTrace(e);
 				log.error("Uncaught error", e);
 				continue;
 			}
@@ -72,11 +72,12 @@ public final class InteractiveShell {
 
 	private Object[] evaluate(String line, LuaContext context) throws CompilationFailure {
 		long start = System.nanoTime();
-		String java = new LuaToJavaCompiler().compile(line, options);
+		String className = "Shell" + Integer.toHexString(sessionIndex++) + "Snippet" + index++;
+		String java = new LuaToJavaCompiler().compile(line, className, options);
 		if (options.get(StandardFlags.SHOW_TIME)) {
 			logTimeTakenToCompile(System.nanoTime() - start);
 		}
-		var method = new JavaToMethodCompiler().compile(java);
+		var method = new JavaToMethodCompiler().compile(java, className);
 		return new Runner(options).run(method, context, List.of());
 	}
 
@@ -86,20 +87,5 @@ public final class InteractiveShell {
 	 */
 	public Options options() {
 		return options;
-	}
-
-	private void shortenStackTrace(RuntimeException e) {
-		// the name combination we're looking for
-		// any frames after these will be discarded
-		final String className = JaninoCompilerBase.GENERATED_CLASS_NAME;
-		final String methodName = JaninoCompilerBase.MAIN_METHOD_NAME;
-		var trace = e.getStackTrace();
-		for (int i = 0; i < trace.length; i++) {
-			var frame = trace[i];
-			if (frame.getClassName().equals(className) && frame.getMethodName().equals(methodName)) {
-				e.setStackTrace(Arrays.copyOfRange(trace, 0, i + 1));
-				return;
-			}
-		}
 	}
 }

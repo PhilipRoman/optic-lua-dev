@@ -7,9 +7,9 @@ import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.tree.CommonTree;
 
 final class LuaToJavaCompiler {
-	String compile(String lua, Options options) throws CompilationFailure {
+	String compile(String lua, String className, Options options) throws CompilationFailure {
 		CommonTree ast = new JavaParser().parse(new ANTLRStringStream(lua));
 		AsmBlock asm = MutableFlattener.flatten(ast, options);
-		return new JavaCodeOutput(options).generate(asm);
+		return new JavaCodeOutput(options).generate(className, asm);
 	}
 }
