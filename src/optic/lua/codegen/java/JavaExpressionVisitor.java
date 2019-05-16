@@ -180,11 +180,15 @@ class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure>
 
 	@Override
 	public String visitVarargs() throws CompilationFailure {
-		// TODO log illegal vararg usage
 		if (options().get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
-			nestedData.firstNestedVarargName().orElseThrow(CompilationFailure::new);
+			return nestedData.firstNestedVarargName().orElseThrow(this::varargError);
 		}
-		return nestedData.varargName().orElseThrow(CompilationFailure::new);
+		return nestedData.varargName().orElseThrow(this::varargError);
+	}
+
+	private CompilationFailure varargError() {
+		log.error("Cannot use \"...\" outside of vararg context");
+		return new CompilationFailure();
 	}
 
 	private String compileToNumber(RValue value) throws CompilationFailure {
