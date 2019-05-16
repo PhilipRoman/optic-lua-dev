@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
+final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
 	private static final Logger log = LoggerFactory.getLogger(JavaExpressionVisitor.class);
 	private static AtomicInteger idCounter = new AtomicInteger();
 	private final NestedData nestedData;

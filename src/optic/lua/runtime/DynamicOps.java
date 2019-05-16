@@ -5,7 +5,7 @@ import optic.lua.util.Numbers;
 import java.util.Objects;
 
 @RuntimeApi
-public class DynamicOps {
+public final class DynamicOps {
 	private static double toNum(Object x) {
 		return StandardLibrary.strictToNumber(x);
 	}

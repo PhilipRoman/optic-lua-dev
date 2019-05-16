@@ -2,7 +2,7 @@ package optic.lua.runtime;
 
 import org.jetbrains.annotations.Contract;
 
-class Errors {
+final class Errors {
 	@Contract("-> fail")
 	static void forbidden() {
 		throw new UnsupportedOperationException();

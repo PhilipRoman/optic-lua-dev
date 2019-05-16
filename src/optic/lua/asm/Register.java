@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  * <p>
  * Use [RegisterFactory] to obtain instances of this class.
  */
-public class Register implements RValue {
+public final class Register implements RValue {
 	public static final Register UNUSED = new Register("_", true, ProvenType.OBJECT);
 
 	private final String name;

@@ -4,7 +4,7 @@ import optic.lua.util.UniqueNames;
 
 import java.util.*;
 
-class NestedData {
+final class NestedData {
 	/**
 	 * <p>
 	 * Stack containing names of varargs variables in nested functions.

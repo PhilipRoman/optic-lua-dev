@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 @Command(description = "Lua to JVM compiler", version = "optic-lua [pre-alpha]")
-class OpticLua {
+final class OpticLua {
 	@Parameters(paramLabel = "FILE", description = "list of Lua source files to compile")
 	Set<Path> sources = new HashSet<>();
 

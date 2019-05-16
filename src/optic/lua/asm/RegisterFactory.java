@@ -5,7 +5,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.function.Supplier;
 
-public class RegisterFactory {
+public final class RegisterFactory {
 	@Contract(" -> new")
 	static Register createVararg() {
 		return new Register(true, ProvenType.OBJECT);

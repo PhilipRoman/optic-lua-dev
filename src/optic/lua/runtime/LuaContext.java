@@ -6,7 +6,7 @@ import optic.lua.runtime.invoke.*;
 import java.io.*;
 import java.util.*;
 
-public class LuaContext {
+public final class LuaContext {
 	public Reader in = new InputStreamReader(System.in);
 	public PrintWriter out = new PrintWriter(System.out);
 	public PrintWriter err = new PrintWriter(System.err);

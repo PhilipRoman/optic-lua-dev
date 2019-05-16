@@ -9,7 +9,7 @@ import picocli.CommandLine;
 import java.nio.file.Path;
 import java.util.*;
 
-public class Main {
+public final class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) throws Exception {

@@ -2,7 +2,7 @@ package optic.lua.optimization;
 
 import optic.lua.util.Combined;
 
-public class CombinedCommonType extends Combined<ProvenType> {
+public final class CombinedCommonType extends Combined<ProvenType> {
 	@Override
 	protected ProvenType reduce(ProvenType a, ProvenType b) {
 		return a.and(b);

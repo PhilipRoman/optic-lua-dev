@@ -8,7 +8,7 @@ import java.util.*;
 
 import static nl.bigo.luaparser.Lua53Walker.FIELD;
 
-public class TableLiteralBuilder {
+public final class TableLiteralBuilder {
 	private final LinkedHashMap<RValue, RValue> table = new LinkedHashMap<>(4);
 	private final Flattener flattener;
 	private final int size;

@@ -3,7 +3,7 @@ package optic.lua.codegen;
 import java.io.PrintStream;
 import java.util.*;
 
-public class ResultBuffer {
+public final class ResultBuffer {
 	/**
 	 * Contains only CharSequences and ResultBuffers
 	 */

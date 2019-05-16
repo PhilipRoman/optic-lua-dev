@@ -3,7 +3,7 @@ package optic.lua.runtime;
 import java.util.*;
 
 @RuntimeApi
-public class EnvOps {
+public final class EnvOps {
 	@RuntimeApi
 	public static Object get(UpValue _ENV, String key) {
 		return ((LuaTable) _ENV.value).get(key);

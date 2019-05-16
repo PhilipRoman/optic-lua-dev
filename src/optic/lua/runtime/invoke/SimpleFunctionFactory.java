@@ -1,6 +1,6 @@
 package optic.lua.runtime.invoke;
 
-public class SimpleFunctionFactory implements FunctionFactory {
+public final class SimpleFunctionFactory implements FunctionFactory {
 	private final String name;
 
 	public SimpleFunctionFactory(String name) {

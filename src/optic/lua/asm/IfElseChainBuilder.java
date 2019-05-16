@@ -7,7 +7,7 @@ import org.antlr.runtime.tree.*;
 
 import java.util.*;
 
-class IfElseChainBuilder {
+final class IfElseChainBuilder {
 	private final List<Conditional> chain = new ArrayList<>(4);
 	private final Flattener flattener;
 

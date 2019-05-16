@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class StandardLibrary {
+public final class StandardLibrary {
 	public static double toNumber(double d) {
 		return d;
 	}

@@ -4,7 +4,7 @@ import optic.lua.asm.RValue.Invocation;
 
 import java.util.*;
 
-class StepFactory {
+final class StepFactory {
 	static Step tableWrite(LValue.TableField target, RValue value) {
 		checkVararg(false, value);
 		return discard(RValue.invocation(target.table(), InvocationMethod.SET_INDEX, List.of(target.key(), value)));

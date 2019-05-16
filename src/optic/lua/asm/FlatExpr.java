@@ -2,7 +2,7 @@ package optic.lua.asm;
 
 import java.util.*;
 
-public class FlatExpr {
+public final class FlatExpr {
 	private final List<Step> block;
 	private final RValue value;
 

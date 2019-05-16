@@ -9,7 +9,7 @@ import org.slf4j.*;
 
 import java.util.Scanner;
 
-class JaninoCompilerBase {
+final class JaninoCompilerBase {
 	static final String GENERATED_CLASS_NAME = "LuaSource";
 	static final String MAIN_METHOD_NAME = "mainChunk";
 	private static final Logger log = LoggerFactory.getLogger(JaninoCompilerBase.class);

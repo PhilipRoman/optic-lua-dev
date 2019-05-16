@@ -1,7 +1,7 @@
 package optic.lua.runtime;
 
 @RuntimeApi
-public class ListOps {
+public final class ListOps {
 	private static Object[] EMPTY = {};
 	private static Object[] TRUE = {true};
 	private static Object[] FALSE = {false};

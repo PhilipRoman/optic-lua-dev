@@ -10,7 +10,7 @@ import java.util.stream.*;
 import static java.util.Comparator.reverseOrder;
 import static java.util.Map.Entry.comparingByValue;
 
-public class InstrumentedCallSite implements CallSite {
+public final class InstrumentedCallSite implements CallSite {
 	private static final boolean[] EMPTY_BOOL_ARRAY = {};
 	private static final boolean[] TRUE_BOOL_ARRAY = {true};
 	private static final boolean[] FALSE_BOOL_ARRAY = {false};

@@ -29,7 +29,7 @@ import java.util.*;
  * return EMPTY_ARRAY;
  *
  * */
-public class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure> {
+public final class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure> {
 	public static final String INJECTED_CONTEXT_PARAM_NAME = "INJECTED_LUA_CONTEXT";
 	public static final String INJECTED_ARGS_PARAM_NAME = "INJECTED_LUA_ARGS";
 	private static final boolean USE_INJECTED_CONTEXT = true;

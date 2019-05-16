@@ -6,7 +6,7 @@ import org.codehaus.janino.ScriptEvaluator;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
-class JavaToMethodCompiler {
+final class JavaToMethodCompiler {
 	public Method compile(String source) throws CompilationFailure {
 		var evaluator = new ScriptEvaluator();
 		JaninoCompilerBase.cookInto(evaluator, source);
