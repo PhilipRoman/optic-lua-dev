@@ -254,7 +254,7 @@ public class MutableFlattener implements VariableResolver {
 				return;
 			}
 		}
-		log.error("Unknown statement: " + t.toStringTree());
+		log.error("Unknown statement: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
 		throw new CompilationFailure();
 	}
 
@@ -329,7 +329,7 @@ public class MutableFlattener implements VariableResolver {
 				return RValue.bool(false);
 			}
 		}
-		log.error("Unknown expression: {} in {}", t, t.getParent().toStringTree());
+		log.error("Unknown expression: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
 		throw new CompilationFailure();
 	}
 

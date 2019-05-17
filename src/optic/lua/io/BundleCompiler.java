@@ -22,12 +22,29 @@ public final class BundleCompiler {
 		log.info("Compiled {} files in {}ms", numberOfFiles, millis);
 	}
 
+	private static void dumpJavaSource(String java) {
+		try {
+			var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
+			Files.writeString(debugFile, java);
+		} catch (IOException e) {
+			log.error("Non-fatal exception while dumping debug data", e);
+		}
+	}
+
 	public Bundle compile(Collection<Path> paths) throws CompilationFailure {
 		long start = System.nanoTime();
 		Map<Path, Method> map = new HashMap<>(paths.size());
+		boolean hasError = false;
 		for (Path path : paths) {
-			map.put(path, compileFile(path));
+			try {
+				map.put(path, compileFile(path));
+			} catch (CompilationFailure e) {
+				log.error("Failed to compile {}", path);
+				hasError = true;
+			}
 		}
+		if (hasError)
+			throw new CompilationFailure();
 		long nanos = System.nanoTime() - start;
 		if (options.get(StandardFlags.SHOW_TIME))
 			logTimeTaken(paths.size(), nanos);
@@ -45,12 +62,7 @@ public final class BundleCompiler {
 		String className = FilePathCodec.encode(path.toString());
 		String java = new LuaToJavaCompiler().compile(lua, className, options);
 		if (options.get(StandardFlags.DUMP_JAVA)) {
-			try {
-				var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
-				Files.writeString(debugFile, java);
-			} catch (IOException e1) {
-				log.error("Non-fatal exception while dumping debug data", e1);
-			}
+			dumpJavaSource(java);
 		}
 
 		return new JavaToMethodCompiler().compile(java, className);

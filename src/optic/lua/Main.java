@@ -12,7 +12,7 @@ import java.util.*;
 public final class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		var options = new Options();
 		var bundleCompiler = new BundleCompiler(options);
 
@@ -47,7 +47,13 @@ public final class Main {
 		if (opticLua.mainSource != null) {
 			sources.add(opticLua.mainSource);
 		}
-		Bundle bundle = bundleCompiler.compile(sources);
+		Bundle bundle = null;
+		try {
+			bundle = bundleCompiler.compile(sources);
+		} catch (CompilationFailure e) {
+			log.error("Some tasks failed");
+			System.exit(1);
+		}
 
 		if (opticLua.interactiveShell) {
 			// interactive session

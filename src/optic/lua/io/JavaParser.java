@@ -21,9 +21,15 @@ final class JavaParser {
 		} catch (RuntimeException e) {
 			if (e.getCause() instanceof RecognitionException) {
 				logParsingError((RecognitionException) e.getCause());
+			} else {
+				logOtherError(e);
 			}
 			throw new CompilationFailure();
 		}
+	}
+
+	private void logOtherError(RuntimeException e) {
+		log.error("Parsing failed due to error: {}", e.getMessage());
 	}
 
 	private void logParsingError(RecognitionException e) {
