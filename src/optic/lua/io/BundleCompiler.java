@@ -22,15 +22,6 @@ public final class BundleCompiler {
 		log.info("Compiled {} files in {}ms", numberOfFiles, millis);
 	}
 
-	private static void dumpJavaSource(String java) {
-		try {
-			var debugFile = Files.createTempFile(Paths.get(""), "GENERATED_SOURCE_", ".java");
-			Files.writeString(debugFile, java);
-		} catch (IOException e) {
-			log.error("Non-fatal exception while dumping debug data", e);
-		}
-	}
-
 	public Bundle compile(Collection<Path> paths) throws CompilationFailure {
 		long start = System.nanoTime();
 		Map<Path, Method> map = new HashMap<>(paths.size());
@@ -62,7 +53,7 @@ public final class BundleCompiler {
 		String className = FilePathCodec.encode(path.toString());
 		String java = new LuaToJavaCompiler().compile(lua, className, options);
 		if (options.get(StandardFlags.DUMP_JAVA)) {
-			dumpJavaSource(java);
+			System.out.println(java);
 		}
 
 		return new JavaToMethodCompiler().compile(java, className);
