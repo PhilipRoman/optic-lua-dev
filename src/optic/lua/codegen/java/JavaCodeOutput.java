@@ -11,6 +11,8 @@ import org.slf4j.*;
 import java.io.*;
 import java.util.*;
 
+import static optic.lua.codegen.java.JavaExpressionVisitor.LOCAL_VARIABLE_PREFIX;
+
 /**
  * Creates Java source code from given {@link AsmBlock}.
  */
@@ -71,16 +73,16 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 					buffer.add(context, "._ENV = ", expression(value), ";");
 					return buffer;
 				} else if (!variable.isFinal()) {
-					buffer.add(variable.getName(), ".set(", expression(value), ");");
+					buffer.add(LOCAL_VARIABLE_PREFIX, variable.getName(), ".set(", expression(value), ");");
 					return buffer;
 				}
 				// if upvalue is final, fall through to LOCAL branch
 			}
 			case LOCAL: {
 				if (variable.typeInfo().isNumeric() && !value.typeInfo().isNumeric())
-					buffer.add(variable, " = StandardLibrary.toNumber(", expression(value), ");");
+					buffer.add(LOCAL_VARIABLE_PREFIX, variable, " = StandardLibrary.toNumber(", expression(value), ");");
 				else
-					buffer.add(variable, " = ", expression(value), ";");
+					buffer.add(LOCAL_VARIABLE_PREFIX, variable, " = ", expression(value), ";");
 				return buffer;
 			}
 			case GLOBAL: {
@@ -106,14 +108,14 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			// int loop
 			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE && (long) ", expression(step), " == ", expression(step), ")");
 			buffer.add("for(int ", realCounterName, " = (int)", expression(from), "; ", realCounterName, " <= (int)", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
-			buffer.add("long ", counter.getName(), " = ", realCounterName, ";");
+			buffer.add("long ", LOCAL_VARIABLE_PREFIX, counter.getName(), " = ", realCounterName, ";");
 			buffer.addBlock(visitAll(block.steps()));
 			buffer.add("}");
 			buffer.add("else");
 		}
 		// regular for-loop
 		buffer.add("for(", JavaUtils.typeName(realCounterType), " ", realCounterName, " = ", expression(from), "; ", realCounterName, " <= ", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
-		buffer.add(JavaUtils.typeName(counter), " ", counter.getName(), " = ", realCounterName, ";");
+		buffer.add(JavaUtils.typeName(counter), " ", LOCAL_VARIABLE_PREFIX, counter.getName(), " = ", realCounterName, ";");
 		buffer.addBlock(visitAll(block.steps()));
 		buffer.add("}");
 		return buffer;
@@ -127,15 +129,13 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		if (variable.getMode() == VariableMode.LOCAL) {
 			// local variable
 			String finalPrefix = variable.isFinal() ? "final " : "";
-			boolean debug = options.get(StandardFlags.DEBUG_COMMENTS);
-			String debugSuffix = debug ? (" /* " + variable.toDebugString() + " */") : "";
-			buffer.add(finalPrefix, JavaUtils.typeName(variable), " ", name, ";", debugSuffix);
+			buffer.add(finalPrefix, JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else if (variable.isFinal()) {
 			// final upvalue
-			buffer.add("final ", JavaUtils.typeName(variable), " ", name, ";");
+			buffer.add("final ", JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else {
 			// upvalue
-			buffer.add("final UpValue ", name, " = UpValue.create();");
+			buffer.add("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = UpValue.create();");
 		}
 		return buffer;
 	}
@@ -150,7 +150,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		buffer.add("Object[] ", eachName, " = (Object[]) ", iteratorName, ".next();");
 		int i = 0;
 		for (var variable : variables) {
-			buffer.add(JavaUtils.typeName(variable), " ", variable.getName(), " = get(", eachName, ", ", i++, ");");
+			buffer.add(JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, variable.getName(), " = get(", eachName, ", ", i++, ");");
 		}
 		buffer.addBlock(visitAll(body.steps()));
 		buffer.add("}");

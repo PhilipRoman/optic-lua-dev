@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFailure> {
 	private static final Logger log = LoggerFactory.getLogger(JavaExpressionVisitor.class);
+	static final String LOCAL_VARIABLE_PREFIX = "L_";
 	private static AtomicInteger idCounter = new AtomicInteger();
 	private final NestedData nestedData;
 	private final JavaCodeOutput statementVisitor;
@@ -102,7 +103,7 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 				boolean isUpValue = param.getMode() == VariableMode.UPVALUE;
 				var paramTypeName = (isUpValue && !param.isFinal()) ? "UpValue" : "Object";
 				String finalPrefix = param.isFinal() ? "final " : "";
-				buffer.add(finalPrefix + paramTypeName + " " + p + " = get(" + argsName + ", " + params.indexOf(p) + ");");
+				buffer.add(finalPrefix + paramTypeName + " " + LOCAL_VARIABLE_PREFIX + p + " = get(" + argsName + ", " + params.indexOf(p) + ");");
 			}
 		}
 		if (!t.parameters().hasVarargs()) {
@@ -120,32 +121,23 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 
 	@Override
 	public String visitRegister(Register r) {
-		if (options().get(StandardFlags.DEBUG_COMMENTS)) {
-			return r.name() + " /* " + r.toDebugString() + " */";
-		} else {
-			return r.name();
-		}
+		return r.name();
 	}
 
 	@Override
 	public String visitLocalName(VariableInfo variable) {
-		if (options().get(StandardFlags.DEBUG_COMMENTS)) {
-			return variable.getName() + " /* " + variable.toDebugString() + " */";
-		} else {
-			return variable.getName();
-		}
+		return LOCAL_VARIABLE_PREFIX + variable.getName();
 	}
 
 	@Override
 	public String visitUpValueName(VariableInfo upvalue) {
-		String debugComment = options().get(StandardFlags.DEBUG_COMMENTS) ? " /* " + upvalue.toDebugString() + " */" : "";
 		if (upvalue.isEnv()) {
-			return nestedData.contextName() + "._ENV" + debugComment;
+			return nestedData.contextName() + "._ENV";
 		}
 		if (upvalue.isFinal()) {
-			return upvalue.getName() + debugComment;
+			return LOCAL_VARIABLE_PREFIX + upvalue.getName();
 		}
-		return upvalue.getName() + ".get()" + debugComment;
+		return LOCAL_VARIABLE_PREFIX + upvalue.getName() + ".get()";
 	}
 
 	@Override
