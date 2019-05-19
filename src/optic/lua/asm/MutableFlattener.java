@@ -147,19 +147,13 @@ public class MutableFlattener implements VariableResolver {
 				return;
 			}
 			case VAR: {
-				var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
+				var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
 				int i = 1;
-				while (i < t.getChildCount() && t.getChild(i).getType() == INDEX) {
+				while (i < t.getChildCount()) {
 					builder.add(t.getChild(i++));
 				}
-				if (t.getChild(i) != null && t.getChild(i).getType() == CALL) {
-					var result = builder.build();
-					steps.addAll(result.block());
-					createFunctionCall(result.value(), t.getChild(i), false);
-				} else {
-					var result = builder.build();
-					steps.addAll(result.block());
-				}
+				var result = builder.buildStatement();
+				steps.addAll(result);
 				return;
 			}
 			case For: {
@@ -292,20 +286,14 @@ public class MutableFlattener implements VariableResolver {
 				return RValue.variableName(info);
 			}
 			case VAR: {
-				var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
+				var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
 				int i = 1;
-				while (i < t.getChildCount() && t.getChild(i).getType() == INDEX) {
+				while (i < t.getChildCount()) {
 					builder.add(t.getChild(i++));
 				}
-				if (t.getChild(i) != null && t.getChild(i).getType() == CALL) {
-					var result = builder.build();
-					steps.addAll(result.block());
-					return createFunctionCall(result.value(), t.getChild(i), true);
-				} else {
-					var result = builder.build();
-					steps.addAll(result.block());
-					return result.value();
-				}
+				var result = builder.buildExpression();
+				steps.addAll(result.block());
+				return result.value();
 			}
 			case FUNCTION: {
 				return createFunctionLiteral(t);
@@ -405,16 +393,14 @@ public class MutableFlattener implements VariableResolver {
 		if (name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
 			// table assignment
 			var t = (CommonTree) name;
-			var builder = new NestedFieldBuilder(getInterface(), flattenExpression(t.getChild(0)));
+			log.info("{}", t.toStringTree());
+			var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
 			int i = 1;
-			while (i < t.getChildCount() - 1 && t.getChild(i).getType() == INDEX) {
+			while (i < t.getChildCount()) {
 				builder.add(t.getChild(i++));
 			}
-			var result = builder.build();
-			steps.addAll(result.block());
-			Trees.expect(INDEX, t.getChild(t.getChildCount() - 1));
-			var key = flattenExpression(t.getChild(t.getChildCount() - 1).getChild(0));
-			return new LValue.TableField(result.value(), key);
+			steps.addAll(builder.buildExpression().block());
+			return new LValue.TableField(builder.getSelf(), builder.getLastIndexKey());
 		} else {
 			// variable assignment;
 			return new LValue.Name(name.toString());
