@@ -152,6 +152,7 @@ public class MutableFlattener implements VariableResolver {
 				while (i < t.getChildCount()) {
 					builder.add(t.getChild(i++));
 				}
+
 				var result = builder.buildStatement();
 				steps.addAll(result);
 				return;
@@ -393,7 +394,7 @@ public class MutableFlattener implements VariableResolver {
 		if (name instanceof Tree && ((Tree) name).getType() == ASSIGNMENT_VAR) {
 			// table assignment
 			var t = (CommonTree) name;
-			log.info("{}", t.toStringTree());
+
 			var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
 			int i = 1;
 			while (i < t.getChildCount()) {
