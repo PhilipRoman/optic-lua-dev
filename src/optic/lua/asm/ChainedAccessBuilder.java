@@ -1,14 +1,15 @@
 package optic.lua.asm;
 
-import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.messages.CompilationFailure;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.Trees;
-import static optic.lua.util.Trees.childrenOf;
 import org.antlr.runtime.tree.*;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Contract;
 
 import java.util.*;
+
+import static nl.bigo.luaparser.Lua53Lexer.*;
+import static optic.lua.util.Trees.childrenOf;
 
 final class ChainedAccessBuilder {
 	private RValue current;
@@ -27,18 +28,18 @@ final class ChainedAccessBuilder {
 	public void add(Tree tree) throws CompilationFailure {
 		var t = (CommonTree) tree;
 
-		if(lastOp == Op.CALL || lastOp == Op.COL_CALL)
+		if (lastOp == Op.CALL || lastOp == Op.COL_CALL)
 			current = current.discardRemaining().applyTo(steps);
 
-		switch(t.getType()) {
-			case Lua53Walker.INDEX:
+		switch (t.getType()) {
+			case INDEX:
 				addIndex(t);
 				break;
-			case Lua53Walker.CALL:
-				addCall(t);
+			case CALL:
+				addCall(t, false);
 				break;
-			case Lua53Walker.COL_CALL:
-				addColCall(t);
+			case COL_CALL:
+				addCall(t, true);
 				break;
 			default:
 				throw new IllegalArgumentException(Trees.reverseLookupName(tree.getType()));
@@ -46,7 +47,7 @@ final class ChainedAccessBuilder {
 	}
 
 	private void addIndex(CommonTree tree) throws CompilationFailure {
-		Trees.expect(Lua53Walker.INDEX, tree);
+		Trees.expect(INDEX, tree);
 		var key = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		steps.addAll(key.block());
 		Register next = RegisterFactory.create(ProvenType.OBJECT);
@@ -57,66 +58,49 @@ final class ChainedAccessBuilder {
 		lastOp = Op.INDEX;
 	}
 
-	private void addCall(CommonTree tree) throws CompilationFailure {
-		Trees.expect(Lua53Walker.CALL, tree);
+	private void addCall(CommonTree tree, boolean colon) throws CompilationFailure {
+		Trees.expect(colon ? COL_CALL : CALL, tree);
 		List<RValue> args = new ArrayList<>();
-		for(var child : childrenOf(tree))
+		if (colon)
+			args.add(self);
+		for (var child : childrenOf(tree))
 			args.add(flattener.flattenExpression((CommonTree) child).applyTo(steps));
+		normalizeValueList(args);
 		self = current = RValue.invocation(current, InvocationMethod.CALL, args);
 		lastKey = null;
-		lastOp = Op.CALL;
+		lastOp = colon ? Op.COL_CALL : Op.CALL;
 	}
 
-	private void addColCall(CommonTree tree) throws CompilationFailure {
-		Trees.expect(Lua53Walker.COL_CALL, tree);
-		List<RValue> args = new ArrayList<>();
-		args.add(self);
-		for(var child : childrenOf(tree))
-			args.add(flattener.flattenExpression((CommonTree) child).applyTo(steps));
-		self = current = RValue.invocation(current, InvocationMethod.CALL, args);
-		lastKey = null;
-		lastOp = Op.COL_CALL;
-	}
-
-	public List<Step> buildStatement() {
-		if(lastOp == Op.CALL || lastOp == Op.COL_CALL) {
-			var list = new ArrayList<Step>(steps);
+	List<Step> buildStatement() {
+		if (lastOp == Op.CALL || lastOp == Op.COL_CALL) {
+			var list = new ArrayList<>(steps);
 			list.add(StepFactory.discard((RValue.Invocation) current));
 			return list;
 		}
 		return Collections.unmodifiableList(steps);
 	}
 
-	public FlatExpr buildExpression() {
+	FlatExpr buildExpression() {
 		return new FlatExpr(steps, current);
 	}
 
-	public RValue getSelf() {
+	RValue getSelf() {
 		return self;
 	}
 
-	public RValue getLastIndexKey() {
-		if(lastKey != null)
+	RValue getLastIndexKey() {
+		if (lastKey != null)
 			return lastKey;
 		else
 			throw new IllegalStateException("Last key does not exist!");
 	}
 
-	@Contract(mutates = "this")
-	private List<RValue> normalizeValueList(List<RValue> registers) {
-		var values = new ArrayList<RValue>(registers.size());
-		int valueIndex = 0;
-		int valueCount = registers.size();
-		for (var register : registers) {
-			boolean isLastValue = valueIndex == valueCount - 1;
-			if (isLastValue) {
-				values.add(register);
-			} else {
-				values.add(discardRemaining(register));
-			}
-			valueIndex++;
+	@Contract(mutates = "this, param1")
+	private void normalizeValueList(List<RValue> values) {
+		int valueCount = values.size();
+		for (int i = 0; i < valueCount - 1; i++) {
+			values.set(i, discardRemaining(values.get(i)));
 		}
-		return values;
 	}
 
 	@Contract(mutates = "this")
@@ -129,7 +113,7 @@ final class ChainedAccessBuilder {
 		return vararg;
 	}
 
-	private static enum Op {
+	private enum Op {
 		INDEX, CALL, COL_CALL
 	}
 }
