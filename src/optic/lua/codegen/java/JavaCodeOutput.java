@@ -47,9 +47,9 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			var varargs = values.get(values.size() - 1);
 			var valuesCopy = new ArrayList<>(values);
 			valuesCopy.remove(valuesCopy.size() - 1);
-			buffer.add("return ListOps.concat(", expression(varargs), valuesCopy.isEmpty() ? "" : ", ", commaList(valuesCopy), ");");
+			buffer.add("return append(", expression(varargs), valuesCopy.isEmpty() ? "" : ", ", commaList(valuesCopy), ");");
 		} else {
-			buffer.add("return ListOps.create(", commaList(values), ");");
+			buffer.add("return list(", commaList(values), ");");
 		}
 		return buffer;
 	}
@@ -57,7 +57,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	@Override
 	public ResultBuffer visitSelect(Register target, int n, RValue vararg) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		buffer.add("Object ", target, " = ListOps.get(", expression(vararg), ", ", n, ");");
+		buffer.add("Object ", target, " = get(", expression(vararg), ", ", n, ");");
 		return buffer;
 	}
 
@@ -150,7 +150,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		buffer.add("Object[] ", eachName, " = (Object[]) ", iteratorName, ".next();");
 		int i = 0;
 		for (var variable : variables) {
-			buffer.add(JavaUtils.typeName(variable), " ", variable.getName(), " = ListOps.get(", eachName, ", ", i++, ");");
+			buffer.add(JavaUtils.typeName(variable), " ", variable.getName(), " = get(", eachName, ", ", i++, ");");
 		}
 		buffer.addBlock(visitAll(body.steps()));
 		buffer.add("}");
@@ -184,7 +184,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			FlatExpr condition = entry.getKey();
 			AsmBlock value = entry.getValue();
 			buffer.addBlock(visitAll(condition.block()));
-			buffer.add("if(DynamicOps.isTrue(", expression(condition.value()), ")) {");
+			buffer.add("if(isTrue(", expression(condition.value()), ")) {");
 			buffer.addBlock(visitAll(value.steps()));
 			buffer.add("}", isLast ? "" : " else {");
 		}
@@ -216,7 +216,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	@Override
 	public ResultBuffer visitBreakIf(RValue condition, boolean isTrue) throws CompilationFailure {
 		var buffer = new ResultBuffer();
-		buffer.add("if(", (isTrue ? "" : "!"), "DynamicOps.isTrue(", expression(condition), ")) break;");
+		buffer.add("if(", (isTrue ? "" : "!"), "isTrue(", expression(condition), ")) break;");
 		return buffer;
 	}
 
@@ -255,6 +255,8 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		var out = new PrintStream(result);
 
 		out.println("import optic.lua.runtime.*;");
+		out.println("import static optic.lua.runtime.DynamicOps.*;");
+		out.println("import static optic.lua.runtime.ListOps.*;");
 		out.println("import optic.lua.runtime.invoke.*;");
 		out.println("import java.util.Iterator;");
 		out.println("public class " + className + " {");
@@ -262,7 +264,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 
 		out.println("public static Object[] run(final LuaContext " + contextName + ", Object[] args) { if(1 == 1) {");
 		buffer.addBlock(visitAll(block.steps()));
-		buffer.add("} return ListOps.empty(); }");
+		buffer.add("} return EMPTY; }");
 
 		buffer.add("public static void main(String... args) {");
 		buffer.add("    run(LuaContext.create(), args);");

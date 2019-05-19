@@ -95,14 +95,14 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 			if (p.equals("...")) {
 				var varargName = nestedData.pushNewVarargName();
 				int offset = params.size() - 1;
-				buffer.add("\tfinal Object[] " + varargName + " = ListOps.sublist(" + argsName + ", " + offset + ");");
+				buffer.add("\tfinal Object[] " + varargName + " = sublist(" + argsName + ", " + offset + ");");
 			} else {
 				var param = t.body().locals().get(p);
 				Objects.requireNonNull(param);
 				boolean isUpValue = param.getMode() == VariableMode.UPVALUE;
 				var paramTypeName = (isUpValue && !param.isFinal()) ? "UpValue" : "Object";
 				String finalPrefix = param.isFinal() ? "final " : "";
-				buffer.add(finalPrefix + paramTypeName + " " + p + " = ListOps.get(" + argsName + ", " + params.indexOf(p) + ");");
+				buffer.add(finalPrefix + paramTypeName + " " + p + " = get(" + argsName + ", " + params.indexOf(p) + ");");
 			}
 		}
 		if (!t.parameters().hasVarargs()) {
@@ -110,7 +110,7 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 		}
 
 		buffer.addBlock(statementVisitor.visitAll(t.body().steps()));
-		buffer.add("} return ListOps.empty(); }}");
+		buffer.add("} return EMPTY; }}");
 		nestedData.popLastContextName();
 		nestedData.popLastVarargName();
 		var out = new ByteArrayOutputStream(256);
@@ -207,7 +207,7 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 		// if there is no corresponding Java operator, call the runtime API
 		String function = op.name().toLowerCase();
 		var context = nestedData.contextName();
-		return "DynamicOps." + function + "(" + context + ", " + a.accept(this) + ", " + b.accept(this) + ")";
+		return function + "(" + context + ", " + a.accept(this) + ", " + b.accept(this) + ")";
 	}
 
 	private String compileUnaryOperatorInvocation(LuaOperator op, RValue value) throws CompilationFailure {
@@ -218,15 +218,15 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 		// if there is no corresponding Java operator, call the runtime API
 		String function = op.name().toLowerCase();
 		var context = nestedData.contextName();
-		return "DynamicOps." + function + "(" + context + ", " + value.accept(this) + ")";
+		return function + "(" + context + ", " + value.accept(this) + ")";
 	}
 
 	private String compileTableWrite(RValue table, RValue key, RValue value) throws CompilationFailure {
-		return "TableOps.setIndex(" + table.accept(this) + ", " + key.accept(this) + ", " + value.accept(this) + ")";
+		return "setIndex(" + table.accept(this) + ", " + key.accept(this) + ", " + value.accept(this) + ")";
 	}
 
 	private String compileTableRead(RValue table, RValue key) throws CompilationFailure {
-		return "TableOps.index(" + table.accept(this) + ", " + key.accept(this) + ")";
+		return "index(" + table.accept(this) + ", " + key.accept(this) + ")";
 	}
 
 	private String compileFunctionCall(RValue function, List<RValue> arguments) throws CompilationFailure {
@@ -244,8 +244,8 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 		}
 		var contextName = nestedData.contextName();
 		var args = isVararg
-				? "ListOps.concat(" + commaList(argList) + ")"
-				: "ListOps.create(" + commaList(argList) + ")";
+				? "append(" + commaList(argList) + ")"
+				: "list(" + commaList(argList) + ")";
 		return callSiteName + ".invoke(" + contextName + ", " + function.accept(this) + "," + args + ")";
 	}
 

@@ -31,12 +31,12 @@ public final class LuaContext {
 
 	@RuntimeApi
 	public Object getGlobal(String name) {
-		return TableOps.index(_ENV, name);
+		return DynamicOps.index(_ENV, name);
 	}
 
 	@RuntimeApi
 	public void setGlobal(String name, Object value) {
-		TableOps.setIndex(_ENV, name, value);
+		DynamicOps.setIndex(_ENV, name, value);
 	}
 
 	@RuntimeApi

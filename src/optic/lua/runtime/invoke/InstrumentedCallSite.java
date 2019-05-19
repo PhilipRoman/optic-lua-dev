@@ -24,7 +24,7 @@ public final class InstrumentedCallSite implements CallSite {
 
 	@Override
 	public Object[] invoke(LuaContext context, Object function, Object[] args) {
-		Object[] results = FunctionOps.call(context, function, args);
+		Object[] results = DynamicOps.call(context, function, args);
 		var entry = new HistoryEntry(
 				((LuaFunction) function).constructionSite(),
 				HistoryEntry.encode(args),

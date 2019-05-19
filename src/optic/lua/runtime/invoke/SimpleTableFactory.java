@@ -8,11 +8,11 @@ public final class SimpleTableFactory implements TableFactory {
 
 	@Override
 	public LuaTable create(Object... entries) {
-		return TableOps.create(entries);
+		return DynamicOps.table(entries);
 	}
 
 	@Override
 	public LuaTable createWithVararg(Object key, Object[] varargs, Object... entries) {
-		return TableOps.createWithVararg(key, varargs, entries);
+		return DynamicOps.varargTable(key, varargs, entries);
 	}
 }

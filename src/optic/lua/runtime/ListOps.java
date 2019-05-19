@@ -2,17 +2,12 @@ package optic.lua.runtime;
 
 @RuntimeApi
 public final class ListOps {
-	private static Object[] EMPTY = {};
+	public static Object[] EMPTY = {};
 	private static Object[] TRUE = {true};
 	private static Object[] FALSE = {false};
 
 	@RuntimeApi
-	public static Object[] empty() {
-		return EMPTY;
-	}
-
-	@RuntimeApi
-	public static Object[] concat(Object[] toAppend, Object... original) {
+	public static Object[] append(Object[] toAppend, Object... original) {
 		if (toAppend.length == 0) {
 			return original;
 		}
@@ -26,16 +21,16 @@ public final class ListOps {
 	}
 
 	@RuntimeApi
-	public static Object[] create() {
+	public static Object[] list() {
 		return EMPTY;
 	}
 
 	@RuntimeApi
-	public static Object[] create(Object... args) {
+	public static Object[] list(Object... args) {
 		return args;
 	}
 
-	static Object[] createWithBoolean(boolean value) {
+	static Object[] listWithBoolean(boolean value) {
 		return value ? TRUE : FALSE;
 	}
 
