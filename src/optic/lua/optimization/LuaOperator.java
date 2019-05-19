@@ -79,8 +79,9 @@ public enum LuaOperator {
 		Objects.requireNonNull(b);
 		switch (this) {
 			case UNM:
-			case BNOT:
 				return b;
+			case BNOT:
+				return b == OBJECT ? OBJECT : INTEGER;
 			case ADD:
 			case SUB:
 			case MUL:
@@ -102,11 +103,10 @@ public enum LuaOperator {
 			case BXOR:
 			case SHL:
 			case SHR:
-				if (a == INTEGER || b == INTEGER) {
+				if (a.isNumeric() && b.isNumeric())
 					return INTEGER;
-				} else {
+				else
 					return OBJECT;
-				}
 			case POW:
 				// semantics for POW require double precision even if both operands are natural numbers
 				// this is due to large number overflow mechanics
