@@ -4,11 +4,8 @@ import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
 
-import java.lang.String;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static nl.bigo.luaparser.Lua53Walker.*;
 
 /**
  * Represents a possibly empty list of named parameters, optionally followed by a vararg (...)
@@ -26,7 +23,7 @@ public final class ParameterList {
 				.orElse(Collections.emptyList())
 				.stream()
 				.map(Tree.class::cast)
-				.peek(x -> Trees.expectEither(DotDotDot, Name, x))
+				.peek(x -> Trees.expectEither(Lua53Walker.DotDotDot, Lua53Walker.Name, x))
 				.map(Object::toString)
 				.collect(Collectors.toList());
 		return new ParameterList(List.copyOf(names));
@@ -50,7 +47,7 @@ public final class ParameterList {
 		return names.toString();
 	}
 
-	public List<java.lang.String> list() {
+	public List<String> list() {
 		return List.copyOf(names);
 	}
 }

@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;
@@ -7,12 +8,11 @@ import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
 import org.slf4j.*;
 
-import java.lang.String;
 import java.util.*;
 
-import static nl.bigo.luaparser.Lua53Walker.Number;
-import static nl.bigo.luaparser.Lua53Walker.String;
 import static nl.bigo.luaparser.Lua53Walker.*;
+
+import java.lang.String;
 
 /**
  * Mutable implementation of tree flattener. Good startup performance.
@@ -271,10 +271,10 @@ public class MutableFlattener implements VariableResolver {
 			return register;
 		}
 		switch (t.getType()) {
-			case Number: {
+			case Lua53Walker.Number: {
 				return RValue.number(Double.parseDouble(t.getText()));
 			}
-			case String: {
+			case Lua53Walker.String: {
 				return RValue.string(t.getText());
 			}
 			case Name: {
