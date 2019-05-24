@@ -42,6 +42,8 @@ public final class Main {
 			options.enable(StandardFlags.SHOW_TIME);
 		if (opticLua.showRtStats)
 			options.enable(StandardFlags.SHOW_RT_STATS);
+		if (opticLua.generateClasses)
+			options.enable(StandardFlags.GENERATE_CLASSES);
 
 		Set<Path> sources = new HashSet<>(opticLua.sources);
 		if (opticLua.mainSource != null) {

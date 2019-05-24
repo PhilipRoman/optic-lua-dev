@@ -12,7 +12,8 @@ public enum StandardFlags implements Option<Boolean> {
 	CACHE_LUA_COMPILING(true),
 	ALLOW_UPVALUE_VARARGS(false),
 	SHOW_TIME(false),
-	SHOW_RT_STATS(false);
+	SHOW_RT_STATS(false),
+	GENERATE_CLASSES(false);
 	private final boolean defaultValue;
 
 	StandardFlags(boolean value) {

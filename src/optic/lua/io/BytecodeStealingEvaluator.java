@@ -2,9 +2,9 @@ package optic.lua.io;
 
 import org.codehaus.commons.compiler.IExpressionEvaluator;
 import org.codehaus.janino.*;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Map;
+import java.util.*;
 
 /**
  * <p><i>
@@ -25,24 +25,23 @@ import java.util.Map;
  * @see #getBytecodes()
  */
 final class BytecodeStealingEvaluator extends SimpleCompiler {
-	@Nullable
-	private Map<String, byte[]> classes = null;
+	@NotNull
+	private final Map<String, byte[]> classes = new HashMap<>();
 
 	/**
 	 * @return The bytecodes that were generated when {@link #cook(String)} was invoked
 	 */
 	Map<String, byte[]> getBytecodes() {
-		if (classes == null)
+		if (classes.isEmpty())
 			throw new IllegalStateException("Must only be called after \"cook()\"");
-		return classes;
+		return Map.copyOf(classes);
 	}
-
-	// --------------------------------------------------------------------
 
 	// Override this method to prevent the loading of the class files into a ClassLoader.
 	@Override
 	public void cook(Map<String, byte[]> classes) {
 		// Instead of loading the bytecodes into a ClassLoader, store the bytecodes in "this.classes".
-		this.classes = classes;
+		this.classes.putAll(classes);
+		super.cook(classes);
 	}
 }
