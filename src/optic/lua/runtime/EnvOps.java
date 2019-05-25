@@ -92,7 +92,7 @@ public final class EnvOps {
 		env.set("assert", new LuaFunction("assert") {
 			public Object[] call(LuaContext context, Object... args) {
 				if (args.length == 0) {
-					throw new IllegalArgumentException("Bad argument #1, expected value");
+					throw Errors.argument(1, "value");
 				}
 				if (DynamicOps.isTrue(args[0])) {
 					return args;
@@ -112,7 +112,7 @@ public final class EnvOps {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
 				if (args.length == 0) {
-					throw new IllegalArgumentException("Bad argument #1, expected value");
+					throw Errors.argument(1, "value");
 				}
 				Object f = args[0];
 				Object[] params = ListOps.sublist(args, 1);

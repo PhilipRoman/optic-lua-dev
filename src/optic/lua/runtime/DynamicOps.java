@@ -16,10 +16,10 @@ public final class DynamicOps {
 			try {
 				return Double.parseDouble(o.toString());
 			} catch (NumberFormatException e) {
-				throw new IllegalArgumentException("\"" + o + "\" is not a valid number: " + e.getMessage());
+				throw new IllegalArgumentException("string \"" + o + "\" cannot be converted to a number");
 			}
 		}
-		throw new IllegalArgumentException(StandardLibrary.toString(o));
+		throw new IllegalArgumentException("value " + StandardLibrary.toString(o) + " cannot be converted to a number");
 	}
 
 	static long toInt(Object a) {
@@ -31,7 +31,7 @@ public final class DynamicOps {
 		if (i == d) {
 			return i;
 		}
-		throw new IllegalArgumentException("value " + StandardLibrary.toString(a) + " has no integer representation");
+		throw new IllegalArgumentException("value " + StandardLibrary.toString(a) + " cannot be converted to an integer");
 	}
 
 	@RuntimeApi
@@ -303,9 +303,12 @@ public final class DynamicOps {
 
 	@RuntimeApi
 	public static int len(LuaContext ctx, Object value) {
-		return value instanceof CharSequence
-				? ((CharSequence) value).length()
-				: ((LuaTable) value).length();
+		if(value instanceof CharSequence)
+			return ((CharSequence) value).length();
+		else if(value instanceof LuaTable)
+			return ((LuaTable) value).length();
+		else
+			throw Errors.attemptTo("get length of", value);
 	}
 
 	@RuntimeApi
@@ -350,7 +353,7 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);
 		}
-		throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ")");
+		throw Errors.attemptTo("index", obj);
 	}
 
 	@RuntimeApi
@@ -358,7 +361,7 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
 		} else {
-			throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ", value=" + value + ")");
+			throw Errors.attemptTo("index", obj);
 		}
 	}
 
@@ -367,7 +370,6 @@ public final class DynamicOps {
 		if (func instanceof LuaFunction) {
 			return ((LuaFunction) func).call(context, args);
 		}
-		Errors.attemptToCall(func);
-		return null;
+		throw Errors.attemptTo("call", func);
 	}
 }
