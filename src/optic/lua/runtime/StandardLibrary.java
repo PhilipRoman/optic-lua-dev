@@ -31,24 +31,6 @@ public final class StandardLibrary {
 		return null;
 	}
 
-	@RuntimeApi
-	public static double strictToNumber(Object o) {
-		if (o == null) {
-			throw new NullPointerException();
-		}
-		if (o instanceof Number) {
-			return ((Number) o).doubleValue();
-		}
-		if (o instanceof CharSequence) {
-			try {
-				return Double.parseDouble(o.toString());
-			} catch (NumberFormatException e) {
-				throw new IllegalArgumentException("\"" + o + "\" is not a valid number: " + e.getMessage());
-			}
-		}
-		throw new IllegalArgumentException(toString(o));
-	}
-
 	public static String toString(Object o) {
 		if (o == null) {
 			return "nil";

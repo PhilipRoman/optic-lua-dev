@@ -11,6 +11,7 @@ public abstract class LuaFunction {
 		this.site = site;
 	}
 
+	@RuntimeApi
 	LuaFunction(String friendlyName) {
 		this.site = new SimpleFunctionFactory(friendlyName);
 	}

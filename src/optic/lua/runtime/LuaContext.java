@@ -18,10 +18,12 @@ public final class LuaContext {
 	private TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
 
+	@RuntimeApi
 	public static LuaContext create() {
 		return create(Bundle.emptyBundle());
 	}
 
+	@RuntimeApi
 	public static LuaContext create(Bundle bundle) {
 		var ctx = new LuaContext();
 		ctx._ENV = EnvOps.createEnv();

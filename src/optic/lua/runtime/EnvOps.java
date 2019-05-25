@@ -213,62 +213,62 @@ public final class EnvOps {
 		env.set("math", LuaTable.ofMap(Map.of(
 				"sqrt", new LuaFunction("math.sqrt") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.sqrt(value));
 					}
 				},
 				"sin", new LuaFunction("math.sin") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.sin(value));
 					}
 				},
 				"cos", new LuaFunction("math.cos") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.cos(value));
 					}
 				},
 				"atan2", new LuaFunction("math.atan2") {
 					public Object[] call(LuaContext context, Object... args) {
-						double y = StandardLibrary.strictToNumber(args[0]);
-						double x = StandardLibrary.strictToNumber(args[1]);
+						double y = DynamicOps.toNum(args[0]);
+						double x = DynamicOps.toNum(args[1]);
 						return ListOps.list(Math.atan2(y, x));
 					}
 				},
 				"atan", new LuaFunction("math.atan") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.atan(value));
 					}
 				},
 				"abs", new LuaFunction("math.abs") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.abs(value));
 					}
 				},
 				"ceil", new LuaFunction("math.ceil") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.ceil(value));
 					}
 				},
 				"floor", new LuaFunction("math.floor") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.floor(value));
 					}
 				},
 				"deg", new LuaFunction("math.deg") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.toDegrees(value));
 					}
 				},
 				"exp", new LuaFunction("math.exp") {
 					public Object[] call(LuaContext context, Object... args) {
-						double value = StandardLibrary.strictToNumber(args[0]);
+						double value = DynamicOps.toNum(args[0]);
 						return ListOps.list(Math.exp(value));
 					}
 				}
@@ -280,19 +280,19 @@ public final class EnvOps {
 		math.set("pi", Math.PI);
 		math.set("log", new LuaFunction("math.log") {
 			public Object[] call(LuaContext context, Object... args) {
-				double value = StandardLibrary.strictToNumber(args[0]);
+				double value = DynamicOps.toNum(args[0]);
 				return ListOps.list(Math.log(value));
 			}
 		});
 		math.set("rad", new LuaFunction("math.rad") {
 			public Object[] call(LuaContext context, Object... args) {
-				double value = StandardLibrary.strictToNumber(args[0]);
+				double value = DynamicOps.toNum(args[0]);
 				return ListOps.list(Math.toRadians(value));
 			}
 		});
 		math.set("tan", new LuaFunction("math.tan") {
 			public Object[] call(LuaContext context, Object... args) {
-				double value = StandardLibrary.strictToNumber(args[0]);
+				double value = DynamicOps.toNum(args[0]);
 				return ListOps.list(Math.tan(value));
 			}
 		});
@@ -300,21 +300,21 @@ public final class EnvOps {
 		Object[] numberTypeInt = {"integer"};
 		math.set("type", new LuaFunction("math.type") {
 			public Object[] call(LuaContext context, Object... args) {
-				double value = StandardLibrary.strictToNumber(args[0]);
+				double value = DynamicOps.toNum(args[0]);
 				return (long) value == value ? numberTypeInt : numberTypeFloat;
 			}
 		});
 		math.set("max", new LuaFunction("math.max") {
 			public Object[] call(LuaContext context, Object... args) {
-				double a = StandardLibrary.strictToNumber(args[0]);
-				double b = StandardLibrary.strictToNumber(args[1]);
+				double a = DynamicOps.toNum(args[0]);
+				double b = DynamicOps.toNum(args[1]);
 				return ListOps.list(Math.max(a, b));
 			}
 		});
 		math.set("min", new LuaFunction("math.min") {
 			public Object[] call(LuaContext context, Object... args) {
-				double a = StandardLibrary.strictToNumber(args[0]);
-				double b = StandardLibrary.strictToNumber(args[1]);
+				double a = DynamicOps.toNum(args[0]);
+				double b = DynamicOps.toNum(args[1]);
 				return ListOps.list(Math.min(a, b));
 			}
 		});

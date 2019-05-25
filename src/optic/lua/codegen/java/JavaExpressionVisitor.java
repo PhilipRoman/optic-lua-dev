@@ -137,7 +137,7 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 		if (upvalue.isFinal()) {
 			return LOCAL_VARIABLE_PREFIX + upvalue.getName();
 		}
-		return LOCAL_VARIABLE_PREFIX + upvalue.getName() + ".get()";
+		return LOCAL_VARIABLE_PREFIX + upvalue.getName() + ".value";
 	}
 
 	@Override
@@ -184,7 +184,7 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 	}
 
 	private String compileToNumber(RValue value) throws CompilationFailure {
-		return "StandardLibrary.strictToNumber(" + value.accept(this) + ")";
+		return "toNum(" + value.accept(this) + ")";
 	}
 
 	private String compileBinaryOperatorInvocation(LuaOperator op, RValue a, RValue b) throws CompilationFailure {
