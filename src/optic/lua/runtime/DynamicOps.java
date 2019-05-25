@@ -16,10 +16,10 @@ public final class DynamicOps {
 			try {
 				return Double.parseDouble(o.toString());
 			} catch (NumberFormatException e) {
-				throw new IllegalArgumentException("string \"" + o + "\" cannot be converted to a number");
+				// fall through
 			}
 		}
-		throw new IllegalArgumentException("value " + StandardLibrary.toString(o) + " cannot be converted to a number");
+		throw Errors.cannotConvert(o, "number");
 	}
 
 	static long toInt(Object a) {
@@ -31,7 +31,7 @@ public final class DynamicOps {
 		if (i == d) {
 			return i;
 		}
-		throw new IllegalArgumentException("value " + StandardLibrary.toString(a) + " cannot be converted to an integer");
+		throw Errors.cannotConvert(a, "integer");
 	}
 
 	@RuntimeApi

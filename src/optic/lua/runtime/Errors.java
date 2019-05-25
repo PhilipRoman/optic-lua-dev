@@ -12,4 +12,8 @@ final class Errors {
 		String explanation = type.equals("userdata") ? " (" + func.getClass().getCanonicalName() + ')' : "";
 		return new IllegalArgumentException("attempt to " + action + " a " + type + " value" + explanation);
 	}
+
+	public static RuntimeException cannotConvert(Object value, String type) {
+		return new IllegalArgumentException("Can't convert " + StandardLibrary.toString(value) + " to " + type);
+	}
 }

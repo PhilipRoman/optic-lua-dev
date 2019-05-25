@@ -120,8 +120,9 @@ public final class StandardLibrary {
 		}
 		if (x instanceof Number) {
 			double d = ((Number) x).doubleValue();
-			return ((long) d == d) ? Long.toString((long) d) : Double.toString(d);
+			long i = (long) d;
+			return (i == d) ? Long.toString(i) : Double.toString(d);
 		}
-		throw new IllegalArgumentException(toString(x));
+		throw Errors.cannotConvert(x, "string");
 	}
 }
