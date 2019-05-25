@@ -1,7 +1,5 @@
 package optic.lua.runtime;
 
-import optic.lua.util.Numbers;
-
 import java.util.Objects;
 
 @RuntimeApi
@@ -29,8 +27,9 @@ public final class DynamicOps {
 			return ((Number) a).longValue();
 		}
 		double d = toNum(a);
-		if (Numbers.isInt(d)) {
-			return (long) d;
+		long i = (long) d;
+		if (i == d) {
+			return i;
 		}
 		throw new IllegalArgumentException("value " + StandardLibrary.toString(a) + " has no integer representation");
 	}
