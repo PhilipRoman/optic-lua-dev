@@ -51,6 +51,43 @@ final class JavaExpressionVisitor implements RValueVisitor<String, CompilationFa
 	}
 
 	@Override
+	public String visitNot(RValue value) throws CompilationFailure {
+		if (value.typeInfo().isNumeric()) {
+			return "Boolean.FALSE";
+		}
+		String valueExpr = value.accept(this);
+		return String.format("((%s) == null || (%s) == Boolean.FALSE)", valueExpr, valueExpr);
+	}
+
+	@Override
+	public String visitAnd(RValue first, RValue second) throws CompilationFailure {
+		if (first.typeInfo().isNumeric()) { // all numeric values are 'true'
+			return second.accept(this);
+		}
+		String firstExpr = first.accept(this);
+		String secondExpr = second.accept(this);
+		String commonType = JavaUtils.typeName(first.typeInfo().and(second.typeInfo()));
+		return String.format("((Object)(%s) == null || (Object)(%s) == Boolean.FALSE ? (%s)(%s) : (%s)(%s))",
+				firstExpr, firstExpr,
+				commonType, firstExpr,
+				commonType, secondExpr);
+	}
+
+	@Override
+	public String visitOr(RValue first, RValue second) throws CompilationFailure {
+		if (first.typeInfo().isNumeric()) { // all numeric values are 'true'
+			return first.accept(this);
+		}
+		String firstExpr = first.accept(this);
+		String secondExpr = second.accept(this);
+		String commonType = JavaUtils.typeName(first.typeInfo().and(second.typeInfo()));
+		return String.format("((Object)(%s) == null || (Object)(%s) == Boolean.FALSE ? (%s)(%s) : (%s)(%s))",
+				firstExpr, firstExpr,
+				commonType, secondExpr,
+				commonType, firstExpr);
+	}
+
+	@Override
 	public String visitTableConstructor(TableLiteral t) throws CompilationFailure {
 		var map = new LinkedHashMap<>(t.entries());
 		Optional<Entry<RValue, RValue>> vararg = map.entrySet().stream()

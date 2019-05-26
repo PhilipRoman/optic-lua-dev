@@ -82,3 +82,24 @@ end
 for i = 1, 1000000 do
     assert(divisible(i, 17) == (i % 17 == 0), i)
 end
+
+assert((1 or 2) == 1)
+assert((1 and 2) == 2)
+assert((nil and nil) == nil)
+assert((nil and false) == nil)
+assert((nil or nil) == nil)
+assert((nil or false) == false)
+assert(("string" or 1) == "string")
+assert((print and true) == true)
+assert((true and print) == print)
+assert((print or true) == print)
+assert((true or print) == true)
+for _, v in ipairs { 1, 2, 3, "a", "b", "c", print, 1.2, true, {} } do
+    assert(not v == false, v)
+    assert((v and 34) == 34, v)
+    assert((v or 34) == v, v)
+    assert((v and not v) == false, v)
+    assert((v and 56 or 65) == 56, v)
+end
+assert(not nil == true)
+assert(not false == true)

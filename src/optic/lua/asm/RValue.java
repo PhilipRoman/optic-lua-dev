@@ -51,6 +51,18 @@ public interface RValue {
 		return new Invocation(obj, method, arguments);
 	}
 
+	static RValue logicalOr(RValue a, RValue b) {
+		return new Logical(false, a, b);
+	}
+
+	static RValue logicalAnd(RValue a, RValue b) {
+		return new Logical(true, a, b);
+	}
+
+	static RValue logicalNot(RValue x) {
+		return new Not(x);
+	}
+
 	<T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X;
 
 	default boolean isVararg() {
@@ -293,6 +305,82 @@ public interface RValue {
 			Step step = StepFactory.select(result, this, 0);
 			return new FlatExpr(List.of(step), result);
 		}
+	}
+
+	class Not implements RValue {
+		private final RValue value;
+
+		Not(RValue value) {
+			if (!value.isPure()) {
+				throw new IllegalArgumentException("Argument to 'Not()' must be a pure RValue (got " + value + ")");
+			}
+			this.value = value;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitNot(value);
+		}
+
+		@Override
+		public boolean isPure() {
+			return true;
+		}
+
+		@Override
+		public ProvenType typeInfo() {
+			return ProvenType.OBJECT;
+		}
+
+		@Override
+		public String toString() {
+			return "Not(" + value + ")";
+		}
+	}
+
+	class Logical implements RValue {
+		private final boolean and;
+		private final RValue first, second;
+
+		Logical(boolean and, RValue first, RValue second) {
+			if (!first.isPure())
+				throw new IllegalArgumentException(
+						"First operand of logical operator must be pure (got " + first + ")");
+			this.and = and;
+			this.first = first;
+			this.second = second;
+		}
+
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			if (and)
+				return visitor.visitAnd(first, second);
+			else
+				return visitor.visitOr(first, second);
+		}
+
+		@Override
+		public String toString() {
+			return "(" + first + (and ? " And " : " Or ") + second + ")";
+		}
+
+		@Override
+		public boolean isPure() {
+			return true;
+		}
+
+		@Override
+		public ProvenType typeInfo() {
+			if (!and && first.typeInfo().isNumeric()) {
+				return first.typeInfo();
+			}
+			if (and && first.typeInfo().isNumeric()) {
+				return second.typeInfo();
+			}
+			return ProvenType.OBJECT;
+		}
+
 	}
 }
 
