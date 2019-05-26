@@ -31,18 +31,6 @@ final class SampleProgram {
         luaContext.out = new PrintWriter(out)
         new Runner(options).run(bundle.findCompiled(filePath).get(), luaContext, [])
 
-        // show information about call sites:
-        int skippedSites = 0
-        for (site in luaContext.getCallSites()) {
-            def numberOfInvocations = (site as InstrumentedCallSite).history().values().sum()
-            if (numberOfInvocations != null && (numberOfInvocations as int) > 1) {
-                site.printTo(System.out)
-                System.out.println()
-            } else {
-                skippedSites++
-            }
-        }
-        System.out.println(skippedSites + " call sites skipped")
         def scanner = new Scanner(out.getBuffer().toString())
         def list = new ArrayList<String>()
         while (scanner.hasNextLine()) {

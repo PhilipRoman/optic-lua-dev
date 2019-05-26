@@ -13,9 +13,9 @@ public final class LuaContext {
 	public Bundle bundle = null;
 	@RuntimeApi
 	public Object _ENV;
-	private CallSiteFactory callSiteFactory = new InstrumentedCallSiteFactory();
-	private FunctionMetafactory functionMetafactory = new SimpleFunctionMetafactory();
-	private TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
+	public CallSiteFactory callSiteFactory = new SimpleCallSiteFactory();
+	public FunctionMetafactory functionMetafactory = new SimpleFunctionMetafactory();
+	public TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
 
 	@RuntimeApi
