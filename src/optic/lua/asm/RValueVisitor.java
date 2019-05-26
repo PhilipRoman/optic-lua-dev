@@ -26,4 +26,10 @@ public interface RValueVisitor<T, X extends Throwable> {
 	T visitInvocation(RValue.Invocation invocation) throws X;
 
 	T visitVarargs() throws X;
+
+	T visitNot(RValue value) throws X;
+
+	T visitAnd(RValue first, RValue second) throws X;
+
+	T visitOr(RValue first, RValue second) throws X;
 }

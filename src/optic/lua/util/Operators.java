@@ -30,9 +30,7 @@ public final class Operators {
 				Lua53Walker.LTEq,
 				Lua53Walker.LT,
 				Lua53Walker.GT,
-				Lua53Walker.NEq,
-				Lua53Walker.Or,
-				Lua53Walker.And
+				Lua53Walker.NEq
 		).forEach(binaryOperators::set);
 		Set.of(
 				Lua53Walker.BIT_NOT,

@@ -8,11 +8,10 @@ import org.antlr.runtime.tree.*;
 import org.jetbrains.annotations.*;
 import org.slf4j.*;
 
+import java.lang.String;
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua53Walker.*;
-
-import java.lang.String;
 
 /**
  * Mutable implementation of tree flattener. Good startup performance.
@@ -316,6 +315,20 @@ public class MutableFlattener implements VariableResolver {
 			}
 			case False: {
 				return RValue.bool(false);
+			}
+			case Or: {
+				RValue a = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
+				RValue b = discardRemaining(flattenExpression(t.getChild(1)));
+				return RValue.logicalOr(a, b);
+			}
+			case And: {
+				RValue a = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
+				RValue b = discardRemaining(flattenExpression(t.getChild(1)));
+				return RValue.logicalAnd(a, b);
+			}
+			case Not: {
+				RValue x = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
+				return RValue.logicalNot(x);
 			}
 		}
 		log.error("Unknown expression: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
