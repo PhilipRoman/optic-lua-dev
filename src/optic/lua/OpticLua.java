@@ -22,8 +22,11 @@ final class OpticLua {
 	@Option(names = {"-R", "--rt-stats"}, description = "show function call site statistics")
 	boolean showRtStats = false;
 
-	@Option(names = {"--dump"}, description = "dump generated Java code to a temporary file")
+	@Option(names = {"--dump"}, description = "output generated Java code")
 	boolean javaCodeDump = false;
+
+	@Option(names = {"-c", "--class"}, description = "create class files corresponding to sources")
+	boolean generateClasses = false;
 
 	@Option(names = {"-F"}, hidden = true, description = "set advanced compiler options")
 	Map<StandardFlags, Boolean> compilerFlags = new HashMap<>();

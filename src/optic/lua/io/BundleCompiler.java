@@ -55,6 +55,19 @@ public final class BundleCompiler {
 		if (options.get(StandardFlags.DUMP_JAVA)) {
 			System.out.println(java);
 		}
+		if (options.get(StandardFlags.GENERATE_CLASSES)) {
+			var compiledClasses = new JavaToBytecodeCompiler().compile(java);
+			// compiling could produce more than one class file (anonymous classes)
+			for (var entry : compiledClasses.entrySet()) {
+				try {
+					Files.write(Paths.get(entry.getKey() + ".class"), entry.getValue());
+				} catch (IOException e) {
+					log.error("Couldn't write class file", e);
+					throw new CompilationFailure();
+				}
+			}
+			log.info("Written {} class files", compiledClasses.size());
+		}
 
 		return new JavaToMethodCompiler().compile(java, className);
 	}
