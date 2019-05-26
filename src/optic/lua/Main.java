@@ -3,6 +3,7 @@ package optic.lua;
 import optic.lua.io.*;
 import optic.lua.messages.*;
 import optic.lua.runtime.LuaContext;
+import optic.lua.runtime.invoke.InstrumentedCallSiteFactory;
 import org.slf4j.*;
 import picocli.CommandLine;
 
@@ -79,7 +80,11 @@ public final class Main {
 		var method = bundle.findCompiled(fileName).orElseThrow(() -> new NoSuchElementException(fileName));
 		for (int i = 0; i < nTimes; i++) {
 			long start = System.nanoTime();
-			new Runner(options).run(method, LuaContext.create(bundle), List.of());
+			var luaContext = LuaContext.create(bundle);
+			if(options.get(StandardFlags.SHOW_RT_STATS)) {
+				luaContext.callSiteFactory = new InstrumentedCallSiteFactory();
+			}
+			new Runner(options).run(method, luaContext, List.of());
 			if (options.get(StandardFlags.SHOW_TIME)) {
 				logDurationInfo(System.nanoTime() - start);
 			}

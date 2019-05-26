@@ -101,7 +101,7 @@ public class LuaTable {
 
 	private void appendToArray(Object value) {
 		if (array.length <= length) {
-			int newLength = array.length == 0 ? 4 : array.length * 2;
+			int newLength = array.length == 0 ? 4 : array.length * 4;
 			array = Arrays.copyOf(array, newLength);
 		}
 		// example:
@@ -145,40 +145,40 @@ public class LuaTable {
 
 	Iterator<Object[]> pairsIterator() {
 		var hashIterator = hash.entrySet().iterator();
-		var arrayIterator = Arrays.asList(array).subList(0, length).iterator();
-		return new PairsIterator(hashIterator, arrayIterator);
+		return new PairsIterator(hashIterator, array, length);
 	}
 
 	Iterator<Object[]> ipairsIterator() {
-		var arrayIterator = Arrays.asList(array).subList(0, length).iterator();
-		return new IpairsIterator(arrayIterator);
+		return new IpairsIterator(array, length);
 	}
 
 	private class PairsIterator implements Iterator<Object[]> {
 		private final Object[] wrapper = new Object[2];
 		private final Iterator<Entry<Object, Object>> hashIterator;
-		private final Iterator<Object> arrayIterator;
+		private final int length;
 		private int arrayIndex = 0;
+		private final Object[] array;
 
-		PairsIterator(Iterator<Entry<Object, Object>> hashIterator, Iterator<Object> arrayIterator) {
+		PairsIterator(Iterator<Entry<Object, Object>> hashIterator, Object[] array, int length) {
 			this.hashIterator = hashIterator;
-			this.arrayIterator = arrayIterator;
+			this.array = array;
+			this.length = length;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return hashIterator.hasNext() || arrayIterator.hasNext();
+			return arrayIndex < length || hashIterator.hasNext();
 		}
 
 		@Override
 		public Object[] next() {
-			if (hashIterator.hasNext()) {
+			if (arrayIndex < length) {
+				wrapper[1] = array[arrayIndex];
+				wrapper[0] = ++arrayIndex;
+			} else if (hashIterator.hasNext()) {
 				var next = hashIterator.next();
 				wrapper[0] = next.getKey();
 				wrapper[1] = next.getValue();
-			} else if (arrayIterator.hasNext()) {
-				wrapper[0] = ++arrayIndex;
-				wrapper[1] = arrayIterator.next();
 			} else {
 				wrapper[0] = null;
 				wrapper[1] = null;
@@ -194,23 +194,25 @@ public class LuaTable {
 
 	private class IpairsIterator implements Iterator<Object[]> {
 		private final Object[] wrapper = new Object[2];
-		private final Iterator<Object> arrayIterator;
 		private int arrayIndex = 0;
+		private final int length;
+		private final Object[] array;
 
-		IpairsIterator(Iterator<Object> arrayIterator) {
-			this.arrayIterator = arrayIterator;
+		IpairsIterator(Object[] array, int length) {
+			this.array = array;
+			this.length = length;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return arrayIterator.hasNext();
+			return arrayIndex < length;
 		}
 
 		@Override
 		public Object[] next() {
-			if (arrayIterator.hasNext()) {
+			if (arrayIndex < length) {
+				wrapper[1] = array[arrayIndex];
 				wrapper[0] = ++arrayIndex;
-				wrapper[1] = arrayIterator.next();
 			} else {
 				wrapper[0] = null;
 				wrapper[1] = null;

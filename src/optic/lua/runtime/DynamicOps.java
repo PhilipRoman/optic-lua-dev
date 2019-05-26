@@ -1,122 +1,160 @@
 package optic.lua.runtime;
 
-import optic.lua.util.Numbers;
-
 import java.util.Objects;
 
 @RuntimeApi
 public final class DynamicOps {
-	private static double toNum(Object x) {
-		return StandardLibrary.strictToNumber(x);
+	@RuntimeApi
+	public static double toNum(Object o) {
+		if (o == null) {
+			throw new NullPointerException();
+		}
+		if (o instanceof Number) {
+			return ((Number) o).doubleValue();
+		}
+		if (o instanceof CharSequence) {
+			try {
+				return Double.parseDouble(o.toString());
+			} catch (NumberFormatException e) {
+				// fall through
+			}
+		}
+		throw Errors.cannotConvert(o, "number");
 	}
 
 	static long toInt(Object a) {
 		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
 			return ((Number) a).longValue();
 		}
-		double d = StandardLibrary.strictToNumber(a);
-		if (Numbers.isInt(d)) {
-			return (long) d;
+		double d = toNum(a);
+		long i = (long) d;
+		if (i == d) {
+			return i;
 		}
-		throw new IllegalArgumentException("value " + StandardLibrary.toString(a) + " has no integer representation");
+		throw Errors.cannotConvert(a, "integer");
 	}
 
+	@RuntimeApi
 	public static Object add(LuaContext ctx, Object a, Object b) {
 		return toNum(a) + toNum(b);
 	}
 
+	@RuntimeApi
 	public static Object mul(LuaContext ctx, Object a, Object b) {
 		return toNum(a) * toNum(b);
 	}
 
+	@RuntimeApi
 	public static Object sub(LuaContext ctx, Object a, Object b) {
 		return toNum(a) - toNum(b);
 	}
 
+	@RuntimeApi
 	public static Object div(LuaContext ctx, Object a, Object b) {
 		return toNum(a) / toNum(b);
 	}
 
+	@RuntimeApi
 	public static double add(LuaContext ctx, double a, Object b) {
 		return a + toNum(b);
 	}
 
+	@RuntimeApi
 	public static double mul(LuaContext ctx, double a, Object b) {
 		return a * toNum(b);
 	}
 
+	@RuntimeApi
 	public static double sub(LuaContext ctx, double a, Object b) {
 		return a - toNum(b);
 	}
 
+	@RuntimeApi
 	public static double div(LuaContext ctx, double a, Object b) {
 		return a / toNum(b);
 	}
 
+	@RuntimeApi
 	public static long add(LuaContext ctx, long a, long b) {
 		return a + b;
 	}
 
+	@RuntimeApi
 	public static long mul(LuaContext ctx, long a, long b) {
 		return a * b;
 	}
 
+	@RuntimeApi
 	public static long sub(LuaContext ctx, long a, long b) {
 		return a - b;
 	}
 
+	@RuntimeApi
 	public static double div(LuaContext ctx, long a, long b) {
 		return a / (double) b;
 	}
 
+	@RuntimeApi
 	public static double add(LuaContext ctx, double a, double b) {
 		return a + b;
 	}
 
+	@RuntimeApi
 	public static double mul(LuaContext ctx, double a, double b) {
 		return a * b;
 	}
 
+	@RuntimeApi
 	public static double sub(LuaContext ctx, double a, double b) {
 		return a - b;
 	}
 
+	@RuntimeApi
 	public static double div(LuaContext ctx, double a, double b) {
 		return a / b;
 	}
 
+	@RuntimeApi
 	public static Object mod(LuaContext ctx, Object a, Object b) {
 		return toNum(a) % toNum(b);
 	}
 
+	@RuntimeApi
 	public static long mod(LuaContext ctx, long a, long b) {
 		return a % b;
 	}
 
+	@RuntimeApi
 	public static double mod(LuaContext ctx, double a, double b) {
 		return a % b;
 	}
 
+	@RuntimeApi
 	public static double mod(LuaContext ctx, Object a, double b) {
 		return toNum(a) % b;
 	}
 
+	@RuntimeApi
 	public static double mod(LuaContext ctx, Object a, long b) {
 		return toNum(a) % b;
 	}
 
+	@RuntimeApi
 	public static Object pow(LuaContext ctx, Object a, Object b) {
 		return Math.pow(toNum(a), toNum(b));
 	}
 
+	@RuntimeApi
 	public static double pow(LuaContext ctx, Object a, double b) {
 		return Math.pow(toNum(a), b);
 	}
 
+	@RuntimeApi
 	public static double pow(LuaContext ctx, double a, Object b) {
 		return Math.pow(a, toNum(b));
 	}
 
+	@RuntimeApi
 	public static double pow(LuaContext ctx, long base, long exp) {
 		return Math.pow(base, exp);
 		/*long result = 1;
@@ -129,10 +167,12 @@ public final class DynamicOps {
 		return result;*/
 	}
 
+	@RuntimeApi
 	public static double pow(LuaContext ctx, double a, double b) {
 		return Math.pow(a, b);
 	}
 
+	@RuntimeApi
 	public static double pow(LuaContext ctx, int base, int exp) {
 		return Math.pow(base, exp);
 		/*long result = 1;
@@ -145,50 +185,62 @@ public final class DynamicOps {
 		return result;*/
 	}
 
+	@RuntimeApi
 	public static long bor(LuaContext ctx, long a, long b) {
 		return a | b;
 	}
 
+	@RuntimeApi
 	public static long bxor(LuaContext ctx, long a, long b) {
 		return a ^ b;
 	}
 
+	@RuntimeApi
 	public static long band(LuaContext ctx, long a, long b) {
 		return a & b;
 	}
 
+	@RuntimeApi
 	public static long shl(LuaContext ctx, long a, long b) {
 		return a << b;
 	}
 
+	@RuntimeApi
 	public static long shr(LuaContext ctx, long a, long b) {
 		return a >> b;
 	}
 
+	@RuntimeApi
 	public static long bor(LuaContext ctx, Object a, Object b) {
 		return toInt(a) | toInt(b);
 	}
 
+	@RuntimeApi
 	public static long bxor(LuaContext ctx, Object a, Object b) {
 		return toInt(a) ^ toInt(b);
 	}
 
+	@RuntimeApi
 	public static long band(LuaContext ctx, Object a, Object b) {
 		return toInt(a) & toInt(b);
 	}
 
+	@RuntimeApi
 	public static long shl(LuaContext ctx, Object a, Object b) {
 		return toInt(a) << toInt(b);
 	}
 
+	@RuntimeApi
 	public static long shr(LuaContext ctx, Object a, Object b) {
 		return toInt(a) >> toInt(b);
 	}
 
+	@RuntimeApi
 	public static boolean eq(LuaContext ctx, double a, double b) {
 		return a == b;
 	}
 
+	@RuntimeApi
 	public static boolean eq(LuaContext ctx, Object a, Object b) {
 		if (a instanceof Number && b instanceof Number) {
 			return ((Number) a).doubleValue() == ((Number) b).doubleValue();
@@ -199,52 +251,67 @@ public final class DynamicOps {
 		return Objects.equals(a, b);
 	}
 
+	@RuntimeApi
 	public static boolean le(LuaContext ctx, double a, double b) {
 		return a <= b;
 	}
 
+	@RuntimeApi
 	public static boolean le(LuaContext ctx, Object a, Object b) {
 		return toNum(a) <= toNum(b);
 	}
 
+	@RuntimeApi
 	public static boolean lt(LuaContext ctx, double a, double b) {
 		return a < b;
 	}
 
+	@RuntimeApi
 	public static boolean lt(LuaContext ctx, Object a, Object b) {
 		return toNum(a) < toNum(b);
 	}
 
+	@RuntimeApi
 	public static boolean ge(LuaContext ctx, double a, double b) {
 		return a >= b;
 	}
 
+	@RuntimeApi
 	public static boolean ge(LuaContext ctx, Object a, Object b) {
 		return toNum(a) >= toNum(b);
 	}
 
+	@RuntimeApi
 	public static boolean gt(LuaContext ctx, double a, double b) {
 		return a > b;
 	}
 
+	@RuntimeApi
 	public static boolean gt(LuaContext ctx, Object a, Object b) {
 		return toNum(a) > toNum(b);
 	}
 
+	@RuntimeApi
 	public static Object bnot(LuaContext ctx, Object i) {
 		return ~toInt(i);
 	}
 
+	@RuntimeApi
 	public static long bnot(LuaContext ctx, long i) {
 		return ~i;
 	}
 
+	@RuntimeApi
 	public static int len(LuaContext ctx, Object value) {
-		return value instanceof CharSequence
-				? ((CharSequence) value).length()
-				: ((LuaTable) value).length();
+		if(value instanceof CharSequence)
+			return ((CharSequence) value).length();
+		else if(value instanceof LuaTable)
+			return ((LuaTable) value).length();
+		else
+			throw Errors.attemptTo("get length of", value);
 	}
 
+	@RuntimeApi
 	public static String concat(LuaContext ctx, Object a, Object b) {
 		return StandardLibrary.strictToString(a) + StandardLibrary.strictToString(b);
 	}
@@ -286,7 +353,7 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);
 		}
-		throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ")");
+		throw Errors.attemptTo("index", obj);
 	}
 
 	@RuntimeApi
@@ -294,7 +361,7 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
 		} else {
-			throw new IllegalArgumentException("attempt to index a " + StandardLibrary.type(obj) + " value (table=" + obj + ", key=" + key + ", value=" + value + ")");
+			throw Errors.attemptTo("index", obj);
 		}
 	}
 
@@ -303,7 +370,6 @@ public final class DynamicOps {
 		if (func instanceof LuaFunction) {
 			return ((LuaFunction) func).call(context, args);
 		}
-		Errors.attemptToCall(func);
-		return null;
+		throw Errors.attemptTo("call", func);
 	}
 }

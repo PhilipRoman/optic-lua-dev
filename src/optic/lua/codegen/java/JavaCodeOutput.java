@@ -73,7 +73,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 					buffer.add(context, "._ENV = ", expression(value), ";");
 					return buffer;
 				} else if (!variable.isFinal()) {
-					buffer.add(LOCAL_VARIABLE_PREFIX, variable.getName(), ".set(", expression(value), ");");
+					buffer.add(LOCAL_VARIABLE_PREFIX, variable.getName(), ".value = ", expression(value), ";");
 					return buffer;
 				}
 				// if upvalue is final, fall through to LOCAL branch
@@ -135,7 +135,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			buffer.add("final ", JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else {
 			// upvalue
-			buffer.add("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = UpValue.create();");
+			buffer.add("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = new UpValue();");
 		}
 		return buffer;
 	}
