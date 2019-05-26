@@ -6,6 +6,11 @@ import optic.lua.util.Numbers;
 
 import java.util.*;
 
+/**
+ * A read-only expression. May return more than one value (see {@link #isVararg()}). Care must be taken not to
+ * evaluate the same expression more than once unless it is known to be side-effect free (as indicated by
+ * {@link #isPure()}).
+ */
 public interface RValue {
 	static RValue varargs() {
 		return new Varargs();

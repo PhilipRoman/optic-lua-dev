@@ -2,6 +2,9 @@ package optic.lua.messages;
 
 import java.util.*;
 
+/**
+ * Mutable, type-safe container of {@link Option} objects mapped to some values.
+ */
 public final class Options {
 	private final Map<Option<?>, Object> table = new HashMap<>(8);
 

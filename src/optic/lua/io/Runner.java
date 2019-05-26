@@ -8,6 +8,9 @@ import org.slf4j.*;
 import java.lang.reflect.*;
 import java.util.List;
 
+/**
+ * Helper class to run Lua code that has been compiled to a method.
+ */
 public final class Runner {
 	private static final Logger log = LoggerFactory.getLogger(Runner.class);
 
@@ -22,6 +25,15 @@ public final class Runner {
 		log.info("Finished in {}ms", millis);
 	}
 
+	/**
+	 * Runs a given method which represents compiled Lua code. Depending on options,
+	 * may report user-friendly information through logging or standard streams.
+	 *
+	 * @param method     The method to run
+	 * @param luaContext The Lua context which will be passed to the method
+	 * @param args       Other arguments that will be passed
+	 * @return List of values returned from the given method
+	 */
 	public Object[] run(Method method, LuaContext luaContext, List<Object> args) {
 		final Object[] result;
 		long start = System.nanoTime();

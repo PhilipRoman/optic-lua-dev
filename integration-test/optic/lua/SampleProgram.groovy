@@ -6,18 +6,29 @@ import optic.lua.io.Runner
 import optic.lua.messages.Options
 import optic.lua.messages.StandardFlags
 import optic.lua.runtime.LuaContext
-import optic.lua.runtime.invoke.InstrumentedCallSite
 
 import java.nio.file.Paths
 
+/**
+ * Helper class to run a single Lua file and capture the standard output.
+ * Use {@link SampleProgram#run() run()} to execute the program and retrieve standard output.
+ */
 @CompileStatic
 final class SampleProgram {
     private final String filePath
 
+    /**
+     * Creates a new program which uses the given file path as source.
+     * @param filePath path to the Lua file to execute
+     */
     SampleProgram(String filePath) {
         this.filePath = filePath
     }
 
+    /**
+     * Executes the referenced program and returns the output as a list of lines.
+     * @return List of lines captured from standard output during program execution
+     */
     List<String> run() {
         def options = new Options([
                 (StandardFlags.VERIFY)        : true,
