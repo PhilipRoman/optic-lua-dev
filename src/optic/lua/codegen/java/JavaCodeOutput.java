@@ -37,6 +37,9 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	private final List<String> constants = new ArrayList<>();
 	private final NestedData nestedData = new NestedData();
 	private final JavaExpressionVisitor expressionVisitor = new JavaExpressionVisitor(nestedData, this);
+	// [J1, L1, J2, L2, ...] where J = Java line and L = Lua line
+	// one-based indexing
+	private final List<Integer> lineTable = new ArrayList<>();
 
 	public JavaCodeOutput(Options options) {
 		this.options = Objects.requireNonNull(options);
@@ -96,9 +99,10 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
-	public ResultBuffer visitLineNumber(int number) {
+	public ResultBuffer visitLineNumber(int luaLine) {
 		var buffer = new LineList();
-		buffer.addLine("// line ", number);
+		buffer.addChild(new LineNumberRecorder(lineTable, luaLine));
+		buffer.addLine("// line ", luaLine);
 		return buffer;
 	}
 
@@ -279,9 +283,16 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 
 		buffer.addChild(classBody);
 
-		buffer.addLine("}");
-
+		// don't add the last closing brace yet
 		buffer.writeTo(out, options.get(Option.INDENT));
+
+		// append line table which only becomes populated after writing out the buffer
+		var joiner = new StringJoiner(",");
+		for (Integer lineNumber : lineTable) {
+			joiner.add(lineNumber.toString());
+		}
+		out.println(options.get(Option.INDENT) + "public static final LineNumberTable LINE_TABLE = new LineNumberTable(" + joiner.toString() + ");");
+		out.println("}");
 		out.flush();
 		return result.toString();
 	}
