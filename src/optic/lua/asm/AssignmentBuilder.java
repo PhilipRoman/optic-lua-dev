@@ -7,6 +7,11 @@ import org.slf4j.*;
 
 import java.util.*;
 
+/**
+ * Helper class to compile variable assignments. Create a new builder using {@link #AssignmentBuilder(VariableResolver)},
+ * add elements with {@link #addValues(List)}, {@link #addValue(Register)} or {@link #addVariable(LValue)} and then
+ * retrieve the result using {@link #build()}.
+ */
 final class AssignmentBuilder {
 	private final Logger log = LoggerFactory.getLogger(AssignmentBuilder.class);
 	private final List<LValue> variables = new ArrayList<>(1);
@@ -31,17 +36,25 @@ final class AssignmentBuilder {
 
 	List<Step> build() {
 		List<Step> steps = new ArrayList<>(4);
+		// by how many variables the left side is ahead of right side
 		int overflow = 0;
+		int nonVarargRegisterCount = nonVarargRegisterCount();
+		RValue vararg = vararg();
 		for (int i = 0; i < variables.size(); i++) {
 			LValue variable = variables.get(i);
-			if (i < nonVarargRegisterCount()) {
+			if (i < nonVarargRegisterCount) {
+				// regular, one-to-one assignment
 				RValue value = values.get(i);
 				steps.add(createWriteStep(variable, value));
-			} else if (vararg() == null) {
+			} else if (vararg == null) {
+				// the left side has surpassed the right side
+				// fill remaining variables with nil
 				steps.add(createWriteStep(variable, RValue.nil()));
 			} else {
+				// the left side has surpassed the right side but the last expression can yield multiple values
+				// fill the remaining variables by selecting values from the last expression
 				Register selected = RegisterFactory.create(ProvenType.OBJECT);
-				steps.add(StepFactory.select(selected, vararg(), overflow));
+				steps.add(StepFactory.select(selected, vararg, overflow));
 				steps.add(createWriteStep(variable, selected));
 				overflow++;
 			}

@@ -7,6 +7,11 @@ import org.antlr.runtime.tree.*;
 
 import java.util.*;
 
+/**
+ * Helper class to compile <code>if then ... elseif then ... else ... end</code> chains.
+ * Create a new builder using {@link #IfElseChainBuilder(Flattener)}, add elements using {@link #add(Tree)}
+ * and finally retrieve the result using {@link #build()}.
+ */
 final class IfElseChainBuilder {
 	private final List<Conditional> chain = new ArrayList<>(4);
 	private final Flattener flattener;
@@ -23,6 +28,9 @@ final class IfElseChainBuilder {
 		chain.add(new Conditional(condition, body));
 	}
 
+	/**
+	 * Returns an ordered map, containing the conditions and respective code blocks of this chain.
+	 */
 	LinkedHashMap<FlatExpr, AsmBlock> build() {
 		var map = new LinkedHashMap<FlatExpr, AsmBlock>(chain.size());
 		for (var c : chain) {
