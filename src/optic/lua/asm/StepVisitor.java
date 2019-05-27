@@ -36,4 +36,6 @@ public interface StepVisitor<T, X extends Throwable> {
 		}
 		return result;
 	}
+
+	T visitLineNumber(int number);
 }

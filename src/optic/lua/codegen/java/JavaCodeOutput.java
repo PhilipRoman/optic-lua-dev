@@ -96,6 +96,13 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
+	public ResultBuffer visitLineNumber(int number) {
+		var buffer = new ResultBuffer();
+		buffer.add("// line ", number);
+		return buffer;
+	}
+
+	@Override
 	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) throws CompilationFailure {
 		var buffer = new ResultBuffer();
 		var realCounterName = "i_" + counter.getName();
