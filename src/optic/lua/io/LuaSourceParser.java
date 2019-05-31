@@ -13,6 +13,9 @@ import org.slf4j.*;
 final class LuaSourceParser {
 	private static final Logger log = LoggerFactory.getLogger(LuaSourceParser.class);
 
+	LuaSourceParser() {
+	}
+
 	CommonTree parse(CharStream charStream) throws CompilationFailure {
 		try {
 			var lexer = new Lua53Lexer(charStream);
@@ -37,7 +40,7 @@ final class LuaSourceParser {
 
 	private void logParsingError(RecognitionException e) {
 		var message = new StringBuilder("Invalid syntax ");
-		message.append("(");
+		message.append('(');
 		message.append(e.line);
 		message.append(':');
 		message.append(e.charPositionInLine);
