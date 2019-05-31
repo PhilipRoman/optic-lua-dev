@@ -16,6 +16,9 @@ import java.util.*;
 public final class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
+	private Main() {
+	}
+
 	public static void main(String[] args) {
 		var options = new Options();
 		var bundleCompiler = new BundleCompiler(options);

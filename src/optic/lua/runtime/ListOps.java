@@ -54,4 +54,7 @@ public final class ListOps {
 		System.arraycopy(array, from, sub, 0, sub.length);
 		return sub;
 	}
+
+	private ListOps() {
+	}
 }
