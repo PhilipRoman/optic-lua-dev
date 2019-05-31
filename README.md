@@ -20,7 +20,7 @@ java -cp .:build/libs/optic-lua.jar my_compiled_class
 ```
 
 ## Features
-* Ahead-of-Time compilation from Lua to runnable .class files
-* Compilation of Lua code to Java source code
-* Interactive shell
-* Analyze runtime statistics, such as common parameter types
+*   Ahead-of-Time compilation from Lua to runnable .class files
+*   Compilation of Lua code to Java source code
+*   Interactive shell
+*   Analyze runtime statistics, such as common parameter types
