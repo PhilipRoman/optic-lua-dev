@@ -1,6 +1,5 @@
 package optic.lua.asm;
 
-import optic.lua.asm.LValue.*;
 import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.*;
@@ -14,8 +13,11 @@ import java.util.*;
  */
 final class AssignmentBuilder {
 	private final Logger log = LoggerFactory.getLogger(AssignmentBuilder.class);
+	// left-hand side of the assignment
 	private final List<LValue> variables = new ArrayList<>(1);
+	// right-hand side of the assignment
 	private final List<RValue> values = new ArrayList<>(1);
+	// the resolver to resolve names
 	private final VariableResolver resolver;
 
 	AssignmentBuilder(VariableResolver resolver) {
@@ -38,11 +40,11 @@ final class AssignmentBuilder {
 		List<Step> steps = new ArrayList<>(4);
 		// by how many variables the left side is ahead of right side
 		int overflow = 0;
-		int nonVarargRegisterCount = nonVarargRegisterCount();
-		RValue vararg = vararg();
+		int nonVarargRValueCount = nonVarargRValueCount();
+		RValue vararg = vararg(); // null if right-hand side don't end with a vararg
 		for (int i = 0; i < variables.size(); i++) {
 			LValue variable = variables.get(i);
-			if (i < nonVarargRegisterCount) {
+			if (i < nonVarargRValueCount) {
 				// regular, one-to-one assignment
 				RValue value = values.get(i);
 				steps.add(createWriteStep(variable, value));
@@ -62,15 +64,18 @@ final class AssignmentBuilder {
 		return steps;
 	}
 
-	private int nonVarargRegisterCount() {
+	/**
+	 * How many non-vararg expressions does the right-hand side have?
+	 */
+	private int nonVarargRValueCount() {
 		return values.size() - (vararg() != null ? 1 : 0);
 	}
 
 	private Step createWriteStep(LValue left, RValue right) {
 		if (left instanceof LValue.TableField) {
-			return StepFactory.tableWrite((TableField) left, right);
+			return StepFactory.tableWrite((LValue.TableField) left, right);
 		} else if (left instanceof LValue.Name) {
-			var name = ((Name) left);
+			var name = ((LValue.Name) left);
 			VariableInfo info = resolver.resolve(name.name());
 			if (info == null) {
 				return StepFactory.write(VariableInfo.global(name.name()), right);

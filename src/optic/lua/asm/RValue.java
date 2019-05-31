@@ -10,36 +10,62 @@ import java.util.*;
  * A read-only expression. May return more than one value (see {@link #isVararg()}). Care must be taken not to
  * evaluate the same expression more than once unless it is known to be side-effect free (as indicated by
  * {@link #isPure()}).
+ * <br>
+ * Use static factory methods to create instances of this interface.
  */
 public interface RValue {
+	/**
+	 * Returns a variable-length RValue which references the varargs ("...") of current function.
+	 */
 	static RValue varargs() {
 		return new Varargs();
 	}
 
+	/**
+	 * Returns an RValue which has the value of the given number constant.
+	 */
 	static RValue number(double num) {
 		return new NumberConstant(num);
 	}
 
+	/**
+	 * Returns an RValue which has the value of the given string constant.
+	 */
 	static RValue string(String s) {
 		return new StringConstant(s);
 	}
 
+	/**
+	 * Returns an RValue which has the value of the given boolean constant.
+	 */
 	static RValue bool(boolean b) {
 		return new BooleanConstant(b);
 	}
 
+	/**
+	 * Returns an RValue which has the value of nil.
+	 */
 	static RValue nil() {
 		return new NilConstant();
 	}
 
+	/**
+	 * Returns an RValue which describes a table constructor expression from the given entries.
+	 */
 	static RValue table(LinkedHashMap<RValue, RValue> entries) {
 		return new TableLiteral(entries);
 	}
 
+	/**
+	 * Returns an RValue which describes an anonymous function with given parameter list and body.
+	 */
 	static RValue function(ParameterList parameters, AsmBlock body) {
 		return new FunctionLiteral(parameters, body);
 	}
 
+	/**
+	 * Returns an RValue which references the given variable.
+	 */
 	static RValue variableName(VariableInfo variableInfo) {
 		switch (variableInfo.getMode()) {
 			case LOCAL:
@@ -52,32 +78,53 @@ public interface RValue {
 		throw new AssertionError("Should never reach here!");
 	}
 
+	/**
+	 * Returns an RValue which references the result of applying an {@link InvocationMethod} with arguments to a value.
+	 */
 	static Invocation invocation(RValue obj, InvocationMethod method, List<RValue> arguments) {
 		return new Invocation(obj, method, arguments);
 	}
 
+	/**
+	 * Returns an RValue which describes the result of logical "or" of two expressions.
+	 */
 	static RValue logicalOr(RValue a, RValue b) {
 		return new Logical(false, a, b);
 	}
 
+	/**
+	 * Returns an RValue which describes the result of logical "and" of two expressions.
+	 */
 	static RValue logicalAnd(RValue a, RValue b) {
 		return new Logical(true, a, b);
 	}
 
+	/**
+	 * Returns an RValue which describes the result of logical "not" of an expression.
+	 */
 	static RValue logicalNot(RValue x) {
 		return new Not(x);
 	}
 
 	<T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X;
 
+	/**
+	 * Returns true if this expression may return multiple (or zero) values.
+	 */
 	default boolean isVararg() {
 		return false;
 	}
 
+	/**
+	 * Returns true if this expression is guaranteed to have no side effects.
+	 */
 	default boolean isPure() {
 		return false;
 	}
 
+	/**
+	 * Returns an RValue which references the first value returned by this expression.
+	 */
 	default FlatExpr discardRemaining() {
 		if (this.isVararg()) {
 			var r = RegisterFactory.create(ProvenType.OBJECT);
@@ -128,7 +175,7 @@ public interface RValue {
 		}
 	}
 
-	class NilConstant extends Constant<Step.Void> {
+	class NilConstant extends Constant<Void> {
 		private NilConstant() {
 			super(null);
 		}
@@ -237,6 +284,9 @@ public interface RValue {
 		}
 	}
 
+	/**
+	 * An abstract helper class for various kinds of constants.
+	 */
 	abstract class Constant<T> implements RValue {
 		protected final T value;
 
@@ -343,6 +393,9 @@ public interface RValue {
 		}
 	}
 
+	/**
+	 * Represents "or" and "and" operations. These operations are not implemented as invocations due to lazy evaluation requirements.
+	 */
 	class Logical implements RValue {
 		private final boolean and;
 		private final RValue first, second;

@@ -7,6 +7,9 @@ import picocli.CommandLine.*;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * This class describes the command line interface as required by "picocli" library.
+ */
 @Command(description = "Lua to JVM compiler", version = "optic-lua [pre-alpha]")
 final class OpticLua {
 	@Parameters(paramLabel = "FILE", description = "list of Lua source files to compile")

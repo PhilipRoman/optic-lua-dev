@@ -7,8 +7,11 @@ import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 import org.slf4j.*;
 
-final class JavaParser {
-	private static final Logger log = LoggerFactory.getLogger(JavaParser.class);
+/**
+ * Converts Lua source code into an abstact syntax tree using {@link #parse(CharStream)}.
+ */
+final class LuaSourceParser {
+	private static final Logger log = LoggerFactory.getLogger(LuaSourceParser.class);
 
 	CommonTree parse(CharStream charStream) throws CompilationFailure {
 		try {
