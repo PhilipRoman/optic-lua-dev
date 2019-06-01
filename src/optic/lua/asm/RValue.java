@@ -67,15 +67,7 @@ public interface RValue {
 	 * Returns an RValue which references the given variable.
 	 */
 	static RValue variableName(VariableInfo variableInfo) {
-		switch (variableInfo.getMode()) {
-			case LOCAL:
-				return new LocalName(variableInfo);
-			case UPVALUE:
-				return new UpValueName(variableInfo);
-			case GLOBAL:
-				return new GlobalName(variableInfo);
-		}
-		throw new AssertionError("Should never reach here!");
+		return new Name(variableInfo);
 	}
 
 	/**
@@ -137,7 +129,7 @@ public interface RValue {
 		return ProvenType.OBJECT;
 	}
 
-	class NumberConstant extends Constant<Double> {
+	final class NumberConstant extends Constant<Double> {
 		private NumberConstant(double value) {
 			super(value);
 		}
@@ -153,7 +145,7 @@ public interface RValue {
 		}
 	}
 
-	class StringConstant extends Constant<String> {
+	final class StringConstant extends Constant<String> {
 		private StringConstant(String value) {
 			super(value);
 		}
@@ -164,7 +156,7 @@ public interface RValue {
 		}
 	}
 
-	class BooleanConstant extends Constant<Boolean> {
+	final class BooleanConstant extends Constant<Boolean> {
 		private BooleanConstant(boolean value) {
 			super(value);
 		}
@@ -175,7 +167,7 @@ public interface RValue {
 		}
 	}
 
-	class NilConstant extends Constant<Void> {
+	final class NilConstant extends Constant<Void> {
 		private NilConstant() {
 			super(null);
 		}
@@ -186,7 +178,7 @@ public interface RValue {
 		}
 	}
 
-	class TableLiteral implements RValue {
+	final class TableLiteral implements RValue {
 		private final LinkedHashMap<RValue, RValue> entries;
 
 		private TableLiteral(LinkedHashMap<RValue, RValue> entries) {
@@ -203,7 +195,7 @@ public interface RValue {
 		}
 	}
 
-	class FunctionLiteral implements RValue {
+	final class FunctionLiteral implements RValue {
 		private final ParameterList parameters;
 		private final AsmBlock body;
 
@@ -226,19 +218,25 @@ public interface RValue {
 		}
 	}
 
-	class LocalName implements RValue {
+	final class Name implements RValue {
 		private final VariableInfo variable;
 
-		private LocalName(VariableInfo variable) {
-			if (variable.getMode() != VariableMode.LOCAL) {
-				throw new IllegalArgumentException(variable.toDebugString() + " is not local!");
-			}
+		private Name(VariableInfo variable) {
 			this.variable = variable;
 		}
 
 		@Override
 		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
-			return visitor.visitLocalName(variable);
+			switch(variable.getMode()) {
+				case LOCAL:
+					return visitor.visitLocalName(variable);
+				case UPVALUE:
+					return visitor.visitUpValueName(variable);
+				case GLOBAL:
+					return visitor.visitGlobalName(variable);
+				default:
+					throw new AssertionError("Should not reach here");
+			}
 		}
 
 		@Override
@@ -248,39 +246,7 @@ public interface RValue {
 
 		@Override
 		public boolean isPure() {
-			return true;
-		}
-	}
-
-	class UpValueName implements RValue {
-		private final VariableInfo variable;
-
-		private UpValueName(VariableInfo variable) {
-			if (variable.getMode() != VariableMode.UPVALUE) {
-				throw new IllegalArgumentException(variable.toDebugString() + " is not an upvalue!");
-			}
-			this.variable = variable;
-		}
-
-		@Override
-		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
-			return visitor.visitUpValueName(variable);
-		}
-	}
-
-	class GlobalName implements RValue {
-		private final VariableInfo variable;
-
-		private GlobalName(VariableInfo variable) {
-			if (variable.getMode() != VariableMode.GLOBAL) {
-				throw new IllegalArgumentException(variable.toDebugString() + " is not global!");
-			}
-			this.variable = variable;
-		}
-
-		@Override
-		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
-			return visitor.visitGlobalName(variable);
+			return variable.getMode() != VariableMode.GLOBAL;
 		}
 	}
 
@@ -304,7 +270,7 @@ public interface RValue {
 		}
 	}
 
-	class Invocation implements RValue {
+	final class Invocation implements RValue {
 		private final RValue object;
 		private final InvocationMethod method;
 		private final List<RValue> arguments;
@@ -343,7 +309,7 @@ public interface RValue {
 		}
 	}
 
-	class Varargs implements RValue {
+	final class Varargs implements RValue {
 		@Override
 		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
 			return visitor.visitVarargs();
@@ -362,7 +328,7 @@ public interface RValue {
 		}
 	}
 
-	class Not implements RValue {
+	final class Not implements RValue {
 		private final RValue value;
 
 		Not(RValue value) {
@@ -396,7 +362,7 @@ public interface RValue {
 	/**
 	 * Represents "or" and "and" operations. These operations are not implemented as invocations due to lazy evaluation requirements.
 	 */
-	class Logical implements RValue {
+	final class Logical implements RValue {
 		private final boolean and;
 		private final RValue first, second;
 
