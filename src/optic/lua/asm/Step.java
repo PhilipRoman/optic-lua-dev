@@ -207,4 +207,19 @@ public interface Step {
 			return visitor.visitWrite(target, source);
 		}
 	}
+
+	final class LineNumber implements Step {
+		private final int number;
+
+		public LineNumber(int number) {
+			if (number <= 0)
+				throw new IllegalArgumentException("Line number must be greater than 0");
+			this.number = number;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(StepVisitor<T, X> visitor) throws X {
+			return visitor.visitLineNumber(number);
+		}
+	}
 }

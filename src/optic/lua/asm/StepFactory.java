@@ -77,4 +77,8 @@ final class StepFactory {
 	static Step forInLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) {
 		return new Step.ForEachLoop(variables, iterator, body);
 	}
+
+	static Step lineNumber(int number) {
+		return new Step.LineNumber(number);
+	}
 }
