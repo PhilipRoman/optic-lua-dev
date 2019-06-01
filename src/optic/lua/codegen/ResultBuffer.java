@@ -8,8 +8,11 @@ public interface ResultBuffer {
 	@Contract(mutates = "param4")
 	void writeToRecursive(PrintStream out, String indent, int depth, LineNumberCounter counter);
 
-	class LineNumberCounter {
+	static class LineNumberCounter {
 		private int lineNumber = 1;
+
+		LineNumberCounter() {
+		}
 
 		@Contract(mutates = "this")
 		void increment() {
