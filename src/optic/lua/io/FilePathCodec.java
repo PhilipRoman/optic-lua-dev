@@ -1,5 +1,8 @@
 package optic.lua.io;
 
+/**
+ * A simple encoding scheme, used to encode/decode between file paths and valid Java identifiers.
+ */
 final class FilePathCodec {
 	private FilePathCodec() {
 	}

@@ -1,18 +1,14 @@
 package optic.lua.asm;
 
+/**
+ * The meaning of a particular code block.
+ */
 public enum BlockMeaning {
 	MAIN_CHUNK, LOOP_BODY, IF_BODY, DO_BLOCK, FUNCTION_BODY;
 
-	public boolean isConditional() {
-		switch (this) {
-			case MAIN_CHUNK:
-			case DO_BLOCK:
-				return false;
-			default:
-				return true;
-		}
-	}
-
+	/**
+	 * Whether or not local variables past this block should be accessed as upvalues
+	 */
 	public boolean hasLexicalBoundary() {
 		return this == FUNCTION_BODY;
 	}

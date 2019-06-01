@@ -16,4 +16,7 @@ final class Errors {
 	public static RuntimeException cannotConvert(Object value, String type) {
 		return new IllegalArgumentException("Can't convert " + StandardLibrary.toString(value) + " to " + type);
 	}
+
+	private Errors() {
+	}
 }

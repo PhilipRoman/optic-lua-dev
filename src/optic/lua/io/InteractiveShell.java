@@ -7,16 +7,29 @@ import org.slf4j.*;
 import java.io.*;
 import java.util.*;
 
+/**
+ * An interactive session for evaluating Lua statements and expressions.
+ */
 public final class InteractiveShell {
 	private static final Logger log = LoggerFactory.getLogger(InteractiveShell.class);
-	private final Reader in;
+	// counters used for naming things
+	private static int sessionIndex = 1;
 	private final PrintWriter out;
 	private final PrintWriter err;
-	private final Bundle bundle;
+	// standard streams
+	private final Reader in;
 	private final Options options;
-	private static int sessionIndex = 1;
+	// other compiled Lua files
+	private final Bundle bundle;
 	private int index = 1;
 
+	/**
+	 * @param in      standard input
+	 * @param out     standard output
+	 * @param err     standard error
+	 * @param bundle  other available compiled files
+	 * @param options options to use
+	 */
 	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle, Options options) {
 		this.in = new InputStreamReader(in);
 		this.out = new PrintWriter(new OutputStreamWriter(out));
@@ -30,6 +43,10 @@ public final class InteractiveShell {
 		log.info("Compiled expression in {}ms", millis);
 	}
 
+	/**
+	 * Reads data from standard input (while available or until interrupted) and evaluates it line by line, writing
+	 * results to standard output. Similarly to standard Lua <= 5.2, expressions should be prefixed by "=".
+	 */
 	public void run() {
 		LuaContext context = LuaContext.create(bundle);
 		context.in = in;

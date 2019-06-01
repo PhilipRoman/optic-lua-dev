@@ -7,6 +7,9 @@ import java.util.function.Supplier;
 
 import static optic.lua.asm.VariableMode.*;
 
+/**
+ * A mutable container of information associated with a single variable.
+ */
 public class VariableInfo {
 	private final String name;
 	private boolean isFinal = true;
@@ -19,6 +22,9 @@ public class VariableInfo {
 		this.name = name;
 	}
 
+	/**
+	 * Creates an upvalue variable named "_ENV" for which the {@link #isEnv()} method returns true.
+	 */
 	static VariableInfo createEnv() {
 		var v = new VariableInfo("_ENV");
 		v.markAsUpvalue();

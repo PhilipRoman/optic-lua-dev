@@ -125,4 +125,7 @@ public final class StandardLibrary {
 		}
 		throw Errors.cannotConvert(x, "string");
 	}
+
+	private StandardLibrary() {
+	}
 }

@@ -372,4 +372,7 @@ public final class DynamicOps {
 		}
 		throw Errors.attemptTo("call", func);
 	}
+
+	private DynamicOps() {
+	}
 }

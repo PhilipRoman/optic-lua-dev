@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * Use [RegisterFactory] to obtain instances of this class.
  */
 public final class Register implements RValue {
-	public static final Register UNUSED = new Register("_", true, ProvenType.OBJECT);
+	static final Register UNUSED = new Register("_", true, ProvenType.OBJECT);
 
 	private final String name;
 
@@ -63,11 +63,6 @@ public final class Register implements RValue {
 	@Override
 	public ProvenType typeInfo() {
 		return type.get();
-	}
-
-	public String toDebugString() {
-		String varargSuffix = vararg ? "..." : "";
-		return "(" + typeInfo() + varargSuffix + " \"" + name + "\")";
 	}
 
 	@Override

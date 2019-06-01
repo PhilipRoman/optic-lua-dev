@@ -42,10 +42,16 @@ public final class Operators {
 	private Operators() {
 	}
 
+	/**
+	 * Determines if the given tree denotes a binary operator
+	 */
 	public static boolean isBinary(Tree tree) {
 		return binaryOperators.get(tree.getType());
 	}
 
+	/**
+	 * Determines if the given tree denotes an unary operator
+	 */
 	public static boolean isUnary(Tree tree) {
 		return unaryOperators.get(tree.getType());
 	}

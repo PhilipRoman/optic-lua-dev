@@ -10,13 +10,20 @@ import picocli.CommandLine;
 import java.nio.file.Path;
 import java.util.*;
 
+/**
+ * The entry point for running the compiler as a standalone program.
+ */
 public final class Main {
 	private static final Logger log = LoggerFactory.getLogger(Main.class);
+
+	private Main() {
+	}
 
 	public static void main(String[] args) {
 		var options = new Options();
 		var bundleCompiler = new BundleCompiler(options);
 
+		// command line parser
 		OpticLua opticLua = new OpticLua();
 		CommandLine commandLine = new CommandLine(opticLua);
 		commandLine.parse(args);
@@ -31,6 +38,7 @@ public final class Main {
 			return;
 		}
 
+		// store advanced option flags from command line into options
 		opticLua.compilerFlags.forEach((option, enabled) -> {
 			if (enabled)
 				options.enable(option);
@@ -46,7 +54,9 @@ public final class Main {
 		if (opticLua.generateClasses)
 			options.enable(StandardFlags.GENERATE_CLASSES);
 
+		// a pool of source files to compile
 		Set<Path> sources = new HashSet<>(opticLua.sources);
+		// include the file to run
 		if (opticLua.mainSource != null) {
 			sources.add(opticLua.mainSource);
 		}
@@ -59,7 +69,7 @@ public final class Main {
 		}
 
 		if (opticLua.interactiveShell) {
-			// interactive session
+			// enter interactive session after compiling the files
 			var shell = new InteractiveShell(System.in, System.out, System.err, bundle, options);
 			shell.run();
 			return;
@@ -81,6 +91,7 @@ public final class Main {
 		for (int i = 0; i < nTimes; i++) {
 			long start = System.nanoTime();
 			var luaContext = LuaContext.create(bundle);
+			// runtime stats can only be shown if the Lua context uses a special call site factory
 			if(options.get(StandardFlags.SHOW_RT_STATS)) {
 				luaContext.callSiteFactory = new InstrumentedCallSiteFactory();
 			}

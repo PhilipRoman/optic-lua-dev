@@ -8,7 +8,11 @@ import java.util.*;
 
 import static nl.bigo.luaparser.Lua53Walker.FIELD;
 
-public final class TableLiteralBuilder {
+/**
+ * Helper class for compiling a table constructor. Create the table using {@link #TableLiteralBuilder(Flattener, int)},
+ * add entries using {@link #addEntry(Tree)} and finally obtain the results using {@link #getSteps()} and {@link #getTable()}.
+ */
+final class TableLiteralBuilder {
 	private final LinkedHashMap<RValue, RValue> table = new LinkedHashMap<>(4);
 	private final Flattener flattener;
 	private final int size;
@@ -16,12 +20,12 @@ public final class TableLiteralBuilder {
 	private int fieldIndex = 0;
 	private int arrayFieldIndex = 1;
 
-	public TableLiteralBuilder(Flattener flattener, int numberOfEntries) {
+	TableLiteralBuilder(Flattener flattener, int numberOfEntries) {
 		this.flattener = flattener;
 		size = numberOfEntries;
 	}
 
-	public void addEntry(Tree tree) throws CompilationFailure {
+	void addEntry(Tree tree) throws CompilationFailure {
 		var field = Trees.expect(FIELD, tree);
 		boolean hasKey = field.getChildCount() == 2;
 		if (!(field.getChildCount() == 1 || field.getChildCount() == 2)) {
@@ -40,11 +44,11 @@ public final class TableLiteralBuilder {
 		fieldIndex++;
 	}
 
-	public LinkedHashMap<RValue, RValue> getTable() {
+	LinkedHashMap<RValue, RValue> getTable() {
 		return table;
 	}
 
-	public List<Step> getSteps() {
+	List<Step> getSteps() {
 		return steps;
 	}
 }

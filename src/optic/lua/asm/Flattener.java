@@ -5,6 +5,9 @@ import org.antlr.runtime.tree.*;
 
 import java.util.List;
 
+/**
+ * A helper interface for exposing the internal API of {@link MutableFlattener} to helper classes.
+ */
 interface Flattener {
 	AsmBlock flatten(CommonTree tree, List<VariableInfo> locals, BlockMeaning meaning) throws CompilationFailure;
 

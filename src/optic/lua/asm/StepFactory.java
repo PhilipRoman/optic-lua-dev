@@ -81,4 +81,7 @@ final class StepFactory {
 	static Step lineNumber(int number) {
 		return new Step.LineNumber(number);
 	}
+
+	private StepFactory() {
+	}
 }

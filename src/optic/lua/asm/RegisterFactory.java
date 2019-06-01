@@ -21,4 +21,7 @@ public final class RegisterFactory {
 	public static Register unused() {
 		return Register.UNUSED;
 	}
+
+	private RegisterFactory() {
+	}
 }

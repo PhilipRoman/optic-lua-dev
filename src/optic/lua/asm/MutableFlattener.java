@@ -14,20 +14,23 @@ import java.util.*;
 import static nl.bigo.luaparser.Lua53Walker.*;
 
 /**
- * Mutable implementation of tree flattener. Good startup performance.
- * Need to investigate parallelism capabilities.
+ * Mutable implementation of a tree flattener. To flatten a given AST tree, use {@link #flatten(CommonTree, Options)}.
+ * This implementation creates other flatteners recursively to flatten child blocks.
  */
 public class MutableFlattener implements VariableResolver {
 	private static final Logger log = LoggerFactory.getLogger(MutableFlattener.class);
+	// mutable list of current steps
 	private final List<Step> steps;
-	// local variable info
+	// mutable container of current local variable
 	private final Map<String, VariableInfo> locals = new HashMap<>(8);
 	// parent scope
 	private final MutableFlattener parent;
 	// whether or not local variables from parent are accessed as upvalues
 	private final boolean lexicalBoundary;
+	// the one and only _ENV upvalue
 	private final VariableInfo _ENV = VariableInfo.createEnv();
 	private final Options options;
+	// what kind of code block does
 	private final BlockMeaning meaning;
 
 	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Options options, BlockMeaning meaning) {
@@ -46,7 +49,7 @@ public class MutableFlattener implements VariableResolver {
 
 	private static AsmBlock flatten(CommonTree tree, Options context, MutableFlattener parent, List<VariableInfo> locals, BlockMeaning kind) throws CompilationFailure {
 		Objects.requireNonNull(tree);
-		var statements = Optional.ofNullable(tree.getChildren()).orElse(List.of());
+		var statements = Trees.childrenOf(tree);
 		int expectedSize = statements.size() * 4 + 10;
 		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, kind.hasLexicalBoundary(), context, kind);
 		for (var local : locals) {
@@ -110,6 +113,11 @@ public class MutableFlattener implements VariableResolver {
 		return flatten(tree, options, this, infos, BlockMeaning.FUNCTION_BODY);
 	}
 
+	/**
+	 * Recursively searches the parents of this flattener for a local variable with this name.
+	 *
+	 * @return An upvalue or local variable if one exists, otherwise null.
+	 */
 	@Nullable
 	@Override
 	public VariableInfo resolve(String name) {
@@ -133,6 +141,7 @@ public class MutableFlattener implements VariableResolver {
 		return null;
 	}
 
+	@Contract(mutates = "this")
 	private void flattenStatement(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		switch (t.getType()) {
@@ -252,6 +261,7 @@ public class MutableFlattener implements VariableResolver {
 		throw new CompilationFailure();
 	}
 
+	@Contract(mutates = "this")
 	private RValue flattenExpression(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
@@ -356,6 +366,7 @@ public class MutableFlattener implements VariableResolver {
 		return RValue.invocation(a, InvocationMethod.TO_NUMBER, List.of());
 	}
 
+	@Contract(mutates = "this")
 	private RValue evaluateOnce(RValue value) {
 		if (value.isPure()) {
 			return value;
@@ -409,9 +420,8 @@ public class MutableFlattener implements VariableResolver {
 			var t = (CommonTree) name;
 
 			var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
-			int i = 1;
-			while (i < t.getChildCount()) {
-				builder.add(t.getChild(i++));
+			for (int i = 1, size = t.getChildCount(); i < size; i++) {
+				builder.add(t.getChild(i));
 			}
 			steps.addAll(builder.buildExpression().block());
 			return new LValue.TableField(builder.getSelf(), builder.getLastIndexKey());
@@ -439,12 +449,14 @@ public class MutableFlattener implements VariableResolver {
 			if (info == null || info.getMode() != VariableMode.LOCAL) {
 				// if variable doesn't exist yet
 				if (local) {
+					// declare the variable
 					var variable = new VariableInfo(name.toString());
 					locals.put(name.toString(), variable);
 					declare(variable);
 				}
 			} else if (locals.containsKey(info.getName()) && options.get(StandardFlags.SSA_SPLIT)) {
-				// if variable is already a local variable
+				// if variable is a local variable from *this* scope and is reassigned
+				// clear it's type information by replacing it with a fresh one
 				var next = info.nextIncarnation();
 				locals.put(name.toString(), next);
 				declare(next);
@@ -461,21 +473,6 @@ public class MutableFlattener implements VariableResolver {
 	private void declare(VariableInfo variable) {
 		Step step = StepFactory.declareLocal(variable);
 		steps.add(step);
-	}
-
-	@Nullable
-	@Contract(value = "_, _, true -> !null; _, _, false -> null", mutates = "this")
-	private RValue createFunctionCall(RValue function, Tree call, boolean expression) throws CompilationFailure {
-		Objects.requireNonNull(function);
-		Objects.requireNonNull(call);
-		Trees.expect(CALL, call);
-		List<RValue> arguments = normalizeValueList(flattenAll(Trees.childrenOf(call)));
-		if (expression) {
-			return RValue.invocation(function, InvocationMethod.CALL, arguments);
-		} else {
-			steps.add(StepFactory.discard(RValue.invocation(function, InvocationMethod.CALL, arguments)));
-			return null;
-		}
 	}
 
 	@Contract(pure = true)

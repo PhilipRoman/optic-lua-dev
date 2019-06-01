@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class Trees {
-	public static final Field[] LUA_PARSER_FIELDS = Lua53Walker.class.getFields();
+	private static final Field[] LUA_PARSER_FIELDS = Lua53Walker.class.getFields();
 
 	private Trees() {
 	}
@@ -52,56 +52,12 @@ public final class Trees {
 		}
 	}
 
-	@Contract("null -> fail; _ -> param1")
-	public static Tree expectBinaryOp(Tree tree) {
-		checkNull(tree);
-		if (!Operators.isBinary(tree)) {
-			throw new AssertionError();
-		}
-		return tree;
-	}
-
-	@Contract("null -> fail; _ -> param1")
-	public static Tree expectUnaryOp(Tree tree) {
-		checkNull(tree);
-		if (!Operators.isUnary(tree)) {
-			throw new AssertionError();
-		}
-		return tree;
-	}
-
 	@NotNull
 	@Contract("null -> fail; !null -> _")
 	public static List<?> childrenOf(Tree t) {
 		checkNull(t);
-		return Objects.requireNonNullElse(((CommonTree) t).getChildren(), List.of());
-	}
-
-	public static int[] getChildTypes(Tree t) {
-		int[] types = new int[t.getChildCount()];
-		for (int i = 0; i < types.length; i++) {
-			types[i] = t.getChild(i).getType();
-		}
-		return types;
-	}
-
-	public static int matchRepeated(Tree tree, int[] start, int type, int[] end) {
-		if (start.length + end.length > tree.getChildCount()) {
-			throw new IllegalArgumentException("Prefix + postfix is longer than array itself");
-		}
-		int[] actual = getChildTypes(tree);
-		if (!Arrays.equals(actual, 0, start.length, start, 0, start.length)) {
-			throw new IllegalArgumentException(Arrays.toString(actual) + " doesn't start with " + Arrays.toString(start));
-		}
-		if (!Arrays.equals(actual, actual.length - end.length, actual.length, end, 0, end.length)) {
-			throw new IllegalArgumentException(Arrays.toString(actual) + " doesn't end with " + Arrays.toString(end));
-		}
-		for (int i = start.length; i < actual.length - end.length; i++) {
-			if (actual[i] != type) {
-				throw new IllegalArgumentException("Expected " + type + " got " + actual[i]);
-			}
-		}
-		return actual.length - start.length - end.length;
+		List<?> obj = ((CommonTree) t).getChildren();
+		return (obj != null) ? obj : List.of();
 	}
 
 	public static String reverseLookupName(int type) {

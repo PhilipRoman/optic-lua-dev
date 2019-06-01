@@ -72,6 +72,10 @@ public enum LuaOperator {
 		}
 	}
 
+	/**
+	 * Returns the most specific possible type of the result of applying values of given types to this operator.
+	 * If this operator is unary, the first argument should be null.
+	 */
 	public ProvenType resultType(ProvenType a, ProvenType b) {
 		if (arity() == 2) {
 			Objects.requireNonNull(a);

@@ -11,6 +11,17 @@ import java.util.*;
 import static nl.bigo.luaparser.Lua53Lexer.*;
 import static optic.lua.util.Trees.childrenOf;
 
+/**
+ * A builder for compiling expressions/statements in form of <code>a.b.c()</code> or <code>a.b.c = x</code>.
+ * To flatten such code patterns, create a new builder from the first element of the "chain", add remaining elements
+ * using {@link #add(Tree)} and finally use one of the finalization methods to get the result:
+ * <ul>
+ * {@link #buildExpression()}
+ * {@link #buildStatement()}
+ * {@link #getSelf()}
+ * {@link #getLastIndexKey()}
+ * </ul>
+ */
 final class ChainedAccessBuilder {
 	private RValue current;
 	private RValue self;
@@ -19,12 +30,22 @@ final class ChainedAccessBuilder {
 	private final List<Step> steps = new ArrayList<>(4);
 	private final Flattener flattener;
 
+	/**
+	 * @param flattener the {@link Flattener} to use while flattening child expressions
+	 * @param current   the first value in the "chain" (such as "a" in <code>a.b.c()</code>)
+	 */
 	ChainedAccessBuilder(Flattener flattener, RValue current) {
 		this.flattener = flattener;
 		this.current = current;
 		this.self = current;
 	}
 
+	/**
+	 * Add another element to the "chain". The type of tree must be INDEX, CALL or COL_CALL
+	 *
+	 * @param tree the child node to add
+	 * @throws CompilationFailure rethrown if flattening the child node fails
+	 */
 	public void add(Tree tree) throws CompilationFailure {
 		var t = (CommonTree) tree;
 
@@ -71,6 +92,9 @@ final class ChainedAccessBuilder {
 		lastOp = colon ? Op.COL_CALL : Op.CALL;
 	}
 
+	/**
+	 * Returns the "chain" as a function call statement.
+	 */
 	List<Step> buildStatement() {
 		if (lastOp == Op.CALL || lastOp == Op.COL_CALL) {
 			var list = new ArrayList<>(steps);
@@ -80,14 +104,23 @@ final class ChainedAccessBuilder {
 		return Collections.unmodifiableList(steps);
 	}
 
+	/**
+	 * Returns the resulting expression (either a function call or an index access).
+	 */
 	FlatExpr buildExpression() {
 		return new FlatExpr(steps, current);
 	}
 
+	/**
+	 * Returns the last expression in the "chain" which may be used as a target of an index assignment or a colon call
+	 */
 	RValue getSelf() {
 		return self;
 	}
 
+	/**
+	 * Returns the key expression of the last index access. Useful when compiling table index assignment.
+	 */
 	RValue getLastIndexKey() {
 		if (lastKey != null)
 			return lastKey;
