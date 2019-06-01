@@ -20,7 +20,14 @@ java -cp .:build/libs/optic-lua.jar my_compiled_class
 ```
 
 ## Features
+*   Lua 5.3 support
 *   Ahead-of-Time compilation from Lua to runnable .class files
 *   Compilation of Lua code to Java source code
 *   Interactive shell
 *   Analyze runtime statistics, such as common parameter types
+Note that the compiler does not yet fully implement all of Lua and its standard library. You can track the progress here: [Lua 5.3 implementation](https://github.com/PhilipRoman/optic-lua-dev/projects/1).
+
+## Planned features
+*   Zero-overhead FFI to Java code
+*   Ability to mix Lua and Java code in the same file
+*   Embedding API
