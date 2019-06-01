@@ -11,12 +11,15 @@ Some useful guidelines are listed below:
 *   Every variable/field/parameter is considered non-null by default (don't do null checks). All nullable values should be documented and/or marked using @Nullable.
 *   Every class should be final by default. If a class is non-final, it's assumed to be designed for inheritance.
 *   Don't write documentation without a reason.
+*   Feel free to use any language features from Java 11
 
 ## Build process
 
 The project uses Gradle build system to produce outputs. Run `gradle test` to run unit and integration tests and `gradle shadowJar` to produce a standalone jar.
 
 The recommended way to run the project is to execute the standalone jar: `java -jar build/libs/optic-lua.jar --help`. I don't use the `gradle run` task because it's harder to pass command line arguments and there seem to be latency problems for standard output as well as weird terminal behaviour when reading from standard input.
+
+The project is usually built with OpenJDK 11.
 
 ## What goes where
 

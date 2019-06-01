@@ -19,6 +19,8 @@ If you've compiled some Lua code to a .class file, you can run it by adding the 
 java -cp .:build/libs/optic-lua.jar my_compiled_class
 ```
 
+The project is developed using OpenJDK 11.
+
 ## Features
 *   Lua 5.3 support
 *   Ahead-of-Time compilation from Lua to runnable .class files
