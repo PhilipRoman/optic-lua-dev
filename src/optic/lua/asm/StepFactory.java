@@ -78,6 +78,10 @@ final class StepFactory {
 		return new Step.ForEachLoop(variables, iterator, body);
 	}
 
+	static Step lineNumber(int number) {
+		return new Step.LineNumber(number);
+	}
+
 	private StepFactory() {
 	}
 }

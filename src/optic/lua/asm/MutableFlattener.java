@@ -56,7 +56,7 @@ public class MutableFlattener implements VariableResolver {
 			f.locals.put(local.getName(), local);
 		}
 		for (var stat : statements) {
-			f.steps.add(StepFactory.comment("line " + ((Tree) stat).getLine()));
+			f.steps.add(StepFactory.lineNumber(((Tree) stat).getLine()));
 			try {
 				f.flattenStatement((Tree) stat);
 			} catch (RuntimeException e) {

@@ -1,7 +1,7 @@
 package optic.lua.codegen.java;
 
 import optic.lua.asm.*;
-import optic.lua.codegen.ResultBuffer;
+import optic.lua.codegen.*;
 import optic.lua.messages.*;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
@@ -44,50 +44,50 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 
 	@Override
 	public ResultBuffer visitReturn(List<RValue> values) throws CompilationFailure {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		if (!values.isEmpty() && values.get(values.size() - 1).isVararg()) {
 			var varargs = values.get(values.size() - 1);
 			var valuesCopy = new ArrayList<>(values);
 			valuesCopy.remove(valuesCopy.size() - 1);
-			buffer.add("return append(", expression(varargs), valuesCopy.isEmpty() ? "" : ", ", commaList(valuesCopy), ");");
+			buffer.addLine("return append(", expression(varargs), valuesCopy.isEmpty() ? "" : ", ", commaList(valuesCopy), ");");
 		} else {
-			buffer.add("return list(", commaList(values), ");");
+			buffer.addLine("return list(", commaList(values), ");");
 		}
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitSelect(Register target, int n, RValue vararg) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		buffer.add("Object ", target, " = get(", expression(vararg), ", ", n, ");");
+		var buffer = new LineList();
+		buffer.addLine("Object ", target, " = get(", expression(vararg), ", ", n, ");");
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitWrite(VariableInfo variable, RValue value) throws CompilationFailure {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		switch (variable.getMode()) {
 			case UPVALUE: {
 				if (variable.isEnv()) {
 					var context = nestedData.contextName();
-					buffer.add(context, "._ENV = ", expression(value), ";");
+					buffer.addLine(context, "._ENV = ", expression(value), ";");
 					return buffer;
 				} else if (!variable.isFinal()) {
-					buffer.add(LOCAL_VARIABLE_PREFIX, variable.getName(), ".value = ", expression(value), ";");
+					buffer.addLine(LOCAL_VARIABLE_PREFIX, variable.getName(), ".value = ", expression(value), ";");
 					return buffer;
 				}
 				// if upvalue is final, fall through to LOCAL branch
 			}
 			case LOCAL: {
 				if (variable.typeInfo().isNumeric() && !value.typeInfo().isNumeric())
-					buffer.add(LOCAL_VARIABLE_PREFIX, variable, " = StandardLibrary.toNumber(", expression(value), ");");
+					buffer.addLine(LOCAL_VARIABLE_PREFIX, variable, " = StandardLibrary.toNumber(", expression(value), ");");
 				else
-					buffer.add(LOCAL_VARIABLE_PREFIX, variable, " = ", expression(value), ";");
+					buffer.addLine(LOCAL_VARIABLE_PREFIX, variable, " = ", expression(value), ";");
 				return buffer;
 			}
 			case GLOBAL: {
 				var context = nestedData.contextName();
-				buffer.add(context, ".setGlobal(\"", variable.getName(), "\", ", expression(value), ");");
+				buffer.addLine(context, ".setGlobal(\"", variable.getName(), "\", ", expression(value), ");");
 				return buffer;
 			}
 			default:
@@ -96,8 +96,15 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
+	public ResultBuffer visitLineNumber(int number) {
+		var buffer = new LineList();
+		buffer.addLine("// line ", number);
+		return buffer;
+	}
+
+	@Override
 	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) throws CompilationFailure {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		var realCounterName = "i_" + counter.getName();
 		ProvenType realCounterType = from.typeInfo().and(step.typeInfo());
 		if (realCounterType == ProvenType.INTEGER
@@ -106,90 +113,82 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
 			// it has been proven repeatedly that int loops are ~30% faster than long loops and 300% faster than float/double loops
 			// int loop
-			buffer.add("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE && (long) ", expression(step), " == ", expression(step), ")");
-			buffer.add("for(int ", realCounterName, " = (int)", expression(from), "; ", realCounterName, " <= (int)", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
-			buffer.add("long ", LOCAL_VARIABLE_PREFIX, counter.getName(), " = ", realCounterName, ";");
-			buffer.addBlock(visitAll(block.steps()));
-			buffer.add("}");
-			buffer.add("else");
+			buffer.addLine("if(", expression(from), " >= Integer.MIN_VALUE && ", expression(to), " <= Integer.MAX_VALUE && (long) ", expression(step), " == ", expression(step), ")");
+			buffer.addLine("for(int ", realCounterName, " = (int)", expression(from), "; ", realCounterName, " <= (int)", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
+			buffer.addLine("long ", LOCAL_VARIABLE_PREFIX, counter.getName(), " = ", realCounterName, ";");
+			buffer.addAllChildren(visitAll(block.steps()));
+			buffer.addLine("}");
+			buffer.addLine("else");
 		}
 		// regular for-loop
-		buffer.add("for(", JavaUtils.typeName(realCounterType), " ", realCounterName, " = ", expression(from), "; ", realCounterName, " <= ", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
-		buffer.add(JavaUtils.typeName(counter), " ", LOCAL_VARIABLE_PREFIX, counter.getName(), " = ", realCounterName, ";");
-		buffer.addBlock(visitAll(block.steps()));
-		buffer.add("}");
+		buffer.addLine("for(", JavaUtils.typeName(realCounterType), " ", realCounterName, " = ", expression(from), "; ", realCounterName, " <= ", expression(to), "; ", realCounterName, " += ", expression(step), ") {");
+		buffer.addLine(JavaUtils.typeName(counter), " ", LOCAL_VARIABLE_PREFIX, counter.getName(), " = ", realCounterName, ";");
+		buffer.addAllChildren(visitAll(block.steps()));
+		buffer.addLine("}");
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitDeclaration(VariableInfo variable) {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		String name = variable.getName();
 		assert variable.getMode() != VariableMode.GLOBAL;
 		if (variable.getMode() == VariableMode.LOCAL) {
 			// local variable
 			String finalPrefix = variable.isFinal() ? "final " : "";
-			buffer.add(finalPrefix, JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
+			buffer.addLine(finalPrefix, JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else if (variable.isFinal()) {
 			// final upvalue
-			buffer.add("final ", JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
+			buffer.addLine("final ", JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else {
 			// upvalue
-			buffer.add("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = new UpValue();");
+			buffer.addLine("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = new UpValue();");
 		}
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws CompilationFailure {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		var iteratorName = "iterator_" + UniqueNames.next();
 		var eachName = "each_" + UniqueNames.next();
-		buffer.add("Iterator ", iteratorName, " = (Iterator) ", expression(iterator), ";");
-		buffer.add("while(", iteratorName, ".hasNext()) {");
-		buffer.add("Object[] ", eachName, " = (Object[]) ", iteratorName, ".next();");
+		buffer.addLine("Iterator ", iteratorName, " = (Iterator) ", expression(iterator), ";");
+		buffer.addLine("while(", iteratorName, ".hasNext()) {");
+		buffer.addLine("Object[] ", eachName, " = (Object[]) ", iteratorName, ".next();");
 		int i = 0;
 		for (var variable : variables) {
-			buffer.add(JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, variable.getName(), " = get(", eachName, ", ", i++, ");");
+			buffer.addLine(JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, variable.getName(), " = get(", eachName, ", ", i++, ");");
 		}
-		buffer.addBlock(visitAll(body.steps()));
-		buffer.add("}");
+		buffer.addAllChildren(visitAll(body.steps()));
+		buffer.addLine("}");
 		return buffer;
 	}
 
-	private CharSequence commaList(List<RValue> args) throws CompilationFailure {
-		int size = args.size();
-		var builder = new StringBuilder(size * 5 + 10);
-		for (int i = 0; i < size; i++) {
-			builder.append(expression(args.get(i)));
-			if (i != size - 1) {
-				builder.append(", ");
-			}
-		}
-		return builder;
+	private ResultBuffer commaList(List<RValue> args) throws CompilationFailure {
+		return expressionVisitor.commaList(args);
 	}
 
 	@NotNull
-	private CharSequence expression(RValue expression) throws CompilationFailure {
+	private ResultBuffer expression(RValue expression) throws CompilationFailure {
 		return Objects.requireNonNull(expression.accept(expressionVisitor));
 	}
 
 	@Override
 	public ResultBuffer visitIfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) throws CompilationFailure {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		int size = clauses.size();
 		int i = 0;
 		for (var entry : clauses.entrySet()) {
 			boolean isLast = ++i == size;
 			FlatExpr condition = entry.getKey();
 			AsmBlock value = entry.getValue();
-			buffer.addBlock(visitAll(condition.block()));
-			buffer.add("if(isTrue(", expression(condition.value()), ")) {");
-			buffer.addBlock(visitAll(value.steps()));
-			buffer.add("}", isLast ? "" : " else {");
+			buffer.addAllChildren(visitAll(condition.block()));
+			buffer.addLine("if(isTrue(", expression(condition.value()), ")) {");
+			buffer.addAllChildren(visitAll(value.steps()));
+			buffer.addLine("}", isLast ? "" : " else {");
 		}
 		for (int j = 0; j < size - 1; j++) {
-			buffer.add("}");
+			buffer.addLine("}");
 		}
 //		buffer.add(String.join("", Collections.nCopies(size - 1, "}")));
 		return buffer;
@@ -197,49 +196,49 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 
 	@Override
 	public ResultBuffer visitLoop(AsmBlock body) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		buffer.add("while(true) {");
-		buffer.addBlock(visitAll(body.steps()));
-		buffer.add("}");
+		var buffer = new LineList();
+		buffer.addLine("while(true) {");
+		buffer.addAllChildren(visitAll(body.steps()));
+		buffer.addLine("}");
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitBlock(AsmBlock block) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		buffer.add("{");
-		buffer.addBlock(visitAll(block.steps()));
-		buffer.add("}");
+		var buffer = new LineList();
+		buffer.addLine("{");
+		buffer.addAllChildren(visitAll(block.steps()));
+		buffer.addLine("}");
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitBreakIf(RValue condition, boolean isTrue) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		buffer.add("if(", (isTrue ? "" : "!"), "isTrue(", expression(condition), ")) break;");
+		var buffer = new LineList();
+		buffer.addLine("if(", (isTrue ? "" : "!"), "isTrue(", expression(condition), ")) break;");
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitVoid(RValue.Invocation invocation) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		buffer.add(expression(invocation) + ";");
+		var buffer = new LineList();
+		buffer.addLine(expression(invocation), ";");
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitComment(String comment) {
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		if (options.get(StandardFlags.KEEP_COMMENTS)) {
-			buffer.add("// ", comment);
+			buffer.addLine("// ", comment);
 		}
 		return buffer;
 	}
 
 	@Override
 	public ResultBuffer visitAssignment(Register register, RValue value) throws CompilationFailure {
-		var buffer = new ResultBuffer();
-		buffer.add(JavaUtils.typeName(register), " ", register.name(), " = ", expression(value), ";");
+		var buffer = new LineList();
+		buffer.addLine(JavaUtils.typeName(register), " ", register.name(), " = ", expression(value), ";");
 		return buffer;
 	}
 
@@ -247,32 +246,41 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		Objects.requireNonNull(className);
 		Objects.requireNonNull(block);
 
-		var buffer = new ResultBuffer();
+		var buffer = new LineList();
 		if (options.get(StandardFlags.ALLOW_UPVALUE_VARARGS)) {
 			log.warn("Use of {} is not officially supported", StandardFlags.ALLOW_UPVALUE_VARARGS);
 		}
 		var result = new ByteArrayOutputStream(4096);
 		var out = new PrintStream(result);
 
-		out.println("import optic.lua.runtime.*;");
-		out.println("import static optic.lua.runtime.DynamicOps.*;");
-		out.println("import static optic.lua.runtime.ListOps.*;");
-		out.println("import optic.lua.runtime.invoke.*;");
-		out.println("import java.util.Iterator;");
-		out.println("public class " + className + " {");
+		buffer.addLine("import optic.lua.runtime.*;");
+		buffer.addLine("import static optic.lua.runtime.DynamicOps.*;");
+		buffer.addLine("import static optic.lua.runtime.ListOps.*;");
+		buffer.addLine("import optic.lua.runtime.invoke.*;");
+		buffer.addLine("import java.util.Iterator;");
+		buffer.addLine("public class " + className + " {");
 		var contextName = nestedData.pushNewContextName();
 
-		out.println("public static Object[] run(final LuaContext " + contextName + ", Object[] args) { if(1 == 1) {");
-		buffer.addBlock(visitAll(block.steps()));
-		buffer.add("} return EMPTY; }");
+		LineList classBody = new LineList();
+		classBody.addLine("public static Object[] run(final LuaContext " + contextName + ", Object[] args) { if(1 == 1) {");
 
-		buffer.add("public static void main(String... args) {");
-		buffer.add("    run(LuaContext.create(), args);");
-		buffer.add("}");
+		LineList methodBody = new LineList();
+		methodBody.addAllChildren(visitAll(block.steps()));
+		for (String constant : constants) {
+			methodBody.prependString(constant);
+		}
+		classBody.addChild(methodBody);
 
-		buffer.add("}");
+		classBody.addLine("} return EMPTY; }");
 
-		constants.forEach(out::println);
+		classBody.addLine("public static void main(String... args) {");
+		classBody.addLine(new LineList("run(LuaContext.create(), args);"));
+		classBody.addLine("}");
+
+		buffer.addChild(classBody);
+
+		buffer.addLine("}");
+
 		buffer.writeTo(out, options.get(Option.INDENT));
 		out.flush();
 		return result.toString();
