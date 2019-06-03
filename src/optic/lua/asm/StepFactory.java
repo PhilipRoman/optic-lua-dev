@@ -42,11 +42,6 @@ final class StepFactory {
 		return assign(out, RValue.invocation(table, InvocationMethod.INDEX, List.of(key)));
 	}
 
-	static Step select(Register out, RValue varargs, int n) {
-		checkVararg(false, out);
-		return new Step.Select(out, varargs, n);
-	}
-
 	private static void checkVararg(boolean expected, RValue register) {
 		if (register.isVararg() != expected) {
 			var msg = register + " is " + (expected ? "not " : "") + "a vararg register!";

@@ -13,6 +13,7 @@ import java.util.*;
 import static nl.bigo.luaparser.Lua53Walker.Number;
 import static nl.bigo.luaparser.Lua53Walker.String;
 import static nl.bigo.luaparser.Lua53Walker.*;
+import static optic.lua.asm.RValue.firstOnly;
 
 /**
  * Mutable implementation of a tree flattener. To flatten a given AST tree, use {@link #flatten(CommonTree, Options)}.
@@ -202,7 +203,7 @@ public final class MutableFlattener implements VariableResolver {
 				if (t.getChild(1).getChildCount() > 1) {
 					log.warn("for loop iterator should be a single expression; additional expressions will be ignored! {}", t.toStringTree());
 				}
-				var iterator = evaluateOnce(discardRemaining(flattenExpression(Trees.expectChild(EXPR_LIST, t, 1).getChild(0))));
+				var iterator = evaluateOnce(firstOnly(flattenExpression(Trees.expectChild(EXPR_LIST, t, 1).getChild(0))));
 				var body = flattenForInLoopBody((CommonTree) Trees.expectChild(Do, t, 2), variables);
 				steps.add(StepFactory.forInLoop(variables, iterator, body));
 				return;
@@ -272,15 +273,15 @@ public final class MutableFlattener implements VariableResolver {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
-			var a = discardRemaining(flattenExpression(t.getChild(0)));
-			var b = discardRemaining(flattenExpression(t.getChild(1)));
+			var a = firstOnly(flattenExpression(t.getChild(0)));
+			var b = firstOnly(flattenExpression(t.getChild(1)));
 			var register = RegisterFactory.create(() -> op.resultType(a.typeInfo(), b.typeInfo()));
 			steps.add(StepFactory.assign(register, RValue.invocation(a, op.invocationMethod(), List.of(b))));
 			return register;
 		}
 		if (Operators.isUnary(t)) {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
-			RValue param = discardRemaining(flattenExpression(t.getChild(0)));
+			RValue param = firstOnly(flattenExpression(t.getChild(0)));
 			var register = RegisterFactory.create(() -> op.resultType(null, param.typeInfo()));
 			steps.add(StepFactory.assign(register, RValue.invocation(param, op.invocationMethod(), List.of())));
 			return register;
@@ -333,17 +334,17 @@ public final class MutableFlattener implements VariableResolver {
 				return RValue.bool(false);
 			}
 			case Or: {
-				RValue a = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
-				RValue b = discardRemaining(flattenExpression(t.getChild(1)));
+				RValue a = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
+				RValue b = firstOnly(flattenExpression(t.getChild(1)));
 				return RValue.logicalOr(a, b);
 			}
 			case And: {
-				RValue a = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
-				RValue b = discardRemaining(flattenExpression(t.getChild(1)));
+				RValue a = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
+				RValue b = firstOnly(flattenExpression(t.getChild(1)));
 				return RValue.logicalAnd(a, b);
 			}
 			case Not: {
-				RValue x = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
+				RValue x = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
 				return RValue.logicalNot(x);
 			}
 			default: {
@@ -367,7 +368,7 @@ public final class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private RValue toNumber(RValue a) {
-		a = discardRemaining(a);
+		a = firstOnly(a);
 		if (a.typeInfo().isNumeric()) {
 			return a;
 		}
@@ -385,16 +386,6 @@ public final class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private RValue discardRemaining(RValue vararg) {
-		if (vararg.isVararg()) {
-			Register r = RegisterFactory.create(ProvenType.OBJECT);
-			steps.add(StepFactory.select(r, vararg, 0));
-			return r;
-		}
-		return vararg;
-	}
-
-	@Contract(mutates = "this")
 	private List<RValue> normalizeValueList(List<RValue> registers) {
 		var values = new ArrayList<RValue>(registers.size());
 		int valueIndex = 0;
@@ -404,7 +395,7 @@ public final class MutableFlattener implements VariableResolver {
 			if (isLastValue) {
 				values.add(register);
 			} else {
-				values.add(discardRemaining(register));
+				values.add(firstOnly(register));
 			}
 			valueIndex++;
 		}

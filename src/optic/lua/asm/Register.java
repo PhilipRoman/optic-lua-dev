@@ -3,7 +3,6 @@ package optic.lua.asm;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
 
-import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -63,14 +62,5 @@ public final class Register implements RValue {
 	@Override
 	public ProvenType typeInfo() {
 		return type.get();
-	}
-
-	@Override
-	public FlatExpr discardRemaining() {
-		if (!vararg) {
-			return new FlatExpr(List.of(), this);
-		}
-		var first = RegisterFactory.create(ProvenType.OBJECT);
-		return new FlatExpr(List.of(StepFactory.select(first, this, 0)), first);
 	}
 }

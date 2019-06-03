@@ -23,8 +23,6 @@ public interface StepVisitor<T, X extends Throwable> {
 
 	T visitReturn(List<RValue> values) throws X;
 
-	T visitSelect(Register out, int n, RValue varargs) throws X;
-
 	T visitVoid(RValue.Invocation invocation) throws X;
 
 	T visitWrite(VariableInfo target, RValue value) throws X;

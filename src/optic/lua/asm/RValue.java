@@ -3,6 +3,7 @@ package optic.lua.asm;
 import optic.lua.asm.InvocationMethod.ReturnCount;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.Numbers;
+import org.codehaus.janino.InternalCompilerException;
 
 import java.util.*;
 
@@ -98,6 +99,20 @@ public interface RValue {
 		return new Not(x);
 	}
 
+	/**
+	 * Returns an RValue which references only the first value returned by the given expression.
+	 */
+	static RValue firstOnly(RValue x) {
+		return x.isVararg() ? new Selected(x, 0) : x;
+	}
+
+	/**
+	 * Returns an RValue which references only the n-th value returned by the given expression.
+	 */
+	static RValue selectNth(RValue x, int n) {
+		return x.isVararg() ? new Selected(x, n) : RValue.nil();
+	}
+
 	<T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X;
 
 	/**
@@ -117,16 +132,48 @@ public interface RValue {
 	/**
 	 * Returns an RValue which references the first value returned by this expression.
 	 */
-	default FlatExpr discardRemaining() {
-		if (this.isVararg()) {
-			var r = RegisterFactory.create(ProvenType.OBJECT);
-			return new FlatExpr(List.of(StepFactory.select(r, this, 0)), r);
-		}
-		return new FlatExpr(List.of(), this);
+	default RValue firstOnly() {
+		return this.isVararg() ? new Selected(this, 0) : this;
 	}
 
 	default ProvenType typeInfo() {
 		return ProvenType.OBJECT;
+	}
+
+	final class Selected implements RValue {
+		private final RValue source;
+		private final int n;
+
+		private Selected(RValue source, int n) {
+			if (!source.isVararg()) {
+				throw new InternalCompilerException("Source should be vararg (got: " + source + ")");
+			}
+			if (n < 0) {
+				throw new InternalCompilerException("n should be at least 0 (got: " + n + ")");
+			}
+			this.n = n;
+			this.source = source;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+			return visitor.visitSelectNth(source, n);
+		}
+
+		@Override
+		public boolean isVararg() {
+			return false;
+		}
+
+		@Override
+		public boolean isPure() {
+			return source.isPure();
+		}
+
+		@Override
+		public ProvenType typeInfo() {
+			return source.typeInfo();
+		}
 	}
 
 	final class NumberConstant extends Constant<Double> {
@@ -227,7 +274,7 @@ public interface RValue {
 
 		@Override
 		public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
-			switch(variable.getMode()) {
+			switch (variable.getMode()) {
 				case LOCAL:
 					return visitor.visitLocalName(variable);
 				case UPVALUE:
@@ -318,13 +365,6 @@ public interface RValue {
 		@Override
 		public boolean isVararg() {
 			return true;
-		}
-
-		@Override
-		public FlatExpr discardRemaining() {
-			Register result = RegisterFactory.create(ProvenType.OBJECT);
-			Step step = StepFactory.select(result, this, 0);
-			return new FlatExpr(List.of(step), result);
 		}
 	}
 

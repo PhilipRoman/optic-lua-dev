@@ -50,7 +50,7 @@ final class ChainedAccessBuilder {
 		var t = (CommonTree) tree;
 
 		if (lastOp == Op.CALL || lastOp == Op.COL_CALL)
-			current = current.discardRemaining().applyTo(steps);
+			current = current.firstOnly();
 
 		switch (t.getType()) {
 			case INDEX:
@@ -132,18 +132,8 @@ final class ChainedAccessBuilder {
 	private void normalizeValueList(List<RValue> values) {
 		int valueCount = values.size();
 		for (int i = 0; i < valueCount - 1; i++) {
-			values.set(i, discardRemaining(values.get(i)));
+			values.set(i, RValue.firstOnly(values.get(i)));
 		}
-	}
-
-	@Contract(mutates = "this")
-	private RValue discardRemaining(RValue vararg) {
-		if (vararg.isVararg()) {
-			Register r = RegisterFactory.create(ProvenType.OBJECT);
-			steps.add(StepFactory.select(r, vararg, 0));
-			return r;
-		}
-		return vararg;
 	}
 
 	private enum Op {

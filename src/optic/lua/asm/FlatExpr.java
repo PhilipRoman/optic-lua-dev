@@ -2,7 +2,7 @@ package optic.lua.asm;
 
 import org.jetbrains.annotations.Contract;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * An immutable container for a list of {@link #block() steps} and
@@ -42,10 +42,6 @@ public final class FlatExpr {
 	 * except that the result will be limited to a single value.
 	 */
 	FlatExpr discardRemaining() {
-		var r = value.discardRemaining();
-		var temp = new ArrayList<Step>(block.size() + r.block.size());
-		temp.addAll(block);
-		temp.addAll(r.block);
-		return new FlatExpr(temp, r.value);
+		return new FlatExpr(block, value.firstOnly());
 	}
 }

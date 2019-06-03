@@ -57,13 +57,6 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
-	public ResultBuffer visitSelect(Register target, int n, RValue vararg) throws CompilationFailure {
-		var buffer = new LineList();
-		buffer.addLine("Object ", target, " = get(", expression(vararg), ", ", n, ");");
-		return buffer;
-	}
-
-	@Override
 	public ResultBuffer visitWrite(VariableInfo variable, RValue value) throws CompilationFailure {
 		var buffer = new LineList();
 		switch (variable.getMode()) {

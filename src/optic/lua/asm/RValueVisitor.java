@@ -32,4 +32,6 @@ public interface RValueVisitor<T, X extends Throwable> {
 	T visitAnd(RValue first, RValue second) throws X;
 
 	T visitOr(RValue first, RValue second) throws X;
+
+	T visitSelectNth(RValue source, int n) throws X;
 }

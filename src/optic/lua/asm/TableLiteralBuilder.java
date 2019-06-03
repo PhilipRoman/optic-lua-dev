@@ -39,7 +39,7 @@ final class TableLiteralBuilder {
 			var key = RValue.number(arrayFieldIndex++);
 			var value = flattener.flattenExpression(field.getChild(0)).applyTo(steps);
 			boolean isLastField = fieldIndex == size - 1;
-			table.put(key, isLastField ? value : value.discardRemaining().applyTo(steps));
+			table.put(key, isLastField ? value : value.firstOnly());
 		}
 		fieldIndex++;
 	}

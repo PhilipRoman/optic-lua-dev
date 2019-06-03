@@ -103,3 +103,15 @@ for _, v in ipairs { 1, 2, 3, "a", "b", "c", print, 1.2, true, {} } do
 end
 assert(not nil == true)
 assert(not false == true)
+-- test lazy evaluation
+local function t()
+    return true
+end
+local function g()
+    error "Evaluated!"
+end
+assert((t() or g()) == true)
+local function f()
+    return false
+end
+assert((f() and g()) == false)

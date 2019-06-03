@@ -1,6 +1,5 @@
 package optic.lua.asm;
 
-import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -53,9 +52,7 @@ final class AssignmentBuilder {
 			} else {
 				// the left side has surpassed the right side but the last expression can yield multiple values
 				// fill the remaining variables by selecting values from the last expression
-				Register selected = RegisterFactory.create(ProvenType.OBJECT);
-				steps.add(StepFactory.select(selected, vararg, overflow));
-				steps.add(createWriteStep(variable, selected));
+				steps.add(createWriteStep(variable, RValue.selectNth(vararg, overflow)));
 				overflow++;
 			}
 		}

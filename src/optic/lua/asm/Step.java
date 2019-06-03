@@ -163,23 +163,6 @@ public interface Step {
 		}
 	}
 
-	final class Select implements Step {
-		private final Register out;
-		private final RValue varargs;
-		private final int n;
-
-		Select(Register out, RValue varargs, int n) {
-			this.out = out;
-			this.varargs = varargs;
-			this.n = n;
-		}
-
-		@Override
-		public <T, X extends Throwable> T accept(StepVisitor<T, X> visitor) throws X {
-			return visitor.visitSelect(out, n, varargs);
-		}
-	}
-
 	final class Void implements Step {
 		private final RValue.Invocation invocation;
 

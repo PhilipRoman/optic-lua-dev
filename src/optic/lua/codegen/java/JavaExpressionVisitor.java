@@ -85,6 +85,11 @@ final class JavaExpressionVisitor implements RValueVisitor<ResultBuffer, Compila
 	}
 
 	@Override
+	public ResultBuffer visitSelectNth(RValue source, int n) throws CompilationFailure {
+		return Line.join("get(", source.accept(this), ", ", n, ")");
+	}
+
+	@Override
 	public ResultBuffer visitTableConstructor(TableLiteral t) throws CompilationFailure {
 		var map = new LinkedHashMap<>(t.entries());
 		Optional<Entry<RValue, RValue>> vararg = map.entrySet().stream()
