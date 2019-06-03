@@ -28,7 +28,11 @@ public enum StandardFlags implements Option<Boolean> {
 	/**
 	 * Whether or not to write respective JVM class files to the file system.
 	 */
-	GENERATE_CLASSES(false);
+	GENERATE_CLASSES(false),
+	/**
+	 * Whether or not to output the abstract syntax tree of Lua code.
+	 */
+	DUMP_AST(false);
 	private final boolean defaultValue;
 
 	StandardFlags(boolean value) {

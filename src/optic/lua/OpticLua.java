@@ -31,7 +31,7 @@ final class OpticLua {
 	@Option(names = {"-c", "--class"}, description = "create class files corresponding to sources")
 	boolean generateClasses = false;
 
-	@Option(names = {"-F"}, hidden = true, description = "set advanced compiler options")
+	@Option(names = {"-F"}, hideParamSyntax = true, paramLabel = "...", description = "set advanced compiler options")
 	Map<StandardFlags, Boolean> compilerFlags = new HashMap<>();
 
 	@Option(names = {"-v", "--version"}, versionHelp = true, description = "display version information")
