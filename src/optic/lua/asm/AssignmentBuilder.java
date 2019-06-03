@@ -2,7 +2,6 @@ package optic.lua.asm;
 
 import optic.lua.optimization.ProvenType;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.*;
 
 import java.util.*;
 
@@ -12,7 +11,6 @@ import java.util.*;
  * retrieve the result using {@link #build()}.
  */
 final class AssignmentBuilder {
-	private final Logger log = LoggerFactory.getLogger(AssignmentBuilder.class);
 	// left-hand side of the assignment
 	private final List<LValue> variables = new ArrayList<>(1);
 	// right-hand side of the assignment

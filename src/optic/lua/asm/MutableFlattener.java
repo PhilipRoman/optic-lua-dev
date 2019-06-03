@@ -1,6 +1,5 @@
 package optic.lua.asm;
 
-import nl.bigo.luaparser.Lua53Walker;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;
@@ -11,13 +10,15 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
+import static nl.bigo.luaparser.Lua53Walker.Number;
+import static nl.bigo.luaparser.Lua53Walker.String;
 import static nl.bigo.luaparser.Lua53Walker.*;
 
 /**
  * Mutable implementation of a tree flattener. To flatten a given AST tree, use {@link #flatten(CommonTree, Options)}.
  * This implementation creates other flatteners recursively to flatten child blocks.
  */
-public class MutableFlattener implements VariableResolver {
+public final class MutableFlattener implements VariableResolver {
 	private static final Logger log = LoggerFactory.getLogger(MutableFlattener.class);
 	// mutable list of current steps
 	private final List<Step> steps;
@@ -256,9 +257,11 @@ public class MutableFlattener implements VariableResolver {
 				steps.add(StepFactory.ifThenChain(builder.build()));
 				return;
 			}
+			default: {
+				log.error("Unknown statement: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
+				throw new CompilationFailure();
+			}
 		}
-		log.error("Unknown statement: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
-		throw new CompilationFailure();
 	}
 
 	@Contract(mutates = "this")
@@ -280,10 +283,10 @@ public class MutableFlattener implements VariableResolver {
 			return register;
 		}
 		switch (t.getType()) {
-			case Lua53Walker.Number: {
+			case Number: {
 				return RValue.number(Double.parseDouble(t.getText()));
 			}
-			case Lua53Walker.String: {
+			case String: {
 				return RValue.string(t.getText());
 			}
 			case Name: {
@@ -340,9 +343,11 @@ public class MutableFlattener implements VariableResolver {
 				RValue x = evaluateOnce(discardRemaining(flattenExpression(t.getChild(0))));
 				return RValue.logicalNot(x);
 			}
+			default: {
+				log.error("Unknown expression: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
+				throw new CompilationFailure();
+			}
 		}
-		log.error("Unknown expression: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
-		throw new CompilationFailure();
 	}
 
 	@Contract(mutates = "this")

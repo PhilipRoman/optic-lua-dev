@@ -2,6 +2,7 @@ package optic.lua.util;
 
 import nl.bigo.luaparser.Lua53Walker;
 import org.antlr.runtime.tree.*;
+import org.codehaus.janino.InternalCompilerException;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.Field;
@@ -70,7 +71,7 @@ public final class Trees {
 					return field.getName().toLowerCase();
 				}
 			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
+				throw new InternalCompilerException("Access to field denied", e);
 			}
 		}
 		return null;

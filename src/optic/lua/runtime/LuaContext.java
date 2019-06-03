@@ -18,6 +18,9 @@ public final class LuaContext {
 	public TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
 
+	private LuaContext() {
+	}
+
 	@RuntimeApi
 	public static LuaContext create() {
 		return create(Bundle.emptyBundle());

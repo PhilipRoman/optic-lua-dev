@@ -20,9 +20,6 @@ public final class Main {
 	}
 
 	public static void main(String[] args) {
-		var options = new Options();
-		var bundleCompiler = new BundleCompiler(options);
-
 		// command line parser
 		OpticLua opticLua = new OpticLua();
 		CommandLine commandLine = new CommandLine(opticLua);
@@ -38,6 +35,7 @@ public final class Main {
 			return;
 		}
 
+		var options = new Options();
 		// store advanced option flags from command line into options
 		opticLua.compilerFlags.forEach((option, enabled) -> {
 			if (enabled)
@@ -60,12 +58,14 @@ public final class Main {
 		if (opticLua.mainSource != null) {
 			sources.add(opticLua.mainSource);
 		}
-		Bundle bundle = null;
+		var bundleCompiler = new BundleCompiler(options);
+		final Bundle bundle;
 		try {
 			bundle = bundleCompiler.compile(sources);
 		} catch (CompilationFailure e) {
 			log.error("Some tasks failed");
 			System.exit(1);
+			return; // for control flow analysis tools
 		}
 
 		if (opticLua.interactiveShell) {

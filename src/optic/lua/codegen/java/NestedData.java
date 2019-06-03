@@ -25,6 +25,9 @@ final class NestedData {
 		pushNewVarargName();
 	}
 
+	NestedData() {
+	}
+
 	String pushNewVarargName() {
 		String name = "varargs_" + UniqueNames.next();
 		varargNamesInFunction.addFirst(Optional.of(name));

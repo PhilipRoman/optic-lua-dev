@@ -14,6 +14,9 @@ import java.util.Scanner;
 final class JaninoCompilerBase {
 	private static final Logger log = LoggerFactory.getLogger(JaninoCompilerBase.class);
 
+	public JaninoCompilerBase() {
+	}
+
 	/**
 	 * Compiles the given string into the evaluator, taking care of reporting and error handling
 	 *
@@ -22,7 +25,7 @@ final class JaninoCompilerBase {
 	 * @throws CompilationFailure if the compilation fails (a log message may also be emitted)
 	 */
 	@Contract(mutates = "param1")
-	static void cookInto(SimpleCompiler evaluator, String java) throws CompilationFailure {
+	void cookInto(SimpleCompiler evaluator, String java) throws CompilationFailure {
 		evaluator.setDebuggingInformation(true, true, true);
 		try {
 			evaluator.cook(java);
