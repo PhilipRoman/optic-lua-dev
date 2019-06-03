@@ -27,6 +27,7 @@ The project is developed using OpenJDK 11.
 *   Compilation of Lua code to Java source code
 *   Interactive shell
 *   Analyze runtime statistics, such as common parameter types
+
 Note that the compiler does not yet fully implement all of Lua and its standard library. You can track the progress here: [Lua 5.3 implementation](https://github.com/PhilipRoman/optic-lua-dev/projects/1).
 
 ## Planned features
