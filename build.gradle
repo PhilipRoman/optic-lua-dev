@@ -31,12 +31,12 @@ sourceSets {
 mainClassName = 'optic.lua.Main'
 
 jar {
-    baseName = 'optic-lua-lib'
+    archiveBaseName = 'optic-lua-lib'
 }
 
 shadowJar {
-    baseName = 'optic-lua'
-    classifier = null
+    archiveBaseName = 'optic-lua'
+    archiveClassifier = null
     minimize {
         exclude(dependency('org.slf4j:slf4j-simple:.*'))
     }
