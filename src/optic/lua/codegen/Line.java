@@ -3,14 +3,10 @@ package optic.lua.codegen;
 import java.io.PrintStream;
 import java.util.*;
 
-public final class Line implements ResultBuffer {
-	private final String content;
+public class Line implements ResultBuffer {
+	protected final String content;
 
-	Line(List<?> line) {
-		this(concat(line));
-	}
-
-	private Line(String content) {
+	protected Line(String content) {
 		this.content = content;
 	}
 
@@ -45,8 +41,9 @@ public final class Line implements ResultBuffer {
 	}
 
 	@Override
-	public void writeToRecursive(PrintStream out, String indent, int depth) {
+	public void writeToRecursive(PrintStream out, String indent, int depth, LineNumberCounter counter) {
 		out.println(indent.repeat(depth) + content);
+		counter.increment();
 	}
 
 	@Override

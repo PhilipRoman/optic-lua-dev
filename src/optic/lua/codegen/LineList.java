@@ -15,17 +15,12 @@ public final class LineList implements ResultBuffer {
 		children.add(Line.of(line));
 	}
 
-	public LineList(ResultBuffer... lines) {
-		this();
-		children.addAll(Arrays.asList(lines));
-	}
-
 	public void addLine(Object... line) {
 		var accumulator = new ArrayList<>();
 		for (Object o : line) {
 			if (o instanceof LineList) {
 				if (!accumulator.isEmpty()) {
-					children.add(new Line(accumulator));
+					children.add(Line.join(accumulator.toArray()));
 					accumulator.clear();
 				}
 				children.add((ResultBuffer) o);
@@ -34,16 +29,16 @@ public final class LineList implements ResultBuffer {
 		}
 
 		if (!accumulator.isEmpty())
-			children.add(new Line(accumulator));
+			children.add(Line.join(accumulator.toArray()));
 	}
 
 	public void writeTo(PrintStream out, String indent) {
-		writeToRecursive(out, indent, -1);
+		writeToRecursive(out, indent, -1, new LineNumberCounter());
 	}
 
-	public void writeToRecursive(PrintStream out, String indent, int depth) {
+	public void writeToRecursive(PrintStream out, String indent, int depth, LineNumberCounter counter) {
 		for (var child : children) {
-			child.writeToRecursive(out, indent, depth + 1);
+			child.writeToRecursive(out, indent, depth + 1, counter);
 		}
 	}
 
