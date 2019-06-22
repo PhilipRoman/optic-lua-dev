@@ -4,11 +4,11 @@ import optic.lua.messages.CompilationFailure;
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
-import org.jetbrains.annotations.Contract;
 
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua53Lexer.*;
+import static optic.lua.asm.ExprNode.firstOnly;
 import static optic.lua.util.Trees.childrenOf;
 
 /**
@@ -16,25 +16,25 @@ import static optic.lua.util.Trees.childrenOf;
  * To flatten such code patterns, create a new builder from the first element of the "chain", add remaining elements
  * using {@link #add(Tree)} and finally use one of the finalization methods to get the result:
  * <ul>
- * {@link #buildExpression()}
- * {@link #buildStatement()}
- * {@link #getSelf()}
- * {@link #getLastIndexKey()}
+ * <li>{@link #buildExpression()}</li>
+ * <li>{@link #buildStatement()}</li>
+ * <li>{@link #getSelf()}</li>
+ * <li>{@link #getLastIndexKey()}</li>
  * </ul>
  */
 final class ChainedAccessBuilder {
-	private RValue current;
-	private RValue self;
-	private RValue lastKey = null;
+	private final List<VoidNode> steps = new ArrayList<>(4);
+	private ListNode current; // the current result of the whole expression
+	private ExprNode self; // if the next operation is "colon call", this will be the "self" object
 	private Op lastOp = null;
-	private final List<Step> steps = new ArrayList<>(4);
+	private ExprNode lastKey = null; // if the last operation was a table index, this is the key that was used
 	private final Flattener flattener;
 
 	/**
 	 * @param flattener the {@link Flattener} to use while flattening child expressions
 	 * @param current   the first value in the "chain" (such as "a" in <code>a.b.c()</code>)
 	 */
-	ChainedAccessBuilder(Flattener flattener, RValue current) {
+	ChainedAccessBuilder(Flattener flattener, ExprNode current) {
 		this.flattener = flattener;
 		this.current = current;
 		this.self = current;
@@ -50,7 +50,7 @@ final class ChainedAccessBuilder {
 		var t = (CommonTree) tree;
 
 		if (lastOp == Op.CALL || lastOp == Op.COL_CALL)
-			current = current.firstOnly();
+			current = firstOnly(current);
 
 		switch (t.getType()) {
 			case INDEX:
@@ -72,22 +72,21 @@ final class ChainedAccessBuilder {
 		var key = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		steps.addAll(key.block());
 		Register next = RegisterFactory.create(ProvenType.OBJECT);
-		steps.add(StepFactory.tableIndex(current, key.value(), next));
-		self = current;
+		steps.add(StepFactory.tableIndex(firstOnly(current), firstOnly(key.value()), next));
+		self = firstOnly(current);
 		current = next;
-		lastKey = key.value();
+		lastKey = firstOnly(key.value());
 		lastOp = Op.INDEX;
 	}
 
 	private void addCall(CommonTree tree, boolean colon) throws CompilationFailure {
 		Trees.expect(colon ? COL_CALL : CALL, tree);
-		List<RValue> args = new ArrayList<>();
+		List<ListNode> args = new ArrayList<>();
 		if (colon)
 			args.add(self);
 		for (var child : childrenOf(tree))
 			args.add(flattener.flattenExpression((CommonTree) child).applyTo(steps));
-		normalizeValueList(args);
-		self = current = RValue.invocation(current, InvocationMethod.CALL, args);
+		current = ExprNode.invocation(firstOnly(current), InvocationMethod.CALL, ListNode.exprList(args));
 		lastKey = null;
 		lastOp = colon ? Op.COL_CALL : Op.CALL;
 	}
@@ -95,10 +94,10 @@ final class ChainedAccessBuilder {
 	/**
 	 * Returns the "chain" as a function call statement.
 	 */
-	List<Step> buildStatement() {
+	List<VoidNode> buildStatement() {
 		if (lastOp == Op.CALL || lastOp == Op.COL_CALL) {
 			var list = new ArrayList<>(steps);
-			list.add(StepFactory.discard((RValue.Invocation) current));
+			list.add(StepFactory.discard(current));
 			return list;
 		}
 		return Collections.unmodifiableList(steps);
@@ -114,26 +113,18 @@ final class ChainedAccessBuilder {
 	/**
 	 * Returns the last expression in the "chain" which may be used as a target of an index assignment or a colon call
 	 */
-	RValue getSelf() {
+	ExprNode getSelf() {
 		return self;
 	}
 
 	/**
 	 * Returns the key expression of the last index access. Useful when compiling table index assignment.
 	 */
-	RValue getLastIndexKey() {
+	ExprNode getLastIndexKey() {
 		if (lastKey != null)
 			return lastKey;
 		else
 			throw new IllegalStateException("Last key does not exist!");
-	}
-
-	@Contract(mutates = "this, param1")
-	private void normalizeValueList(List<RValue> values) {
-		int valueCount = values.size();
-		for (int i = 0; i < valueCount - 1; i++) {
-			values.set(i, RValue.firstOnly(values.get(i)));
-		}
 	}
 
 	private enum Op {

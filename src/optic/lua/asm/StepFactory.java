@@ -1,80 +1,78 @@
 package optic.lua.asm;
 
-import optic.lua.asm.RValue.Invocation;
-
 import java.util.*;
 
 final class StepFactory {
-	static Step tableWrite(LValue.TableField target, RValue value) {
+	static VoidNode tableWrite(LValue.TableField target, ExprNode value) {
 		checkVararg(false, value);
-		return discard(RValue.invocation(target.table(), InvocationMethod.SET_INDEX, List.of(target.key(), value)));
+		return discard(ExprNode.invocation(target.table(), InvocationMethod.SET_INDEX, ListNode.exprList(target.key(), value)));
 	}
 
-	static Step declareLocal(VariableInfo info) {
-		return new Step.Declare(info);
+	static VoidNode declareLocal(VariableInfo info) {
+		return new VoidNode.Declare(info);
 	}
 
-	static Step forRange(VariableInfo counter, RValue from, RValue to, AsmBlock block) {
-		return new Step.ForRangeLoop(counter, from, to, RValue.number(1), block);
+	static VoidNode forRange(VariableInfo counter, ExprNode from, ExprNode to, AsmBlock block) {
+		return new VoidNode.ForRangeLoop(counter, from, to, ExprNode.number(1), block);
 	}
 
-	static Step forRange(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) {
-		return new Step.ForRangeLoop(counter, from, to, step, block);
+	static VoidNode forRange(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock block) {
+		return new VoidNode.ForRangeLoop(counter, from, to, step, block);
 	}
 
-	static Step comment(String text) {
-		return new Step.Comment(text);
+	static VoidNode comment(String text) {
+		return new VoidNode.Comment(text);
 	}
 
-	static Step doBlock(AsmBlock block) {
-		return new Step.Block(block);
+	static VoidNode doBlock(AsmBlock block) {
+		return new VoidNode.Block(block);
 	}
 
-	static Step returnFromFunction(List<RValue> registers) {
-		return new Step.Return(registers);
+	static VoidNode returnFromFunction(ListNode values) {
+		return new VoidNode.Return(values);
 	}
 
-	static Step assign(Register result, RValue value) {
-		return new Step.Assign(result, value);
+	static VoidNode assign(Register result, ExprNode value) {
+		return new VoidNode.Assign(result, value);
 	}
 
-	static Step tableIndex(RValue table, RValue key, Register out) {
-		return assign(out, RValue.invocation(table, InvocationMethod.INDEX, List.of(key)));
+	static VoidNode tableIndex(ExprNode table, ExprNode key, Register out) {
+		return assign(out, ExprNode.monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key)));
 	}
 
-	private static void checkVararg(boolean expected, RValue register) {
+	private static void checkVararg(boolean expected, ExprNode register) {
 		if (register.isVararg() != expected) {
 			var msg = register + " is " + (expected ? "not " : "") + "a vararg register!";
 			throw new IllegalArgumentException(msg);
 		}
 	}
 
-	static Step write(VariableInfo target, RValue value) {
-		return new Step.Write(target, value);
+	static VoidNode write(VariableInfo target, ExprNode value) {
+		return new VoidNode.Write(target, value);
 	}
 
-	static Step discard(Invocation invocation) {
-		return new Step.Void(invocation);
+	static VoidNode discard(ListNode invocation) {
+		return new VoidNode.Void(invocation);
 	}
 
-	static Step ifThenChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
-		return new Step.IfElseChain(clauses);
+	static VoidNode ifThenChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
+		return new VoidNode.IfElseChain(clauses);
 	}
 
-	static Step breakIf(RValue expression, boolean isTrue) {
-		return new Step.BreakIf(expression, isTrue);
+	static VoidNode breakIf(ExprNode expression, boolean isTrue) {
+		return new VoidNode.BreakIf(expression, isTrue);
 	}
 
-	static Step loop(AsmBlock body) {
-		return new Step.Loop(body);
+	static VoidNode loop(AsmBlock body) {
+		return new VoidNode.Loop(body);
 	}
 
-	static Step forInLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) {
-		return new Step.ForEachLoop(variables, iterator, body);
+	static VoidNode forInLoop(List<VariableInfo> variables, ExprNode iterator, AsmBlock body) {
+		return new VoidNode.ForEachLoop(variables, iterator, body);
 	}
 
-	static Step lineNumber(int number) {
-		return new Step.LineNumber(number);
+	static VoidNode lineNumber(int number) {
+		return new VoidNode.LineNumber(number);
 	}
 
 	private StepFactory() {

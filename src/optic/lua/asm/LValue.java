@@ -2,25 +2,24 @@ package optic.lua.asm;
 
 /**
  * Represents a location which may be assigned a value.
- * Can be either a [name][Name] or
- * a [table field][TableField]
- * represented as two registers: table and key.
+ * Can be either a name or
+ * a table field, represented as two registers: table and key.
  */
 public interface LValue {
 	class TableField implements LValue {
-		private final RValue table;
-		private final RValue key;
+		private final ExprNode table;
+		private final ExprNode key;
 
-		TableField(RValue table, RValue key) {
+		TableField(ExprNode table, ExprNode key) {
 			this.table = table;
 			this.key = key;
 		}
 
-		public RValue table() {
+		public ExprNode table() {
 			return table;
 		}
 
-		public RValue key() {
+		public ExprNode key() {
 			return key;
 		}
 

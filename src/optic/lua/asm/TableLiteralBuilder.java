@@ -7,16 +7,17 @@ import org.antlr.runtime.tree.Tree;
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua53Walker.FIELD;
+import static optic.lua.asm.ExprNode.firstOnly;
 
 /**
  * Helper class for compiling a table constructor. Create the table using {@link #TableLiteralBuilder(Flattener, int)},
  * add entries using {@link #addEntry(Tree)} and finally obtain the results using {@link #getSteps()} and {@link #getTable()}.
  */
 final class TableLiteralBuilder {
-	private final LinkedHashMap<RValue, RValue> table = new LinkedHashMap<>(4);
+	private final LinkedHashMap<ExprNode, ListNode> table = new LinkedHashMap<>(4);
 	private final Flattener flattener;
 	private final int size;
-	private final List<Step> steps = new ArrayList<>(8);
+	private final List<VoidNode> steps = new ArrayList<>(8);
 	private int fieldIndex = 0;
 	private int arrayFieldIndex = 1;
 
@@ -34,21 +35,21 @@ final class TableLiteralBuilder {
 		if (hasKey) {
 			var key = flattener.flattenExpression(field.getChild(0)).applyTo(steps);
 			var value = flattener.flattenExpression(field.getChild(1)).applyTo(steps);
-			table.put(key, value);
+			table.put(firstOnly(key), firstOnly(value));
 		} else {
-			var key = RValue.number(arrayFieldIndex++);
+			var key = ExprNode.number(arrayFieldIndex++);
 			var value = flattener.flattenExpression(field.getChild(0)).applyTo(steps);
 			boolean isLastField = fieldIndex == size - 1;
-			table.put(key, isLastField ? value : value.firstOnly());
+			table.put(key, isLastField ? value : firstOnly(value));
 		}
 		fieldIndex++;
 	}
 
-	LinkedHashMap<RValue, RValue> getTable() {
+	LinkedHashMap<ExprNode, ListNode> getTable() {
 		return table;
 	}
 
-	List<Step> getSteps() {
+	List<VoidNode> getSteps() {
 		return steps;
 	}
 }

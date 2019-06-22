@@ -2,8 +2,6 @@ package optic.lua.asm;
 
 import optic.lua.optimization.*;
 
-import java.util.List;
-
 public enum InvocationMethod {
 	ADD,
 	BAND,
@@ -45,7 +43,7 @@ public enum InvocationMethod {
 		return returnCount;
 	}
 
-	public ProvenType typeInfo(RValue object, List<RValue> arguments) {
+	public ProvenType typeInfo(ExprNode object, ListNode arguments) {
 		switch (this) {
 			case INDEX:
 			case CALL:
@@ -56,7 +54,7 @@ public enum InvocationMethod {
 			default:
 				var luaOp = LuaOperator.valueOf(name());
 				if (luaOp.arity() == 2) {
-					return luaOp.resultType(object.typeInfo(), arguments.get(0).typeInfo());
+					return luaOp.resultType(object.typeInfo(), arguments.childTypeInfo(0));
 				} else {
 					assert luaOp.arity() == 1;
 					return luaOp.resultType(null, object.typeInfo());

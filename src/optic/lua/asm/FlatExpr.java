@@ -9,19 +9,19 @@ import java.util.List;
  * a {@link #value() result} which depends on these steps.
  */
 public final class FlatExpr {
-	private final List<Step> block;
-	private final RValue value;
+	private final List<VoidNode> block;
+	private final ListNode value;
 
-	public FlatExpr(List<Step> block, RValue value) {
+	public FlatExpr(List<VoidNode> block, ListNode value) {
 		this.block = List.copyOf(block);
 		this.value = value;
 	}
 
-	public RValue value() {
+	public ListNode value() {
 		return value;
 	}
 
-	public List<Step> block() {
+	public List<VoidNode> block() {
 		return block;
 	}
 
@@ -32,7 +32,7 @@ public final class FlatExpr {
 	 * @return the value of this expression
 	 */
 	@Contract(mutates = "param1")
-	RValue applyTo(List<Step> list) {
+	ListNode applyTo(List<VoidNode> list) {
 		list.addAll(block);
 		return value;
 	}
@@ -42,6 +42,6 @@ public final class FlatExpr {
 	 * except that the result will be limited to a single value.
 	 */
 	FlatExpr discardRemaining() {
-		return new FlatExpr(block, value.firstOnly());
+		return new FlatExpr(block, ExprNode.firstOnly(value));
 	}
 }

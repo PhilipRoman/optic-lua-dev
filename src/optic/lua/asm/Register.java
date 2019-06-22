@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * <p>
  * Use [RegisterFactory] to obtain instances of this class.
  */
-public final class Register implements RValue {
+public final class Register implements ExprNode {
 	static final Register UNUSED = new Register("_", true, ProvenType.OBJECT);
 
 	private final String name;
@@ -32,7 +32,7 @@ public final class Register implements RValue {
 	}
 
 	@Override
-	public <T, X extends Throwable> T accept(RValueVisitor<T, X> visitor) throws X {
+	public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
 		return visitor.visitRegister(this);
 	}
 

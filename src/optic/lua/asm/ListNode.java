@@ -1,0 +1,171 @@
+package optic.lua.asm;
+
+import optic.lua.asm.InvocationMethod.ReturnCount;
+import optic.lua.optimization.ProvenType;
+
+import java.util.*;
+
+public interface ListNode extends Node {
+	/**
+	 * Returns a variable-length RValue which references the varargs ("...") of current scope.
+	 */
+	static ListNode varargs() {
+		return new Varargs();
+	}
+
+	static ExprList exprList(ListNode... nodes) {
+		return exprList(Arrays.asList(nodes));
+	}
+
+	static ExprList exprList(ListNode node) {
+		return node.isVararg()
+				? new ExprList(List.of(), Optional.of(node))
+				: new ExprList(List.of((ExprNode) node), Optional.empty());
+	}
+
+	static ExprList exprList(ListNode node_1, ListNode node_2) {
+		if (node_1.isVararg())
+			node_1 = ExprNode.firstOnly(node_1);
+		return node_2.isVararg()
+				? new ExprList(List.of((ExprNode) node_1), Optional.of(node_2))
+				: new ExprList(List.of((ExprNode) node_1, (ExprNode) node_2), Optional.empty());
+	}
+
+	static ExprList exprList(List<ListNode> expressions) {
+		int size = expressions.size();
+		if (size == 0) {
+			return new ExprList(List.of(), Optional.empty());
+		}
+		var copy = new ArrayList<ExprNode>(size);
+		for (int i = 0; i < size - 1; i++) {
+			copy.add(ExprNode.firstOnly(expressions.get(i)));
+		}
+		ListNode last = expressions.get(size - 1);
+		if (last.isVararg())
+			return new ExprList(copy, Optional.of(last));
+		copy.add((ExprNode) last);
+		return new ExprList(copy, Optional.empty());
+	}
+
+	<T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X;
+
+	ProvenType childTypeInfo(int i);
+
+	boolean isPure();
+
+	default boolean isVararg() {
+		return !(this instanceof ExprNode);
+	}
+
+
+	final class Varargs implements ListNode {
+		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
+			return visitor.visitVarargs();
+		}
+
+		@Override
+		public boolean isPure() {
+			return true;
+		}
+
+		@Override
+		public ProvenType childTypeInfo(int i) {
+			return ProvenType.OBJECT;
+		}
+	}
+
+	final class ExprList implements ListNode {
+		private final List<ExprNode> nodes;
+		private final Optional<ListNode> trailing;
+
+		private ExprList(List<ExprNode> nodes, Optional<ListNode> trailing) {
+			this.nodes = nodes;
+			this.trailing = trailing;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
+			return visitor.visitExprList(nodes, trailing);
+		}
+
+		@Override
+		public ProvenType childTypeInfo(int i) {
+			if (nodes.size() > i) {
+				return nodes.get(i).typeInfo();
+			}
+			if (trailing.isPresent()) {
+				int offset = i - nodes.size();
+				return trailing.get().childTypeInfo(offset);
+			}
+			return ProvenType.OBJECT; // nil
+		}
+
+		@Override
+		public boolean isPure() {
+			for (ExprNode node : nodes)
+				if (!node.isPure())
+					return false;
+			return trailing.isEmpty() || trailing.get().isPure();
+		}
+
+		public ExprNode getLeading(int i) {
+			return nodes.get(i);
+		}
+
+		public List<ExprNode> getLeading() {
+			return nodes;
+		}
+
+		public Optional<ListNode> getTrailing() {
+			return trailing;
+		}
+
+		int expressionCount() {
+			return nodes.size() + (trailing.isPresent() ? 1 : 0);
+		}
+	}
+
+	class Invocation implements ListNode {
+		protected final ExprNode object;
+		protected final InvocationMethod method;
+		protected final ListNode arguments;
+
+		Invocation(ExprNode object, InvocationMethod method, ListNode arguments) {
+			this.object = object;
+			this.method = method;
+			this.arguments = arguments;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
+			return visitor.visitInvocation(this);
+		}
+
+		@Override
+		public ProvenType childTypeInfo(int i) {
+			return i == 0 ? method.typeInfo(object, arguments) : ProvenType.OBJECT;
+		}
+
+		@Override
+		public boolean isPure() {
+			return false;
+		}
+
+		public ExprNode getObject() {
+			return object;
+		}
+
+		public InvocationMethod getMethod() {
+			return method;
+		}
+
+		public ListNode getArguments() {
+			return arguments;
+		}
+
+		@Override
+		public boolean isVararg() {
+			return method.getReturnCount() == ReturnCount.ANY;
+		}
+	}
+}
