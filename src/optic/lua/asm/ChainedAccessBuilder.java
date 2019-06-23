@@ -71,7 +71,7 @@ final class ChainedAccessBuilder {
 		Trees.expect(INDEX, tree);
 		var key = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		steps.addAll(key.block());
-		Register next = RegisterFactory.create(ProvenType.OBJECT);
+		Register next = Register.ofType(ProvenType.OBJECT);
 		steps.add(StepFactory.tableIndex(firstOnly(current), firstOnly(key.value()), next));
 		self = firstOnly(current);
 		current = next;

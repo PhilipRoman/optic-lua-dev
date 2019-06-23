@@ -2,33 +2,27 @@ package optic.lua.asm;
 
 import optic.lua.optimization.ProvenType;
 import optic.lua.util.UniqueNames;
+import org.jetbrains.annotations.*;
 
 import java.util.function.Supplier;
 
 /**
  * Register is the basic unit of ASM form. Each assignment targets a new, unique register.
- * Some registers have *vararg capabilities*, which means that they may store a list
- * of values rather than a single value. There also exists the *unused register* which
- * can be used if the value of an expression is not needed (like when calling `print("hello")`).
- * <p>
- * Use [RegisterFactory] to obtain instances of this class.
+ * Use the factory method {@link #ofType(Supplier)} to obtain instances of this class.
  */
 public final class Register implements ExprNode {
-	static final Register UNUSED = new Register("_", true, ProvenType.OBJECT);
-
 	private final String name;
-
-	private final boolean vararg;
 	private final Supplier<ProvenType> type;
 
-	private Register(String name, boolean vararg, Supplier<ProvenType> type) {
-		this.name = name;
-		this.vararg = vararg;
+	private Register(Supplier<ProvenType> type) {
+		this.name = UniqueNames.next();
 		this.type = type;
 	}
 
-	Register(boolean isVararg, Supplier<ProvenType> type) {
-		this(UniqueNames.next(), isVararg, type);
+	@NotNull
+	@Contract("_ -> new")
+	public static Register ofType(Supplier<ProvenType> type) {
+		return new Register(type);
 	}
 
 	@Override
@@ -38,16 +32,7 @@ public final class Register implements ExprNode {
 
 	@Override
 	public String toString() {
-		return name + (vararg ? "@" : "");
-	}
-
-	boolean isUnused() {
-		return name.equals("_");
-	}
-
-	@Override
-	public boolean isVararg() {
-		return vararg;
+		return name;
 	}
 
 	public String name() {
