@@ -276,16 +276,12 @@ public final class MutableFlattener implements VariableResolver {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			var a = firstOnly(flattenExpression(t.getChild(0)));
 			var b = firstOnly(flattenExpression(t.getChild(1)));
-			var register = Register.ofType(() -> op.resultType(a.typeInfo(), b.typeInfo()));
-			steps.add(StepFactory.assign(register, ExprNode.monoInvocation(a, op.invocationMethod(), ListNode.exprList(b))));
-			return register;
+			return ExprNode.monoInvocation(a, op.invocationMethod(), ListNode.exprList(b));
 		}
 		if (Operators.isUnary(t)) {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			ExprNode param = firstOnly(flattenExpression(t.getChild(0)));
-			var register = Register.ofType(() -> op.resultType(null, param.typeInfo()));
-			steps.add(StepFactory.assign(register, ExprNode.monoInvocation(param, op.invocationMethod(), ListNode.exprList())));
-			return register;
+			return ExprNode.monoInvocation(param, op.invocationMethod(), ListNode.exprList());
 		}
 		switch (t.getType()) {
 			case Number: {

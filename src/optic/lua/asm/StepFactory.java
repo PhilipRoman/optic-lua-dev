@@ -4,7 +4,6 @@ import java.util.*;
 
 final class StepFactory {
 	static VoidNode tableWrite(LValue.TableField target, ExprNode value) {
-		checkVararg(false, value);
 		return discard(ExprNode.invocation(target.table(), InvocationMethod.SET_INDEX, ListNode.exprList(target.key(), value)));
 	}
 
@@ -20,10 +19,6 @@ final class StepFactory {
 		return new VoidNode.ForRangeLoop(counter, from, to, step, block);
 	}
 
-	static VoidNode comment(String text) {
-		return new VoidNode.Comment(text);
-	}
-
 	static VoidNode doBlock(AsmBlock block) {
 		return new VoidNode.Block(block);
 	}
@@ -34,17 +29,6 @@ final class StepFactory {
 
 	static VoidNode assign(Register result, ExprNode value) {
 		return new VoidNode.Assign(result, value);
-	}
-
-	static VoidNode tableIndex(ExprNode table, ExprNode key, Register out) {
-		return assign(out, ExprNode.monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key)));
-	}
-
-	private static void checkVararg(boolean expected, ExprNode register) {
-		if (register.isVararg() != expected) {
-			var msg = register + " is " + (expected ? "not " : "") + "a vararg register!";
-			throw new IllegalArgumentException(msg);
-		}
 	}
 
 	static VoidNode write(VariableInfo target, ExprNode value) {

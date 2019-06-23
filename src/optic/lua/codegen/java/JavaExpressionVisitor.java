@@ -10,12 +10,25 @@ import optic.lua.util.*;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
 
+import java.text.*;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, CompilationFailure> {
 	private static final Logger log = LoggerFactory.getLogger(JavaExpressionVisitor.class);
+	private static final DecimalFormat NUMBER_FORMAT = new DecimalFormat();
+
+	static {
+		var symbols = DecimalFormatSymbols.getInstance();
+		symbols.setDecimalSeparator('.');
+		NUMBER_FORMAT.setDecimalFormatSymbols(symbols);
+		NUMBER_FORMAT.setGroupingUsed(false);
+		NUMBER_FORMAT.setMaximumFractionDigits(340); // DecimalFormat.DOUBLE_FRACTION_DIGITS
+		NUMBER_FORMAT.setMinimumFractionDigits(1);
+		NUMBER_FORMAT.setMinimumIntegerDigits(1);
+	}
+
 	static final String LOCAL_VARIABLE_PREFIX = "L_";
 	private static AtomicInteger idCounter = new AtomicInteger();
 	private final NestedData nestedData;
@@ -32,7 +45,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 
 	@Override
 	public ResultBuffer visitNumberConstant(double n) {
-		return Line.of(Numbers.isInt(n) ? Long.toString((long) n) : Double.toString(n));
+		return Line.of(Numbers.isInt(n) ? Long.toString((long) n) : NUMBER_FORMAT.format(n) + "d");
 	}
 
 	@Override

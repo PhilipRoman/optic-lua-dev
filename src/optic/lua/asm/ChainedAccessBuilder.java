@@ -8,7 +8,9 @@ import org.antlr.runtime.tree.*;
 import java.util.*;
 
 import static nl.bigo.luaparser.Lua53Lexer.*;
-import static optic.lua.asm.ExprNode.firstOnly;
+import static optic.lua.asm.ExprNode.*;
+import static optic.lua.asm.ListNode.exprList;
+import static optic.lua.asm.StepFactory.assign;
 import static optic.lua.util.Trees.childrenOf;
 
 /**
@@ -72,7 +74,7 @@ final class ChainedAccessBuilder {
 		var key = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		steps.addAll(key.block());
 		Register next = Register.ofType(ProvenType.OBJECT);
-		steps.add(StepFactory.tableIndex(firstOnly(current), firstOnly(key.value()), next));
+		steps.add(assign(next, tableIndex(firstOnly(current), firstOnly(key.value()))));
 		self = firstOnly(current);
 		current = next;
 		lastKey = firstOnly(key.value());
@@ -86,7 +88,7 @@ final class ChainedAccessBuilder {
 			args.add(self);
 		for (var child : childrenOf(tree))
 			args.add(flattener.flattenExpression((CommonTree) child).applyTo(steps));
-		current = ExprNode.invocation(firstOnly(current), InvocationMethod.CALL, ListNode.exprList(args));
+		current = invocation(firstOnly(current), InvocationMethod.CALL, exprList(args));
 		lastKey = null;
 		lastOp = colon ? Op.COL_CALL : Op.CALL;
 	}

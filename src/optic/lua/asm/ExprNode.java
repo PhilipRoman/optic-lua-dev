@@ -115,6 +115,10 @@ public interface ExprNode extends ListNode {
 		return x.isVararg() ? new Selected(x, n) : ExprNode.nil();
 	}
 
+	static ExprNode tableIndex(ExprNode table, ExprNode key) {
+		return ExprNode.monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key));
+	}
+
 	@Override
 	default ProvenType childTypeInfo(int i) {
 		return i == 0 ? typeInfo() : ProvenType.OBJECT;

@@ -20,7 +20,7 @@ public final class Register implements ExprNode {
 	}
 
 	@NotNull
-	@Contract("_ -> new")
+	@Contract(value = "_ -> new", pure = true)
 	public static Register ofType(Supplier<ProvenType> type) {
 		return new Register(type);
 	}
