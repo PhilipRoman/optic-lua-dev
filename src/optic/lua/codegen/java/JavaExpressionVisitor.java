@@ -69,7 +69,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 			return Line.of("Boolean.FALSE");
 		}
 		var valueExpr = value.accept(this);
-		return Line.join("((", valueExpr, ") == null || (", valueExpr, ") == Boolean.FALSE)");
+		return Line.join("((Object)(", valueExpr, ") == null || (Object)(", valueExpr, ") == Boolean.FALSE)");
 	}
 
 	@Override
@@ -153,7 +153,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				functionCreationSiteName,
 				nestedData.rootContextName() + ".functionFactory(" + idCounter.incrementAndGet() + ")");
 		var contextName = nestedData.pushNewContextName();
-		buffer.addLine("new LuaFunction(", functionCreationSiteName, "){ Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
+		buffer.addLine("new LuaFunction(", functionCreationSiteName, "){ public Object[] call(LuaContext " + contextName + ", Object[] " + argsName + ") { if(1==1) {");
 		for (var p : params) {
 			if (p.equals("...")) {
 				var varargName = nestedData.pushNewVarargName();
@@ -255,7 +255,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				// special case to avoid integer division (in Lua all division is floating-point)
 				return Line.join(a.accept(this), " ", javaOp, " (double) ", b.accept(this));
 			}
-			return Line.join(a.accept(this), " ", javaOp, " ", b.accept(this));
+			return Line.join("(", a.accept(this), " ", javaOp, " ", b.accept(this), ")");
 		}
 		// if there is no corresponding Java operator, call the runtime API
 		String function = op.name().toLowerCase();
