@@ -365,7 +365,6 @@ public final class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private ExprNode toNumber(ExprNode a) {
-		a = firstOnly(a);
 		if (a.typeInfo().isNumeric()) {
 			return a;
 		}
@@ -380,24 +379,6 @@ public final class MutableFlattener implements VariableResolver {
 		var register = Register.ofType(value::typeInfo);
 		steps.add(StepFactory.assign(register, value));
 		return register;
-	}
-
-	@Contract(mutates = "this")
-	@Deprecated
-	private List<ExprNode> normalizeValueList(List<ExprNode> registers) {
-		var values = new ArrayList<ExprNode>(registers.size());
-		int valueIndex = 0;
-		int valueCount = registers.size();
-		for (var register : registers) {
-			boolean isLastValue = valueIndex == valueCount - 1;
-			if (isLastValue) {
-				values.add(register);
-			} else {
-				values.add(firstOnly(register));
-			}
-			valueIndex++;
-		}
-		return values;
 	}
 
 	@Contract(mutates = "this")
@@ -435,7 +416,6 @@ public final class MutableFlattener implements VariableResolver {
 
 		var builder = new AssignmentBuilder(this);
 		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
-		// TODO replace with ExprList
 		ExprList values = flattenAll(Trees.childrenOf(valueList));
 		builder.setValues(values);
 		List<?> names = Trees.childrenOf(nameList);

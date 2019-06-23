@@ -156,10 +156,6 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 		return buffer;
 	}
 
-	private ResultBuffer commaList(List<ExprNode> args) throws CompilationFailure {
-		return expressionVisitor.commaList(args);
-	}
-
 	@NotNull
 	private ResultBuffer expression(ListNode expression) throws CompilationFailure {
 		return Objects.requireNonNull(expression.accept(expressionVisitor));
