@@ -102,7 +102,7 @@ public final class MutableFlattener implements VariableResolver {
 		return flatten(tree, options, this, variables, BlockMeaning.LOOP_BODY);
 	}
 
-	private AsmBlock flattenForRangeBody(CommonTree tree, ProvenType counterType, String name) throws CompilationFailure {
+	private AsmBlock flattenForRangeBody(CommonTree tree, StaticType counterType, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.update(counterType);
 		return flatten(tree, options, this, List.of(info), BlockMeaning.LOOP_BODY);

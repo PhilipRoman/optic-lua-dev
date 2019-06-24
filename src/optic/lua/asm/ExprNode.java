@@ -1,6 +1,6 @@
 package optic.lua.asm;
 
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.StaticType;
 import optic.lua.util.Numbers;
 import org.codehaus.janino.InternalCompilerException;
 
@@ -120,8 +120,8 @@ public interface ExprNode extends ListNode {
 	}
 
 	@Override
-	default ProvenType childTypeInfo(int i) {
-		return i == 0 ? typeInfo() : ProvenType.OBJECT;
+	default StaticType childTypeInfo(int i) {
+		return i == 0 ? typeInfo() : StaticType.OBJECT;
 	}
 
 	/**
@@ -140,8 +140,8 @@ public interface ExprNode extends ListNode {
 		return false;
 	}
 
-	default ProvenType typeInfo() {
-		return ProvenType.OBJECT;
+	default StaticType typeInfo() {
+		return StaticType.OBJECT;
 	}
 
 	final class Selected implements ExprNode {
@@ -170,7 +170,7 @@ public interface ExprNode extends ListNode {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
+		public StaticType typeInfo() {
 			return source.childTypeInfo(n);
 		}
 	}
@@ -186,8 +186,8 @@ public interface ExprNode extends ListNode {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
-			return Numbers.isInt(value) ? ProvenType.INTEGER : ProvenType.NUMBER;
+		public StaticType typeInfo() {
+			return Numbers.isInt(value) ? StaticType.INTEGER : StaticType.NUMBER;
 		}
 	}
 
@@ -286,7 +286,7 @@ public interface ExprNode extends ListNode {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
+		public StaticType typeInfo() {
 			return variable.typeInfo();
 		}
 
@@ -322,7 +322,7 @@ public interface ExprNode extends ListNode {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
+		public StaticType typeInfo() {
 			return method.typeInfo(object, arguments);
 		}
 	}
@@ -348,8 +348,8 @@ public interface ExprNode extends ListNode {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
-			return ProvenType.OBJECT;
+		public StaticType typeInfo() {
+			return StaticType.OBJECT;
 		}
 
 		@Override
@@ -394,14 +394,14 @@ public interface ExprNode extends ListNode {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
+		public StaticType typeInfo() {
 			if (!and && first.typeInfo().isNumeric()) {
 				return first.typeInfo();
 			}
 			if (and && first.typeInfo().isNumeric()) {
 				return second.typeInfo();
 			}
-			return ProvenType.OBJECT;
+			return StaticType.OBJECT;
 		}
 
 	}

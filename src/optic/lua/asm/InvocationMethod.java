@@ -43,14 +43,14 @@ public enum InvocationMethod {
 		return returnCount;
 	}
 
-	public ProvenType typeInfo(ExprNode object, ListNode arguments) {
+	public StaticType typeInfo(ExprNode object, ListNode arguments) {
 		switch (this) {
 			case INDEX:
 			case CALL:
 			case SET_INDEX:
-				return ProvenType.OBJECT;
+				return StaticType.OBJECT;
 			case TO_NUMBER:
-				return ProvenType.NUMBER;
+				return StaticType.NUMBER;
 			default:
 				var luaOp = LuaOperator.valueOf(name());
 				if (luaOp.arity() == 2) {

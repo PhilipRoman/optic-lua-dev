@@ -251,7 +251,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 	private ResultBuffer compileBinaryOperatorInvocation(LuaOperator op, ExprNode a, ExprNode b) throws CompilationFailure {
 		if (JavaOperators.canApplyJavaSymbol(op, a.typeInfo(), b.typeInfo())) {
 			String javaOp = Objects.requireNonNull(JavaOperators.javaSymbol(op));
-			if (op == LuaOperator.DIV && a.typeInfo() == ProvenType.INTEGER && b.typeInfo() == ProvenType.INTEGER) {
+			if (op == LuaOperator.DIV && a.typeInfo() == StaticType.INTEGER && b.typeInfo() == StaticType.INTEGER) {
 				// special case to avoid integer division (in Lua all division is floating-point)
 				return Line.join(a.accept(this), " ", javaOp, " (double) ", b.accept(this));
 			}

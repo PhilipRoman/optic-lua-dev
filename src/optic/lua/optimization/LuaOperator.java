@@ -7,7 +7,7 @@ import optic.lua.util.Trees;
 import java.util.Objects;
 
 import static nl.bigo.luaparser.Lua53Walker.*;
-import static optic.lua.optimization.ProvenType.*;
+import static optic.lua.optimization.StaticType.*;
 
 public enum LuaOperator {
 	ADD, SUB, MUL, DIV, IDIV, POW, UNM, MOD, CONCAT, BAND, BOR, BXOR, BNOT, SHL, SHR, EQ, LT, LE, GT, GE, LEN;
@@ -76,7 +76,7 @@ public enum LuaOperator {
 	 * Returns the most specific possible type of the result of applying values of given types to this operator.
 	 * If this operator is unary, the first argument should be null.
 	 */
-	public ProvenType resultType(ProvenType a, ProvenType b) {
+	public StaticType resultType(StaticType a, StaticType b) {
 		if (arity() == 2) {
 			Objects.requireNonNull(a);
 		}

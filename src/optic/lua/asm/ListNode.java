@@ -1,7 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.asm.InvocationMethod.ReturnCount;
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.StaticType;
 
 import java.util.*;
 
@@ -49,7 +49,7 @@ public interface ListNode extends Node {
 
 	<T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X;
 
-	ProvenType childTypeInfo(int i);
+	StaticType childTypeInfo(int i);
 
 	boolean isPure();
 
@@ -69,8 +69,8 @@ public interface ListNode extends Node {
 		}
 
 		@Override
-		public ProvenType childTypeInfo(int i) {
-			return ProvenType.OBJECT;
+		public StaticType childTypeInfo(int i) {
+			return StaticType.OBJECT;
 		}
 	}
 
@@ -89,7 +89,7 @@ public interface ListNode extends Node {
 		}
 
 		@Override
-		public ProvenType childTypeInfo(int i) {
+		public StaticType childTypeInfo(int i) {
 			if (nodes.size() > i) {
 				return nodes.get(i).typeInfo();
 			}
@@ -97,7 +97,7 @@ public interface ListNode extends Node {
 				int offset = i - nodes.size();
 				return trailing.get().childTypeInfo(offset);
 			}
-			return ProvenType.OBJECT; // nil
+			return StaticType.OBJECT; // nil
 		}
 
 		@Override
@@ -142,8 +142,8 @@ public interface ListNode extends Node {
 		}
 
 		@Override
-		public ProvenType childTypeInfo(int i) {
-			return i == 0 ? method.typeInfo(object, arguments) : ProvenType.OBJECT;
+		public StaticType childTypeInfo(int i) {
+			return i == 0 ? method.typeInfo(object, arguments) : StaticType.OBJECT;
 		}
 
 		@Override

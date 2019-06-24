@@ -9,7 +9,7 @@ final class JavaOperators {
 	private JavaOperators() {
 	}
 
-	static boolean canApplyJavaSymbol(LuaOperator operator, ProvenType a, ProvenType b) {
+	static boolean canApplyJavaSymbol(LuaOperator operator, StaticType a, StaticType b) {
 		// "a" should be null if operator is unary
 		if (operator.arity() == 2) {
 			Objects.requireNonNull(a);
@@ -31,13 +31,13 @@ final class JavaOperators {
 			case GT:
 				return a.isNumeric() && b.isNumeric();
 			case BNOT:
-				return b == ProvenType.INTEGER;
+				return b == StaticType.INTEGER;
 			case BAND:
 			case BOR:
 			case BXOR:
 			case SHL:
 			case SHR:
-				return a == ProvenType.INTEGER && b == ProvenType.INTEGER;
+				return a == StaticType.INTEGER && b == StaticType.INTEGER;
 			default:
 				return false;
 		}

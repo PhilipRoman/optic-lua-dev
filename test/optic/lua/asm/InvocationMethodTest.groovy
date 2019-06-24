@@ -5,7 +5,7 @@ import groovy.transform.CompileStatic
 import static ExprNode.number
 import static ListNode.exprList
 import static optic.lua.asm.InvocationMethod.*
-import static optic.lua.optimization.ProvenType.NUMBER
+import static optic.lua.optimization.StaticType.NUMBER
 
 @CompileStatic
 class InvocationMethodTest extends GroovyTestCase {

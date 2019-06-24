@@ -1,6 +1,6 @@
 package optic.lua.asm;
 
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.StaticType;
 import optic.lua.util.UniqueNames;
 import org.jetbrains.annotations.*;
 
@@ -12,16 +12,16 @@ import java.util.function.Supplier;
  */
 public final class Register implements ExprNode {
 	private final String name;
-	private final Supplier<ProvenType> type;
+	private final Supplier<StaticType> type;
 
-	private Register(Supplier<ProvenType> type) {
+	private Register(Supplier<StaticType> type) {
 		this.name = UniqueNames.next();
 		this.type = type;
 	}
 
 	@NotNull
 	@Contract(value = "_ -> new", pure = true)
-	public static Register ofType(Supplier<ProvenType> type) {
+	public static Register ofType(Supplier<StaticType> type) {
 		return new Register(type);
 	}
 
@@ -45,7 +45,7 @@ public final class Register implements ExprNode {
 	}
 
 	@Override
-	public ProvenType typeInfo() {
+	public StaticType typeInfo() {
 		return type.get();
 	}
 }

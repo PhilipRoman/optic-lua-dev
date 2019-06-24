@@ -4,7 +4,7 @@ import optic.lua.asm.*;
 import optic.lua.asm.ListNode.Invocation;
 import optic.lua.codegen.*;
 import optic.lua.messages.*;
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.StaticType;
 import optic.lua.util.UniqueNames;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
@@ -98,8 +98,8 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 	public ResultBuffer visitForRangeLoop(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock block) throws CompilationFailure {
 		var buffer = new LineList();
 		var realCounterName = "i_" + counter.getName();
-		ProvenType realCounterType = from.typeInfo().and(step.typeInfo());
-		if (realCounterType == ProvenType.INTEGER
+		StaticType realCounterType = from.typeInfo().and(step.typeInfo());
+		if (realCounterType == StaticType.INTEGER
 				&& options.get(StandardFlags.LOOP_SPLIT)) {
 			// we optimize integer loops at runtime by checking if the range is within int bounds
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure

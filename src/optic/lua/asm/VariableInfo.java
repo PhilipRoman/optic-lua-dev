@@ -82,23 +82,23 @@ public class VariableInfo {
 		return name;
 	}
 
-	public ProvenType typeInfo() {
-		return isUpvalue ? ProvenType.OBJECT : type.get();
+	public StaticType typeInfo() {
+		return isUpvalue ? StaticType.OBJECT : type.get();
 	}
 
 	void enableObjects() {
-		update(ProvenType.OBJECT);
+		update(StaticType.OBJECT);
 	}
 
 	void enableNumbers() {
-		update(ProvenType.NUMBER);
+		update(StaticType.NUMBER);
 	}
 
-	void update(ProvenType other) {
+	void update(StaticType other) {
 		type.add(other);
 	}
 
-	void addTypeDependency(Supplier<ProvenType> source) {
+	void addTypeDependency(Supplier<StaticType> source) {
 		type.add(source);
 	}
 
@@ -137,8 +137,8 @@ public class VariableInfo {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
-			return ProvenType.OBJECT;
+		public StaticType typeInfo() {
+			return StaticType.OBJECT;
 		}
 
 		@Override

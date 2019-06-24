@@ -2,22 +2,22 @@ package optic.lua.optimization;
 
 import optic.lua.util.Combined;
 
-public final class CombinedCommonType extends Combined<ProvenType> {
+public final class CombinedCommonType extends Combined<StaticType> {
 	public CombinedCommonType() {
 	}
 
 	@Override
-	protected ProvenType reduce(ProvenType a, ProvenType b) {
+	protected StaticType reduce(StaticType a, StaticType b) {
 		return a.and(b);
 	}
 
 	@Override
-	protected boolean isAlreadyMax(ProvenType value) {
-		return value == ProvenType.OBJECT;
+	protected boolean isAlreadyMax(StaticType value) {
+		return value == StaticType.OBJECT;
 	}
 
 	@Override
-	protected ProvenType emptyValue() {
-		return ProvenType.OBJECT;
+	protected StaticType emptyValue() {
+		return StaticType.OBJECT;
 	}
 }

@@ -1,7 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.messages.CompilationFailure;
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.StaticType;
 import optic.lua.util.Trees;
 import org.antlr.runtime.tree.*;
 
@@ -73,7 +73,7 @@ final class ChainedAccessBuilder {
 		Trees.expect(INDEX, tree);
 		var key = flattener.flattenExpression((CommonTree) tree.getChild(0));
 		steps.addAll(key.block());
-		Register next = Register.ofType(ProvenType.OBJECT);
+		Register next = Register.ofType(StaticType.OBJECT);
 		steps.add(assign(next, tableIndex(firstOnly(current), firstOnly(key.value()))));
 		self = firstOnly(current);
 		current = next;
