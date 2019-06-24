@@ -1,10 +1,11 @@
 package optic.lua.asm;
 
+import optic.lua.GlobalStats;
 import optic.lua.optimization.StaticType;
 import optic.lua.util.Numbers;
 import org.codehaus.janino.InternalCompilerException;
 
-import java.util.LinkedHashMap;
+import java.util.*;
 
 /**
  * A read-only expression. May return more than one value (see {@link #isVararg()}). Care must be taken not to
@@ -19,34 +20,56 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which has the value of the given number constant.
 	 */
 	static ExprNode number(double num) {
-		return new NumberConstant(num);
+		if ((long) num != num)
+			return new NumberConstant(num);
+		var cached = NumberConstant.CACHE.get((long) num);
+		if (cached != null) {
+			GlobalStats.nodesReused++;
+			return cached;
+		}
+		var newObj = new NumberConstant(num);
+		NumberConstant.CACHE.put((long) num, newObj);
+		return newObj;
 	}
 
 	/**
 	 * Returns a node which has the value of the given string constant.
 	 */
 	static ExprNode string(String s) {
-		return new StringConstant(s);
+		var cached = StringConstant.CACHE.get(s);
+		if (cached != null) {
+			GlobalStats.nodesReused++;
+			return cached;
+		}
+		var newObj = new StringConstant(s);
+		StringConstant.CACHE.put(s, newObj);
+		return newObj;
 	}
 
 	/**
 	 * Returns a node which has the value of the given boolean constant.
 	 */
 	static ExprNode bool(boolean b) {
-		return new BooleanConstant(b);
+		GlobalStats.nodesReused++;
+		return b ? BooleanConstant.TRUE : BooleanConstant.FALSE;
 	}
 
 	/**
 	 * Returns a node which has the value of nil.
 	 */
 	static ExprNode nil() {
-		return new NilConstant();
+		GlobalStats.nodesReused++;
+		return NilConstant.NIL;
 	}
 
 	/**
 	 * Returns a node which describes a table constructor expression from the given entries.
 	 */
 	static ExprNode table(LinkedHashMap<ExprNode, ListNode> entries) {
+		if (entries.isEmpty()) {
+			GlobalStats.nodesReused++;
+			return TableLiteral.EMPTY;
+		}
 		return new TableLiteral(entries);
 	}
 
@@ -61,6 +84,16 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which references the given variable.
 	 */
 	static ExprNode variableName(VariableInfo variableInfo) {
+		if (variableInfo.getMode() == VariableMode.GLOBAL) {
+			var cached = Name.GLOBAL_CACHE.get(variableInfo.getName());
+			if (cached != null) {
+				GlobalStats.nodesReused++;
+				return cached;
+			}
+			var newObj = new Name(variableInfo);
+			Name.GLOBAL_CACHE.put(variableInfo.getName(), newObj);
+			return newObj;
+		}
 		return new Name(variableInfo);
 	}
 
@@ -190,6 +223,7 @@ public interface ExprNode extends ListNode {
 			}
 			this.n = n;
 			this.source = source;
+			GlobalStats.nodesCreated++;
 		}
 
 		@Override
@@ -209,6 +243,8 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class NumberConstant extends Constant<Double> {
+		private static final HashMap<Long, NumberConstant> CACHE = new HashMap<>(128);
+
 		private NumberConstant(double value) {
 			super(value);
 		}
@@ -225,6 +261,8 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class StringConstant extends Constant<String> {
+		private static final HashMap<String, StringConstant> CACHE = new HashMap<>(128);
+
 		private StringConstant(String value) {
 			super(value);
 		}
@@ -236,6 +274,9 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class BooleanConstant extends Constant<Boolean> {
+		private static final BooleanConstant TRUE = new BooleanConstant(true);
+		private static final BooleanConstant FALSE = new BooleanConstant(false);
+
 		private BooleanConstant(boolean value) {
 			super(value);
 		}
@@ -252,6 +293,8 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class NilConstant extends Constant<Void> {
+		private static final NilConstant NIL = new NilConstant();
+
 		private NilConstant() {
 			super(null);
 		}
@@ -263,6 +306,7 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class TableLiteral implements ExprNode {
+		private static final TableLiteral EMPTY = new TableLiteral(new LinkedHashMap<>());
 		private final LinkedHashMap<ExprNode, ListNode> entries;
 
 		private TableLiteral(LinkedHashMap<ExprNode, ListNode> entries) {
@@ -303,6 +347,7 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class Name implements ExprNode {
+		private static final HashMap<String, Name> GLOBAL_CACHE = new HashMap<>(64);
 		private final VariableInfo variable;
 
 		private Name(VariableInfo variable) {
@@ -341,6 +386,7 @@ public interface ExprNode extends ListNode {
 		protected final T value;
 
 		private Constant(T value) {
+			GlobalStats.nodesCreated++;
 			this.value = value;
 		}
 
@@ -373,6 +419,7 @@ public interface ExprNode extends ListNode {
 				throw new IllegalArgumentException("Argument to 'Not()' must be pure (got " + value + ")");
 			}
 			this.value = value;
+			GlobalStats.nodesCreated++;
 		}
 
 		@Override
@@ -410,6 +457,7 @@ public interface ExprNode extends ListNode {
 			this.and = and;
 			this.first = first;
 			this.second = second;
+			GlobalStats.nodesCreated++;
 		}
 
 

@@ -7,7 +7,7 @@ import org.jetbrains.annotations.*;
 /**
  * The equivalent of {@link Register} for storing multi-valued expressions.
  */
-public class ArrayRegister implements ListNode {
+public final class ArrayRegister implements ListNode {
 	private final String name;
 
 	private ArrayRegister() {

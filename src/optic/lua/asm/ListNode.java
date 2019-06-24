@@ -1,5 +1,6 @@
 package optic.lua.asm;
 
+import optic.lua.GlobalStats;
 import optic.lua.asm.InvocationMethod.ReturnCount;
 import optic.lua.optimization.StaticType;
 
@@ -10,7 +11,11 @@ public interface ListNode extends Node {
 	 * Returns a variable-length RValue which references the varargs ("...") of current scope.
 	 */
 	static ListNode varargs() {
-		return new Varargs();
+		return Varargs.VARARGS;
+	}
+
+	static ExprList exprList() {
+		return ExprList.EMPTY;
 	}
 
 	static ExprList exprList(ListNode... nodes) {
@@ -34,7 +39,7 @@ public interface ListNode extends Node {
 	static ExprList exprList(List<ListNode> expressions) {
 		int size = expressions.size();
 		if (size == 0) {
-			return new ExprList(List.of(), Optional.empty());
+			return ExprList.EMPTY;
 		}
 		var copy = new ArrayList<ExprNode>(size);
 		for (int i = 0; i < size - 1; i++) {
@@ -59,6 +64,8 @@ public interface ListNode extends Node {
 
 
 	final class Varargs implements ListNode {
+		private static final Varargs VARARGS = new Varargs();
+
 		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
 			return visitor.visitVarargs();
 		}
@@ -72,15 +79,22 @@ public interface ListNode extends Node {
 		public StaticType childTypeInfo(int i) {
 			return StaticType.OBJECT;
 		}
+
+		private Varargs() {
+			GlobalStats.nodesCreated++;
+		}
 	}
 
 	final class ExprList implements ListNode {
+		private static final ExprList EMPTY = new ExprList(List.of(), Optional.empty());
+
 		private final List<ExprNode> nodes;
 		private final Optional<ListNode> trailing;
 
 		private ExprList(List<ExprNode> nodes, Optional<ListNode> trailing) {
 			this.nodes = nodes;
 			this.trailing = trailing;
+			GlobalStats.nodesCreated++;
 		}
 
 		@Override
@@ -134,6 +148,7 @@ public interface ListNode extends Node {
 			this.object = object;
 			this.method = method;
 			this.arguments = arguments;
+			GlobalStats.nodesCreated++;
 		}
 
 		@Override

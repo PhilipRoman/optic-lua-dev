@@ -68,6 +68,9 @@ public final class Main {
 			return; // for control flow analysis tools
 		}
 
+		log.info("Created {} nodes", GlobalStats.nodesCreated);
+		log.info("Reused {} nodes", GlobalStats.nodesReused);
+
 		if (opticLua.interactiveShell) {
 			// enter interactive session after compiling the files
 			var shell = new InteractiveShell(System.in, System.out, System.err, bundle, options);

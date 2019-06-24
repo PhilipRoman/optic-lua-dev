@@ -3,7 +3,7 @@ package optic.lua.codegen;
 import java.io.PrintStream;
 import java.util.*;
 
-public class Line implements ResultBuffer {
+public final class Line implements ResultBuffer {
 	protected final String content;
 
 	protected Line(String content) {
