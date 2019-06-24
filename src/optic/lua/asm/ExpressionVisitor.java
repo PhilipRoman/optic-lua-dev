@@ -19,6 +19,8 @@ public interface ExpressionVisitor<T, X extends Throwable> {
 
 	T visitRegister(Register r) throws X;
 
+	T visitArrayRegister(ArrayRegister register) throws X;
+
 	T visitLocalName(VariableInfo variable) throws X;
 
 	T visitUpValueName(VariableInfo upvalue) throws X;

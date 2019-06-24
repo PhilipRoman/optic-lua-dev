@@ -5,6 +5,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+import static optic.lua.asm.StepFactory.assignArray;
+
 /**
  * Helper class to compile variable assignments. Create a new builder using {@link #AssignmentBuilder(VariableResolver)},
  * set elements with {@link #setValues(ExprList)} and {@link #addVariable(LValue)} and then
@@ -37,6 +39,8 @@ final class AssignmentBuilder {
 		int nonVarargRValueCount = nonVarargRValueCount();
 		@Nullable
 		ListNode vararg = values.getTrailing().orElse(null); // null if values don't end with a vararg
+		@Nullable
+		ArrayRegister trailingValues = null; // will be lazily initialized
 		for (int i = 0; i < variables.size(); i++) {
 			LValue variable = variables.get(i);
 			if (i < nonVarargRValueCount) {
@@ -48,9 +52,11 @@ final class AssignmentBuilder {
 				// fill remaining variables with nil
 				steps.add(createWriteStep(variable, ExprNode.nil()));
 			} else {
+				if (trailingValues == null) // lazily initialize the trailing register
+					steps.add(assignArray(trailingValues = ArrayRegister.create(), vararg));
 				// the left side has surpassed the right side but the last expression can yield multiple values
 				// fill the remaining variables by selecting values from the last expression
-				steps.add(createWriteStep(variable, ExprNode.selectNth(vararg, overflow)));
+				steps.add(createWriteStep(variable, ExprNode.selectNth(trailingValues, overflow)));
 				overflow++;
 			}
 		}

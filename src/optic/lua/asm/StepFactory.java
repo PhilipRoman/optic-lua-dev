@@ -31,6 +31,10 @@ final class StepFactory {
 		return new VoidNode.Assign(result, value);
 	}
 
+	static VoidNode assignArray(ArrayRegister result, ListNode value) {
+		return new VoidNode.AssignArray(result, value);
+	}
+
 	static VoidNode write(VariableInfo target, ExprNode value) {
 		return new VoidNode.Write(target, value);
 	}

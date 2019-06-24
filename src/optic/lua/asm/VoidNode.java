@@ -203,4 +203,19 @@ public interface VoidNode extends Node {
 			return visitor.visitLineNumber(number);
 		}
 	}
+
+	final class AssignArray implements VoidNode {
+		private final ArrayRegister result;
+		private final ListNode value;
+
+		public AssignArray(ArrayRegister result, ListNode value) {
+			this.result = result;
+			this.value = value;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(StatementVisitor<T, X> visitor) throws X {
+			return visitor.visitArrayAssignment(result, value);
+		}
+	}
 }

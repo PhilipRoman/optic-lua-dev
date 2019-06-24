@@ -7,6 +7,8 @@ public interface StatementVisitor<T, X extends Throwable> {
 
 	T visitAssignment(Register register, ExprNode value) throws X;
 
+	T visitArrayAssignment(ArrayRegister register, ListNode value) throws X;
+
 	T visitBlock(AsmBlock block) throws X;
 
 	T visitBreakIf(ExprNode condition, boolean isTrue) throws X;

@@ -182,6 +182,11 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 	}
 
 	@Override
+	public ResultBuffer visitArrayRegister(ArrayRegister register) {
+		return Line.of(register.name());
+	}
+
+	@Override
 	public ResultBuffer visitLocalName(VariableInfo variable) {
 		return Line.of(LOCAL_VARIABLE_PREFIX + variable.getName());
 	}

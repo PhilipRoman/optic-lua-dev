@@ -235,6 +235,13 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 		return buffer;
 	}
 
+	@Override
+	public ResultBuffer visitArrayAssignment(ArrayRegister register, ListNode value) throws CompilationFailure {
+		var buffer = new LineList();
+		buffer.addLine("Object[] ", register.name(), " = ", expression(value), ";");
+		return buffer;
+	}
+
 	public String generate(String className, AsmBlock block) throws CompilationFailure {
 		Objects.requireNonNull(className);
 		Objects.requireNonNull(block);
