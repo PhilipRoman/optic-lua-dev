@@ -3,6 +3,7 @@ package optic.lua.asm;
 import org.jetbrains.annotations.Contract;
 
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * An immutable container for a list of {@link #block() steps} and
@@ -41,7 +42,11 @@ public final class FlatExpr {
 	 * Returns an expression which returns the same value as this expression,
 	 * except that the result will be limited to a single value.
 	 */
-	FlatExpr discardRemaining() {
+	FlatExpr firstOnly() {
 		return new FlatExpr(block, ExprNode.firstOnly(value));
+	}
+
+	FlatExpr mapValue(UnaryOperator<ListNode> function) {
+		return new FlatExpr(block, function.apply(value));
 	}
 }

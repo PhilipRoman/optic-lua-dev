@@ -84,6 +84,9 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which describes the result of logical "or" of two expressions.
 	 */
 	static ExprNode logicalOr(ExprNode a, ExprNode b) {
+		if (alwaysTrue(a)) {
+			return a;
+		}
 		return new Logical(false, a, b);
 	}
 
@@ -91,6 +94,9 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which describes the result of logical "and" of two expressions.
 	 */
 	static ExprNode logicalAnd(ExprNode a, ExprNode b) {
+		if (alwaysTrue(a)) {
+			return b;
+		}
 		return new Logical(true, a, b);
 	}
 
@@ -98,6 +104,11 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which describes the result of logical "not" of an expression.
 	 */
 	static ExprNode logicalNot(ExprNode x) {
+		if (alwaysTrue(x)) {
+			return bool(false);
+		}
+		if (x.typeInfo() != StaticType.BOOLEAN)
+			throw new IllegalArgumentException("expected boolean, got " + x.typeInfo().toString());
 		return new Not(x);
 	}
 
@@ -117,6 +128,28 @@ public interface ExprNode extends ListNode {
 
 	static ExprNode tableIndex(ExprNode table, ExprNode key) {
 		return ExprNode.monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key));
+	}
+
+	static ExprNode toNumber(ExprNode a) {
+		if (a.typeInfo().isNumeric()) {
+			return a;
+		}
+		return monoInvocation(a, InvocationMethod.TO_NUMBER, ListNode.exprList());
+	}
+
+	static ExprNode toBoolean(ExprNode a) {
+		if (a.typeInfo() == StaticType.BOOLEAN) {
+			return a;
+		}
+		if (alwaysTrue(a)) {
+			return bool(true);
+		}
+		return monoInvocation(a, InvocationMethod.TO_BOOLEAN, ListNode.exprList());
+	}
+
+	private static boolean alwaysTrue(ExprNode node) {
+		StaticType type = node.typeInfo();
+		return type != StaticType.OBJECT && type != StaticType.BOOLEAN;
 	}
 
 	@Override
@@ -210,6 +243,11 @@ public interface ExprNode extends ListNode {
 		@Override
 		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
 			return visitor.visitBooleanConstant(value);
+		}
+
+		@Override
+		public StaticType typeInfo() {
+			return StaticType.BOOLEAN;
 		}
 	}
 

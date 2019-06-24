@@ -171,7 +171,7 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 			FlatExpr condition = entry.getKey();
 			AsmBlock value = entry.getValue();
 			buffer.addAllChildren(visitAll(condition.block()));
-			buffer.addLine("if(isTrue(", expression(condition.value()), ")) {");
+			buffer.addLine("if(", expression(condition.value()), ") {");
 			buffer.addAllChildren(visitAll(value.steps()));
 			buffer.addLine("}", isLast ? "" : " else {");
 		}
@@ -203,7 +203,7 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 	@Override
 	public ResultBuffer visitBreakIf(ExprNode condition, boolean isTrue) throws CompilationFailure {
 		var buffer = new LineList();
-		buffer.addLine("if(", (isTrue ? "" : "!"), "isTrue(", expression(condition), ")) break;");
+		buffer.addLine("if(", (isTrue ? "" : "!"), "(", expression(condition), ")) break;");
 		return buffer;
 	}
 

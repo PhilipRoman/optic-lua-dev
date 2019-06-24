@@ -11,10 +11,12 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
+import static nl.bigo.luaparser.Lua53Walker.Name;
+import static nl.bigo.luaparser.Lua53Walker.Not;
 import static nl.bigo.luaparser.Lua53Walker.Number;
 import static nl.bigo.luaparser.Lua53Walker.String;
 import static nl.bigo.luaparser.Lua53Walker.*;
-import static optic.lua.asm.ExprNode.firstOnly;
+import static optic.lua.asm.ExprNode.*;
 
 /**
  * Mutable implementation of a tree flattener. To flatten a given AST tree, use {@link #flatten(CommonTree, Options)}.
@@ -173,8 +175,8 @@ public final class MutableFlattener implements VariableResolver {
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
-				ExprNode from = evaluateOnce(toNumber(firstOnly(flattenExpression(t.getChild(1)))));
-				ExprNode to = evaluateOnce(toNumber(firstOnly(flattenExpression(t.getChild(2)))));
+				ExprNode from = evaluateOnce(ExprNode.toNumber(firstOnly(flattenExpression(t.getChild(1)))));
+				ExprNode to = evaluateOnce(ExprNode.toNumber(firstOnly(flattenExpression(t.getChild(2)))));
 				Tree stepOrBody = t.getChild(3);
 				if (stepOrBody.getType() == Do) {
 					// for loop without step:
@@ -186,7 +188,7 @@ public final class MutableFlattener implements VariableResolver {
 				} else {
 					// for loop with step "C":
 					// for i = A, B, C do ... end
-					ExprNode step = evaluateOnce(toNumber(firstOnly(flattenExpression(stepOrBody))));
+					ExprNode step = evaluateOnce(ExprNode.toNumber(firstOnly(flattenExpression(stepOrBody))));
 					CommonTree block = (CommonTree) t.getChild(4).getChild(0);
 					AsmBlock body = flattenForRangeBody(block, from.typeInfo().and(step.typeInfo()), varName);
 					VariableInfo counter = body.locals().get(varName);
@@ -211,7 +213,9 @@ public final class MutableFlattener implements VariableResolver {
 			}
 			case While: {
 				// while (<condition>) (do (chunk (<body>)))
-				var condition = getInterface().flattenExpression(t.getChild(0));
+				var condition = getInterface().flattenExpression(t.getChild(0))
+						.firstOnly()
+						.mapValue(v -> ExprNode.toBoolean((ExprNode) v));
 				var chunk = Trees.expect(CHUNK, t.getChild(1).getChild(0));
 				var body = flattenLoopBody((CommonTree) chunk);
 				var stepList = new ArrayList<VoidNode>(body.steps().size() + 8);
@@ -224,7 +228,9 @@ public final class MutableFlattener implements VariableResolver {
 			}
 			case Repeat: {
 				// repeat (chunk (<body>)) (<condition>)
-				var condition = getInterface().flattenExpression(t.getChild(1));
+				var condition = getInterface().flattenExpression(t.getChild(1))
+						.firstOnly()
+						.mapValue(v -> ExprNode.toBoolean((ExprNode) v));
 				var chunk = Trees.expect(CHUNK, t.getChild(0));
 				var body = flattenLoopBody((CommonTree) chunk);
 				var stepList = new ArrayList<>(body.steps());
@@ -341,7 +347,7 @@ public final class MutableFlattener implements VariableResolver {
 				return ExprNode.logicalAnd(a, b);
 			}
 			case Not: {
-				ExprNode x = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
+				ExprNode x = evaluateOnce(toBoolean(firstOnly(flattenExpression(t.getChild(0)))));
 				return ExprNode.logicalNot(x);
 			}
 			default: {
@@ -361,14 +367,6 @@ public final class MutableFlattener implements VariableResolver {
 		}
 		steps.addAll(builder.getSteps());
 		return ExprNode.table(builder.getTable());
-	}
-
-	@Contract(mutates = "this")
-	private ExprNode toNumber(ExprNode a) {
-		if (a.typeInfo().isNumeric()) {
-			return a;
-		}
-		return ExprNode.monoInvocation(a, InvocationMethod.TO_NUMBER, ListNode.exprList());
 	}
 
 	@Contract(mutates = "this")

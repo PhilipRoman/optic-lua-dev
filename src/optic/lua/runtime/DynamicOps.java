@@ -303,9 +303,9 @@ public final class DynamicOps {
 
 	@RuntimeApi
 	public static int len(LuaContext ctx, Object value) {
-		if(value instanceof CharSequence)
+		if (value instanceof CharSequence)
 			return ((CharSequence) value).length();
-		else if(value instanceof LuaTable)
+		else if (value instanceof LuaTable)
 			return ((LuaTable) value).length();
 		else
 			throw Errors.attemptTo("get length of", value);
@@ -317,13 +317,8 @@ public final class DynamicOps {
 	}
 
 	@RuntimeApi
-	public static boolean isTrue(Object obj) {
+	public static boolean toBool(Object obj) {
 		return !(obj == null) && !(obj == Boolean.FALSE);
-	}
-
-	@RuntimeApi
-	public static boolean isTrue(boolean b) {
-		return b;
 	}
 
 	@RuntimeApi

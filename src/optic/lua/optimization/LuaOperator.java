@@ -95,13 +95,14 @@ public enum LuaOperator {
 			case DIV:
 				return a.isNumeric() && b.isNumeric() ? NUMBER : OBJECT;
 			case CONCAT:
+			case LEN:
+				return OBJECT;
 			case EQ:
 			case LT:
 			case LE:
 			case GT:
 			case GE:
-			case LEN:
-				return OBJECT;
+				return (a.isNumeric() && b.isNumeric()) ? BOOLEAN : OBJECT;
 			case BAND:
 			case BOR:
 			case BXOR:

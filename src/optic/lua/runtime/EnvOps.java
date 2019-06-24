@@ -94,7 +94,7 @@ public final class EnvOps {
 				if (args.length == 0) {
 					throw Errors.argument(1, "value");
 				}
-				if (DynamicOps.isTrue(args[0])) {
+				if (DynamicOps.toBool(args[0])) {
 					return args;
 				} else {
 					String msg = args.length >= 2 ? StandardLibrary.toString(args[1]) : "Assertion failed!";

@@ -65,11 +65,8 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 
 	@Override
 	public ResultBuffer visitNot(ExprNode value) throws CompilationFailure {
-		if (value.typeInfo().isNumeric()) {
-			return Line.of("Boolean.FALSE");
-		}
 		var valueExpr = value.accept(this);
-		return Line.join("((Object)(", valueExpr, ") == null || (Object)(", valueExpr, ") == Boolean.FALSE)");
+		return Line.join("!(", valueExpr, ")");
 	}
 
 	@Override
@@ -80,9 +77,9 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 		var firstExpr = first.accept(this);
 		var secondExpr = second.accept(this);
 		String commonType = JavaUtils.typeName(first.typeInfo().and(second.typeInfo()));
-		return Line.join("((Object)(", firstExpr, ") == null || (Object)(", firstExpr, ") == Boolean.FALSE ",
-				"? (", commonType, ")(", firstExpr, ") ",
-				": (", commonType, ")(", secondExpr, "))");
+		return Line.join("(toBool(", firstExpr, ") ",
+				"? (", commonType, ")(", secondExpr, ") ",
+				": (", commonType, ")(", firstExpr, "))");
 	}
 
 	@Override
@@ -93,9 +90,9 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 		var firstExpr = first.accept(this);
 		var secondExpr = second.accept(this);
 		String commonType = JavaUtils.typeName(first.typeInfo().and(second.typeInfo()));
-		return Line.join("((Object)(", firstExpr, ") == null || (Object)(", firstExpr, ") == Boolean.FALSE ",
-				"? (", commonType, ")(", secondExpr, ") ",
-				": (", commonType, ")(", firstExpr, "))");
+		return Line.join("(toBool(", firstExpr, ") ",
+				"? (", commonType, ")(", firstExpr, ") ",
+				": (", commonType, ")(", secondExpr, "))");
 	}
 
 	@Override
@@ -219,6 +216,8 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				return compileTableWrite(x.getObject(), ((ExprList) args).getLeading(0), ((ExprList) args).getLeading(1));
 			case TO_NUMBER:
 				return compileToNumber(x.getObject());
+			case TO_BOOLEAN:
+				return compileToBoolean(x.getObject());
 			default:
 				var operator = LuaOperator.valueOf(x.getMethod().name());
 				var first = x.getObject();
@@ -246,6 +245,10 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 
 	private ResultBuffer compileToNumber(ExprNode value) throws CompilationFailure {
 		return Line.join("toNum(", value.accept(this), ")");
+	}
+
+	private ResultBuffer compileToBoolean(ExprNode value) throws CompilationFailure {
+		return Line.join("toBool(", value.accept(this), ")");
 	}
 
 	private ResultBuffer compileBinaryOperatorInvocation(LuaOperator op, ExprNode a, ExprNode b) throws CompilationFailure {

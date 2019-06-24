@@ -27,6 +27,7 @@ public enum InvocationMethod {
 	SHR,
 	SUB,
 	TO_NUMBER,
+	TO_BOOLEAN,
 	UNM;
 
 	private final ReturnCount returnCount;
@@ -51,6 +52,8 @@ public enum InvocationMethod {
 				return StaticType.OBJECT;
 			case TO_NUMBER:
 				return StaticType.NUMBER;
+			case TO_BOOLEAN:
+				return StaticType.BOOLEAN;
 			default:
 				var luaOp = LuaOperator.valueOf(name());
 				if (luaOp.arity() == 2) {
