@@ -140,9 +140,9 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 	}
 
 	@Override
-	public ResultBuffer visitFunctionLiteral(FunctionLiteral t) throws CompilationFailure {
+	public ResultBuffer visitFunctionLiteral(FunctionLiteral f) throws CompilationFailure {
 		LineList buffer = new LineList();
-		var params = t.parameters().list();
+		var params = f.parameters().list();
 		var argsName = "args" + UniqueNames.next();
 		String functionCreationSiteName = "function_factory_" + UniqueNames.next();
 		statementVisitor.addConstant(
@@ -157,7 +157,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				int offset = params.size() - 1;
 				buffer.addLine("\tfinal Object[] ", varargName, " = sublist(", argsName, ", ", offset, ");");
 			} else {
-				var param = t.body().locals().get(p);
+				var param = f.body().locals().get(p);
 				Objects.requireNonNull(param);
 				boolean isUpValue = param.getMode() == VariableMode.UPVALUE;
 				var paramTypeName = (isUpValue && !param.isFinal()) ? "UpValue" : "Object";
@@ -165,11 +165,11 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				buffer.addLine(finalPrefix, paramTypeName, " ", LOCAL_VARIABLE_PREFIX, p, " = get(", argsName, ", ", params.indexOf(p), ");");
 			}
 		}
-		if (!t.parameters().hasVarargs()) {
+		if (!f.parameters().hasVarargs()) {
 			nestedData.pushMissingVarargName();
 		}
 
-		buffer.addAllChildren(statementVisitor.visitAll(t.body().steps()));
+		buffer.addAllChildren(statementVisitor.visitAll(f.body().steps()));
 		buffer.addLine("} return EMPTY; }}");
 		nestedData.popLastContextName();
 		nestedData.popLastVarargName();
@@ -177,8 +177,8 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 	}
 
 	@Override
-	public ResultBuffer visitRegister(Register r) {
-		return Line.of(r.name());
+	public ResultBuffer visitRegister(Register register) {
+		return Line.of(register.name());
 	}
 
 	@Override

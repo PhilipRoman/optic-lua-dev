@@ -21,9 +21,9 @@ public interface ExpressionVisitor<T, X extends Throwable> {
 
 	T visitTableConstructor(TableLiteral t) throws X;
 
-	T visitFunctionLiteral(ExprNode.FunctionLiteral t) throws X;
+	T visitFunctionLiteral(ExprNode.FunctionLiteral f) throws X;
 
-	T visitRegister(Register r) throws X;
+	T visitRegister(Register register) throws X;
 
 	T visitArrayRegister(ArrayRegister register) throws X;
 

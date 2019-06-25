@@ -182,6 +182,14 @@ public interface ListNode extends Node {
 		int expressionCount() {
 			return nodes.size() + (trailing.isPresent() ? 1 : 0);
 		}
+
+		@Override
+		public String toString() {
+			var joiner = new StringJoiner(", ");
+			nodes.forEach(node -> joiner.add(node.toString()));
+			trailing.ifPresent(node -> joiner.add(node.toString()));
+			return joiner.toString();
+		}
 	}
 
 	class Invocation implements ListNode {
@@ -226,6 +234,26 @@ public interface ListNode extends Node {
 		@Override
 		public boolean isVararg() {
 			return method.getReturnCount() == ReturnCount.ANY;
+		}
+
+		@Override
+		public String toString() {
+			switch (method) {
+				case INDEX:
+					return object + "[" + ((ExprList) arguments).getLeading(0) + "]";
+				case CALL:
+					return object + "(" + arguments + ")";
+				case UNM:
+					return "-" + object;
+				case BNOT:
+					return "~" + object;
+				case TO_BOOLEAN:
+					return "bool(" + object + ")";
+				case TO_NUMBER:
+					return "number(" + object + ")";
+				default:
+					return getMethod().toString().toLowerCase() + "(" + object + ", " + ((ExprList) arguments).getLeading(0) + ")";
+			}
 		}
 	}
 }

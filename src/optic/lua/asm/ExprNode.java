@@ -2,7 +2,7 @@ package optic.lua.asm;
 
 import optic.lua.GlobalStats;
 import optic.lua.optimization.StaticType;
-import optic.lua.util.Numbers;
+import optic.lua.util.*;
 import org.codehaus.janino.InternalCompilerException;
 
 import java.util.*;
@@ -167,11 +167,6 @@ public interface ExprNode extends ListNode {
 		return monoInvocation(a, InvocationMethod.TO_BOOLEAN, ListNode.exprList());
 	}
 
-	private static boolean alwaysTrue(ExprNode node) {
-		StaticType type = node.typeInfo();
-		return type != StaticType.OBJECT && type != StaticType.BOOLEAN;
-	}
-
 	@Override
 	default StaticType childTypeInfo(int i) {
 		return i == 0 ? typeInfo() : StaticType.OBJECT;
@@ -221,6 +216,13 @@ public interface ExprNode extends ListNode {
 		public StaticType typeInfo() {
 			return source.childTypeInfo(n);
 		}
+
+		@Override
+		public String toString() {
+			if (n == 0)
+				return source.toString();
+			return "select " + n + " " + source.toString();
+		}
 	}
 
 	final class NumberConstant extends Constant<Double> {
@@ -239,6 +241,14 @@ public interface ExprNode extends ListNode {
 		public StaticType typeInfo() {
 			return Numbers.isInt(value) ? StaticType.INTEGER : StaticType.NUMBER;
 		}
+
+		@Override
+		public String toString() {
+			if (value.longValue() == value) {
+				return Long.toString(value.longValue());
+			}
+			return Double.toString(value);
+		}
 	}
 
 	final class StringConstant extends Constant<String> {
@@ -251,6 +261,11 @@ public interface ExprNode extends ListNode {
 		@Override
 		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
 			return visitor.visitStringConstant(value);
+		}
+
+		@Override
+		public String toString() {
+			return '"' + StringUtils.escape(value) + '"';
 		}
 	}
 
@@ -271,6 +286,11 @@ public interface ExprNode extends ListNode {
 		public StaticType typeInfo() {
 			return StaticType.BOOLEAN;
 		}
+
+		@Override
+		public String toString() {
+			return value ? "true" : "false";
+		}
 	}
 
 	final class NilConstant extends Constant<Void> {
@@ -283,6 +303,11 @@ public interface ExprNode extends ListNode {
 		@Override
 		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
 			return visitor.visitNilConstant();
+		}
+
+		@Override
+		public String toString() {
+			return "nil";
 		}
 	}
 
@@ -301,6 +326,11 @@ public interface ExprNode extends ListNode {
 
 		public LinkedHashMap<ExprNode, ListNode> entries() {
 			return entries;
+		}
+
+		@Override
+		public String toString() {
+			return "{...}";
 		}
 	}
 
@@ -324,6 +354,11 @@ public interface ExprNode extends ListNode {
 
 		public ParameterList parameters() {
 			return parameters;
+		}
+
+		@Override
+		public String toString() {
+			return "function(" + String.join(", ", parameters.list()) + ") ... end";
 		}
 	}
 
@@ -357,6 +392,11 @@ public interface ExprNode extends ListNode {
 		@Override
 		public boolean isPure() {
 			return variable.getMode() != VariableMode.GLOBAL;
+		}
+
+		@Override
+		public String toString() {
+			return "<" + variable.getMode().toString().toLowerCase() + "> " + variable.getName();
 		}
 	}
 
@@ -420,7 +460,7 @@ public interface ExprNode extends ListNode {
 
 		@Override
 		public String toString() {
-			return "Not(" + value + ")";
+			return "not (" + value + ")";
 		}
 	}
 
@@ -452,7 +492,7 @@ public interface ExprNode extends ListNode {
 
 		@Override
 		public String toString() {
-			return "(" + first + (and ? " And " : " Or ") + second + ")";
+			return "(" + first + (and ? " and " : " or ") + second + ")";
 		}
 
 		@Override

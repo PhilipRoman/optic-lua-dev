@@ -3,6 +3,7 @@ package optic.lua.io;
 import optic.lua.asm.*;
 import optic.lua.codegen.java.JavaCodeOutput;
 import optic.lua.messages.*;
+import optic.lua.optimization.ConstantFolder;
 import optic.lua.util.Trees;
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.tree.CommonTree;
@@ -30,6 +31,7 @@ final class LuaToJavaCompiler {
 			dumpAstRecursive(ast, 0);
 		}
 		AsmBlock asm = MutableFlattener.flatten(ast, options);
+		asm = new ConstantFolder().fold(asm);
 		return new JavaCodeOutput(options).generate(className, asm);
 	}
 }
