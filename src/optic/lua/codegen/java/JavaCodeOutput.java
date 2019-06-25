@@ -134,7 +134,8 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 			buffer.addLine("final ", JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else {
 			// upvalue
-			buffer.addLine("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = new UpValue();");
+			var upvalueClass = JavaUtils.typeName(variable);
+			buffer.addLine("final ", upvalueClass, " ", LOCAL_VARIABLE_PREFIX, name, " = new ", upvalueClass, "();");
 		}
 		return buffer;
 	}

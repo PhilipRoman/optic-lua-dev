@@ -45,7 +45,9 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 
 	@Override
 	public ResultBuffer visitNumberConstant(double n) {
-		return Line.of(Numbers.isInt(n) ? Long.toString((long) n) : NUMBER_FORMAT.format(n) + "d");
+		return Line.of(Numbers.isInt(n)
+				? ((long) n) + "L"
+				: NUMBER_FORMAT.format(n) + "d");
 	}
 
 	@Override
@@ -115,6 +117,8 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				.filter(e -> e.getValue().isVararg())
 				.findAny()
 				.orElse(null);
+		if (vararg != null && vararg.getKey().typeInfo() != StaticType.INTEGER)
+			throw new InternalCompilerError("Vararg key must be an integer");
 		// vararg is treated separately, remove it from the map
 		if (vararg != null)
 			copy.remove(vararg.getKey());
@@ -124,18 +128,12 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 			joiner.add((ExprNode) e.getValue());
 		}
 		ResultBuffer list = commaList(joiner);
-		String creationSiteName = "table_factory_" + UniqueNames.next();
-		statementVisitor.addConstant(
-				"TableFactory",
-				creationSiteName,
-				nestedData.rootContextName() + ".tableFactory(" + idCounter.incrementAndGet() + ")"
-		);
 		if (vararg != null) {
 			var offset = vararg.getKey().accept(this);
 			var varargValue = vararg.getValue().accept(this);
-			return Line.join(creationSiteName, ".createWithVararg(", offset, ", ", varargValue, (copy.isEmpty() ? "" : ", "), list, ")");
+			return Line.join("varargTable(", offset, ", ", varargValue, (copy.isEmpty() ? "" : ", "), list, ")");
 		} else {
-			return Line.join(creationSiteName, ".create(", list, ")");
+			return Line.join("table(", list, ")");
 		}
 	}
 
@@ -283,25 +281,33 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 	}
 
 	private ResultBuffer compileTableWrite(ExprNode table, ExprNode key, ExprNode value) throws CompilationFailure {
+		if (table.typeInfo() == StaticType.TABLE)
+			return Line.join(table.accept(this), ".set(", key.accept(this), ", (Object) (", value.accept(this), "))");
 		return Line.join("setIndex(", table.accept(this), ", ", key.accept(this), ", ", value.accept(this), ")");
 	}
 
 	private ResultBuffer compileTableRead(ExprNode table, ExprNode key) throws CompilationFailure {
+		if (table.typeInfo() == StaticType.TABLE)
+			return Line.join(table.accept(this), ".get(", key.accept(this), ")");
 		return Line.join("index(", table.accept(this), ", ", key.accept(this), ")");
 	}
 
 	private ResultBuffer compileFunctionCall(ExprNode function, ListNode arguments) throws CompilationFailure {
+		var contextName = nestedData.contextName();
+		if (function.typeInfo() == StaticType.FUNCTION) {
+			return Line.join(function.accept(this), ".call(", contextName, ", ", arguments.accept(this), ")");
+		}
 		String callSiteName = "call_site_" + UniqueNames.next();
 		statementVisitor.addConstant(
 				"CallSite",
 				callSiteName,
 				nestedData.rootContextName() + ".callSite(" + idCounter.incrementAndGet() + ")"
 		);
-		var contextName = nestedData.contextName();
 		return Line.join(callSiteName, ".invoke(", contextName, ", ", function.accept(this), ",", arguments.accept(this), ")");
+
 	}
 
-	ResultBuffer commaList(List<ExprNode> args) throws CompilationFailure {
+	private ResultBuffer commaList(List<ExprNode> args) throws CompilationFailure {
 		if (args.isEmpty()) {
 			return Line.of("");
 		}

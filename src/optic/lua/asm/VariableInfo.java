@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Supplier;
 
 import static optic.lua.asm.VariableMode.*;
+import static optic.lua.optimization.StaticType.*;
 
 /**
  * A mutable container of information associated with a single variable.
@@ -17,6 +18,7 @@ public class VariableInfo {
 	private boolean initialized = false;
 	private boolean isEnv = false;
 	private CombinedCommonType type = new CombinedCommonType();
+	private ExprNode lastAssignedExpression = ExprNode.nil();
 
 	VariableInfo(String name) {
 		this.name = name;
@@ -83,15 +85,20 @@ public class VariableInfo {
 	}
 
 	public StaticType typeInfo() {
-		return isUpvalue ? StaticType.OBJECT : type.get();
+		var t = type.get();
+		if (!isUpvalue)
+			return t;
+		if (t == FUNCTION || t == INTEGER || t == NUMBER || t == OBJECT || t == TABLE)
+			return t;
+		return OBJECT; // not all types have respective up-value specializations
 	}
 
 	void enableObjects() {
-		update(StaticType.OBJECT);
+		update(OBJECT);
 	}
 
 	void enableNumbers() {
-		update(StaticType.NUMBER);
+		update(NUMBER);
 	}
 
 	void update(StaticType other) {
@@ -100,6 +107,14 @@ public class VariableInfo {
 
 	void addTypeDependency(Supplier<StaticType> source) {
 		type.add(source);
+	}
+
+	ExprNode getLastAssignedExpression() {
+		return lastAssignedExpression;
+	}
+
+	void setLastAssignedExpression(ExprNode expr) {
+		this.lastAssignedExpression = expr;
 	}
 
 	public boolean isEnv() {
@@ -138,7 +153,7 @@ public class VariableInfo {
 
 		@Override
 		public StaticType typeInfo() {
-			return StaticType.OBJECT;
+			return OBJECT;
 		}
 
 		@Override

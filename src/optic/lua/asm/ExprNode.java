@@ -267,6 +267,11 @@ public interface ExprNode extends ListNode {
 		public String toString() {
 			return '"' + StringUtils.escape(value) + '"';
 		}
+
+		@Override
+		public StaticType typeInfo() {
+			return StaticType.STRING;
+		}
 	}
 
 	final class BooleanConstant extends Constant<Boolean> {
@@ -332,6 +337,11 @@ public interface ExprNode extends ListNode {
 		public String toString() {
 			return "{...}";
 		}
+
+		@Override
+		public StaticType typeInfo() {
+			return StaticType.TABLE;
+		}
 	}
 
 	final class FunctionLiteral implements ExprNode {
@@ -359,6 +369,11 @@ public interface ExprNode extends ListNode {
 		@Override
 		public String toString() {
 			return "function(" + String.join(", ", parameters.list()) + ") ... end";
+		}
+
+		@Override
+		public StaticType typeInfo() {
+			return StaticType.FUNCTION;
 		}
 	}
 
@@ -502,6 +517,7 @@ public interface ExprNode extends ListNode {
 
 		@Override
 		public StaticType typeInfo() {
+			// TODO
 			if (!and && first.typeInfo().isNumeric()) {
 				return first.typeInfo();
 			}

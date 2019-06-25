@@ -82,6 +82,7 @@ final class AssignmentBuilder {
 			}
 			info.addTypeDependency(right::typeInfo);
 			info.markAsWritten();
+			info.setLastAssignedExpression(right);
 			return VoidNode.write(info, right);
 		}
 		throw new AssertionError();

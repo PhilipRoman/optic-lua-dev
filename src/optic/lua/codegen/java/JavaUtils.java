@@ -22,11 +22,22 @@ final class JavaUtils {
 			TABLE, "LuaTable"
 	));
 
+	private static IdentityHashMap<StaticType, String> upvalueTypeNames = new IdentityHashMap<>(Map.of(
+			OBJECT, "UpValue",
+			NUMBER, "UpValue.OfNum",
+			INTEGER, "UpValue.OfInt",
+			FUNCTION, "UpValue.OfFunction",
+			TABLE, "UpValue.OfTable"
+	));
+
 	static String typeName(Register r) {
 		return typeName(r.typeInfo());
 	}
 
 	static String typeName(VariableInfo i) {
+		if (i.getMode() == VariableMode.UPVALUE && !i.isFinal()) {
+			return upvalueTypeNames.getOrDefault(i.typeInfo(), "UpValue");
+		}
 		return typeName(i.typeInfo());
 	}
 

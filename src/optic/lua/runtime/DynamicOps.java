@@ -331,7 +331,27 @@ public final class DynamicOps {
 	}
 
 	@RuntimeApi
-	public static LuaTable varargTable(Object key, Object[] trailing, Object... entries) {
+	public static LuaTable table() {
+		return new LuaTable();
+	}
+
+	@RuntimeApi
+	public static LuaTable table(Object k1, Object v1) {
+		LuaTable table = new LuaTable();
+		table.set(k1, v1);
+		return table;
+	}
+
+	@RuntimeApi
+	public static LuaTable table(Object k1, Object v1, Object k2, Object v2) {
+		LuaTable table = new LuaTable();
+		table.set(k1, v1);
+		table.set(k2, v2);
+		return table;
+	}
+
+	@RuntimeApi
+	public static LuaTable varargTable(long key, Object[] trailing, Object... entries) {
 		LuaTable table = new LuaTable();
 		for (int i = 0; i < entries.length; i += 2) {
 			table.set(entries[i], entries[i + 1]);
@@ -352,7 +372,41 @@ public final class DynamicOps {
 	}
 
 	@RuntimeApi
+	public static Object index(Object obj, String key) {
+		if (obj instanceof LuaTable) {
+			return ((LuaTable) obj).get(key);
+		}
+		throw Errors.attemptTo("index", obj);
+	}
+
+	@RuntimeApi
+	public static Object index(Object obj, long key) {
+		if (obj instanceof LuaTable) {
+			return ((LuaTable) obj).get(key);
+		}
+		throw Errors.attemptTo("index", obj);
+	}
+
+	@RuntimeApi
 	public static void setIndex(Object obj, Object key, Object value) {
+		if (obj instanceof LuaTable) {
+			((LuaTable) obj).set(key, value);
+		} else {
+			throw Errors.attemptTo("index", obj);
+		}
+	}
+
+	@RuntimeApi
+	public static void setIndex(Object obj, String key, Object value) {
+		if (obj instanceof LuaTable) {
+			((LuaTable) obj).set(key, value);
+		} else {
+			throw Errors.attemptTo("index", obj);
+		}
+	}
+
+	@RuntimeApi
+	public static void setIndex(Object obj, long key, Object value) {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
 		} else {

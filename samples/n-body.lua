@@ -116,7 +116,7 @@ local function offsetMomentum(b, nbody)
 end
 
 local N = 500000
-local nbody = 5 --[[#bodies]]
+local nbody = #bodies
 
 offsetMomentum(bodies, nbody)
 print(energy(bodies, nbody))
