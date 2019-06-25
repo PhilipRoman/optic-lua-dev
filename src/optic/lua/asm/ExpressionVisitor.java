@@ -4,6 +4,12 @@ import optic.lua.asm.ExprNode.TableLiteral;
 
 import java.util.*;
 
+/**
+ * A function that may be applied to an expression.
+ *
+ * @param <T> The type of object returned by this function
+ * @param <X> The type of exception thrown by this function
+ */
 public interface ExpressionVisitor<T, X extends Throwable> {
 	T visitNumberConstant(double n) throws X;
 

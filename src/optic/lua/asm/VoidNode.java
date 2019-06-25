@@ -3,11 +3,68 @@ package optic.lua.asm;
 import java.util.*;
 
 /**
- * Obtain instances of this interface using {@link StepFactory} methods.
+ * A node which produces zero values (a statement).
+ * Obtain instances of this interface using factory methods.
  */
 public interface VoidNode extends Node {
-	default List<VoidNode> children() {
-		return List.of();
+	static VoidNode tableWrite(LValue.TableField target, ExprNode value) {
+		return discard(ListNode.invocation(target.table(), InvocationMethod.SET_INDEX, ListNode.exprList(target.key(), value)));
+	}
+
+	static VoidNode declareLocal(VariableInfo info) {
+		return new Declare(info);
+	}
+
+	static VoidNode forRange(VariableInfo counter, ExprNode from, ExprNode to, AsmBlock block) {
+		return new ForRangeLoop(counter, from, to, ExprNode.number(1), block);
+	}
+
+	static VoidNode forRange(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock block) {
+		return new ForRangeLoop(counter, from, to, step, block);
+	}
+
+	static VoidNode doBlock(AsmBlock block) {
+		return new Block(block);
+	}
+
+	static VoidNode returnFromFunction(ListNode values) {
+		return new Return(values);
+	}
+
+	static VoidNode assign(Register result, ExprNode value) {
+		return new Assign(result, value);
+	}
+
+	static VoidNode assignArray(ArrayRegister result, ListNode value) {
+		return new AssignArray(result, value);
+	}
+
+	static VoidNode write(VariableInfo target, ExprNode value) {
+		return new Write(target, value);
+	}
+
+	static VoidNode discard(ListNode invocation) {
+		return new Void(invocation);
+	}
+
+	static VoidNode ifThenChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
+		return new IfElseChain(clauses);
+	}
+
+	static VoidNode breakIf(ExprNode expression, boolean isTrue) {
+		return new BreakIf(expression, isTrue);
+	}
+
+	static VoidNode loop(AsmBlock body) {
+		return new Loop(body);
+	}
+
+	static VoidNode forInLoop(List<VariableInfo> variables, ExprNode iterator, AsmBlock body) {
+		return new ForEachLoop(variables, iterator, body);
+	}
+
+	static VoidNode lineNumber(int number) {
+		return new LineNumber(number);
 	}
 
 	<T, X extends Throwable> T accept(StatementVisitor<T, X> visitor) throws X;
@@ -16,7 +73,7 @@ public interface VoidNode extends Node {
 		private final Register result;
 		private final ExprNode value;
 
-		Assign(Register result, ExprNode value) {
+		private Assign(Register result, ExprNode value) {
 			this.result = result;
 			this.value = value;
 			if (!value.typeInfo().subtypeOf(result.typeInfo())) {
@@ -33,7 +90,7 @@ public interface VoidNode extends Node {
 	final class Block implements VoidNode {
 		private final AsmBlock steps;
 
-		Block(AsmBlock steps) {
+		private Block(AsmBlock steps) {
 			this.steps = steps;
 		}
 
@@ -47,7 +104,7 @@ public interface VoidNode extends Node {
 		private final ExprNode condition;
 		private final boolean isTrue;
 
-		BreakIf(ExprNode condition, boolean isTrue) {
+		private BreakIf(ExprNode condition, boolean isTrue) {
 			this.condition = condition;
 			this.isTrue = isTrue;
 		}
@@ -89,7 +146,7 @@ public interface VoidNode extends Node {
 		private final ExprNode iterator;
 		private final AsmBlock body;
 
-		ForEachLoop(List<VariableInfo> variables, ExprNode iterator, AsmBlock body) {
+		private ForEachLoop(List<VariableInfo> variables, ExprNode iterator, AsmBlock body) {
 			this.variables = variables;
 			this.iterator = iterator;
 			this.body = body;
@@ -108,7 +165,7 @@ public interface VoidNode extends Node {
 		private final ExprNode step;
 		private final AsmBlock block;
 
-		ForRangeLoop(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock block) {
+		private ForRangeLoop(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock block) {
 			this.counter = counter;
 			this.from = from;
 			this.to = to;
@@ -125,7 +182,7 @@ public interface VoidNode extends Node {
 	final class IfElseChain implements VoidNode {
 		private final LinkedHashMap<FlatExpr, AsmBlock> clauses;
 
-		IfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
+		private IfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) {
 			this.clauses = clauses;
 		}
 
@@ -138,7 +195,7 @@ public interface VoidNode extends Node {
 	final class Loop implements VoidNode {
 		private final AsmBlock body;
 
-		Loop(AsmBlock body) {
+		private Loop(AsmBlock body) {
 			this.body = body;
 		}
 
@@ -151,7 +208,7 @@ public interface VoidNode extends Node {
 	final class Return implements VoidNode {
 		private final ListNode values;
 
-		Return(ListNode values) {
+		private Return(ListNode values) {
 			this.values = values;
 		}
 
@@ -164,7 +221,7 @@ public interface VoidNode extends Node {
 	final class Void implements VoidNode {
 		private final ListNode value;
 
-		Void(ListNode value) {
+		private Void(ListNode value) {
 			this.value = value;
 		}
 
@@ -178,7 +235,7 @@ public interface VoidNode extends Node {
 		final ExprNode source;
 		private final VariableInfo target;
 
-		Write(VariableInfo target, ExprNode source) {
+		private Write(VariableInfo target, ExprNode source) {
 			this.target = target;
 			this.source = source;
 		}
@@ -192,7 +249,7 @@ public interface VoidNode extends Node {
 	final class LineNumber implements VoidNode {
 		private final int number;
 
-		public LineNumber(int number) {
+		private LineNumber(int number) {
 			if (number <= 0)
 				throw new IllegalArgumentException("Line number must be greater than 0");
 			this.number = number;
@@ -208,7 +265,7 @@ public interface VoidNode extends Node {
 		private final ArrayRegister result;
 		private final ListNode value;
 
-		public AssignArray(ArrayRegister result, ListNode value) {
+		private AssignArray(ArrayRegister result, ListNode value) {
 			this.result = result;
 			this.value = value;
 		}

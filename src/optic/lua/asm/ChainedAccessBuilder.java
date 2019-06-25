@@ -10,7 +10,7 @@ import java.util.*;
 import static nl.bigo.luaparser.Lua53Lexer.*;
 import static optic.lua.asm.ExprNode.*;
 import static optic.lua.asm.ListNode.exprList;
-import static optic.lua.asm.StepFactory.assign;
+import static optic.lua.asm.VoidNode.assign;
 import static optic.lua.util.Trees.childrenOf;
 
 /**
@@ -88,7 +88,7 @@ final class ChainedAccessBuilder {
 			args.add(self);
 		for (var child : childrenOf(tree))
 			args.add(flattener.flattenExpression((CommonTree) child).applyTo(steps));
-		current = invocation(firstOnly(current), InvocationMethod.CALL, exprList(args));
+		current = ListNode.invocation(firstOnly(current), InvocationMethod.CALL, exprList(args));
 		lastKey = null;
 		lastOp = colon ? Op.COL_CALL : Op.CALL;
 	}
@@ -99,7 +99,7 @@ final class ChainedAccessBuilder {
 	List<VoidNode> buildStatement() {
 		if (lastOp == Op.CALL || lastOp == Op.COL_CALL) {
 			var list = new ArrayList<>(steps);
-			list.add(StepFactory.discard(current));
+			list.add(VoidNode.discard(current));
 			return list;
 		}
 		return Collections.unmodifiableList(steps);

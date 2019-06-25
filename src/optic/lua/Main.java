@@ -68,8 +68,7 @@ public final class Main {
 			return; // for control flow analysis tools
 		}
 
-		log.info("Created {} nodes", GlobalStats.nodesCreated);
-		log.info("Reused {} nodes", GlobalStats.nodesReused);
+		log.debug("Created {} nodes, reused {}", GlobalStats.nodesCreated, GlobalStats.nodesReused);
 
 		if (opticLua.interactiveShell) {
 			// enter interactive session after compiling the files
@@ -95,7 +94,7 @@ public final class Main {
 			long start = System.nanoTime();
 			var luaContext = LuaContext.create(bundle);
 			// runtime stats can only be shown if the Lua context uses a special call site factory
-			if(options.get(StandardFlags.SHOW_RT_STATS)) {
+			if (options.get(StandardFlags.SHOW_RT_STATS)) {
 				luaContext.callSiteFactory = new InstrumentedCallSiteFactory();
 			}
 			new Runner(options).run(method, luaContext, List.of());

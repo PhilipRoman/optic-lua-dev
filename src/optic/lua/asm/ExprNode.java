@@ -8,7 +8,7 @@ import org.codehaus.janino.InternalCompilerException;
 import java.util.*;
 
 /**
- * A read-only expression. May return more than one value (see {@link #isVararg()}). Care must be taken not to
+ * A read-only expression. May return only one value ({@link #isVararg()} must return false). Care must be taken not to
  * evaluate the same expression more than once unless it is known to be side-effect free (as indicated by
  * {@link #isPure()}).
  * <br>
@@ -99,27 +99,17 @@ public interface ExprNode extends ListNode {
 
 	/**
 	 * Returns a node which references the result of applying an {@link InvocationMethod} with arguments to a value.
-	 */
-	static Invocation invocation(ExprNode obj, InvocationMethod method, ListNode arguments) {
-		return new Invocation(obj, method, arguments);
-	}
-
-
-	/**
-	 * Returns a node which references the result of applying an {@link InvocationMethod} with arguments to a value.
+	 * The invocation must only yield a single value. Using this function to create multi-valued
+	 * invocations is undefined behaviour.
 	 */
 	static MonoInvocation monoInvocation(ExprNode obj, InvocationMethod method, ListNode arguments) {
 		return new MonoInvocation(obj, method, arguments);
 	}
 
-
 	/**
 	 * Returns a node which describes the result of logical "or" of two expressions.
 	 */
 	static ExprNode logicalOr(ExprNode a, ExprNode b) {
-		if (alwaysTrue(a)) {
-			return a;
-		}
 		return new Logical(false, a, b);
 	}
 
@@ -127,9 +117,6 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which describes the result of logical "and" of two expressions.
 	 */
 	static ExprNode logicalAnd(ExprNode a, ExprNode b) {
-		if (alwaysTrue(a)) {
-			return b;
-		}
 		return new Logical(true, a, b);
 	}
 
@@ -137,9 +124,6 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which describes the result of logical "not" of an expression.
 	 */
 	static ExprNode logicalNot(ExprNode x) {
-		if (alwaysTrue(x)) {
-			return bool(false);
-		}
 		if (x.typeInfo() != StaticType.BOOLEAN)
 			throw new IllegalArgumentException("expected boolean, got " + x.typeInfo().toString());
 		return new Not(x);
@@ -159,10 +143,16 @@ public interface ExprNode extends ListNode {
 		return x.isVararg() ? new Selected(x, n) : ExprNode.nil();
 	}
 
+	/**
+	 * Returns a node which references only the value in given table that was associated with the given key
+	 */
 	static ExprNode tableIndex(ExprNode table, ExprNode key) {
-		return ExprNode.monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key));
+		return monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key));
 	}
 
+	/**
+	 * Returns a node which describes the original value, coerced to number
+	 */
 	static ExprNode toNumber(ExprNode a) {
 		if (a.typeInfo().isNumeric()) {
 			return a;
@@ -170,13 +160,10 @@ public interface ExprNode extends ListNode {
 		return monoInvocation(a, InvocationMethod.TO_NUMBER, ListNode.exprList());
 	}
 
+	/**
+	 * Returns a node which describes the original value, coerced to boolean
+	 */
 	static ExprNode toBoolean(ExprNode a) {
-		if (a.typeInfo() == StaticType.BOOLEAN) {
-			return a;
-		}
-		if (alwaysTrue(a)) {
-			return bool(true);
-		}
 		return monoInvocation(a, InvocationMethod.TO_BOOLEAN, ListNode.exprList());
 	}
 
@@ -190,17 +177,11 @@ public interface ExprNode extends ListNode {
 		return i == 0 ? typeInfo() : StaticType.OBJECT;
 	}
 
-	/**
-	 * Returns true if this expression may return multiple (or zero) values.
-	 */
 	@Override
 	default boolean isVararg() {
 		return false;
 	}
 
-	/**
-	 * Returns true if this expression is guaranteed to have no side effects.
-	 */
 	@Override
 	default boolean isPure() {
 		return false;

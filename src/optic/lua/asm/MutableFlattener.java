@@ -63,7 +63,7 @@ public final class MutableFlattener implements VariableResolver {
 		for (var stat : statements) {
 			int lineNumber = ((Tree) stat).getLine();
 			if (lineNumber > 0) {
-				f.steps.add(StepFactory.lineNumber(lineNumber));
+				f.steps.add(VoidNode.lineNumber(lineNumber));
 			}
 			try {
 				f.flattenStatement((Tree) stat);
@@ -184,7 +184,7 @@ public final class MutableFlattener implements VariableResolver {
 					CommonTree block = (CommonTree) stepOrBody.getChild(0);
 					AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
 					VariableInfo counter = body.locals().get(varName);
-					steps.add(StepFactory.forRange(counter, from, to, body));
+					steps.add(VoidNode.forRange(counter, from, to, body));
 				} else {
 					// for loop with step "C":
 					// for i = A, B, C do ... end
@@ -192,7 +192,7 @@ public final class MutableFlattener implements VariableResolver {
 					CommonTree block = (CommonTree) t.getChild(4).getChild(0);
 					AsmBlock body = flattenForRangeBody(block, from.typeInfo().and(step.typeInfo()), varName);
 					VariableInfo counter = body.locals().get(varName);
-					steps.add(StepFactory.forRange(counter, from, to, step, body));
+					steps.add(VoidNode.forRange(counter, from, to, step, body));
 				}
 				return;
 			}
@@ -208,7 +208,7 @@ public final class MutableFlattener implements VariableResolver {
 				}
 				var iterator = evaluateOnce(firstOnly(flattenExpression(Trees.expectChild(EXPR_LIST, t, 1).getChild(0))));
 				var body = flattenForInLoopBody((CommonTree) Trees.expectChild(Do, t, 2), variables);
-				steps.add(StepFactory.forInLoop(variables, iterator, body));
+				steps.add(VoidNode.forInLoop(variables, iterator, body));
 				return;
 			}
 			case While: {
@@ -220,10 +220,10 @@ public final class MutableFlattener implements VariableResolver {
 				var body = flattenLoopBody((CommonTree) chunk);
 				var stepList = new ArrayList<VoidNode>(body.steps().size() + 8);
 				stepList.addAll(condition.block());
-				stepList.add(StepFactory.breakIf(firstOnly(condition.value()), false));
+				stepList.add(VoidNode.breakIf(firstOnly(condition.value()), false));
 				stepList.addAll(body.steps());
 				var processedBody = new AsmBlock(stepList, body.locals());
-				steps.add(StepFactory.loop(processedBody));
+				steps.add(VoidNode.loop(processedBody));
 				return;
 			}
 			case Repeat: {
@@ -235,14 +235,14 @@ public final class MutableFlattener implements VariableResolver {
 				var body = flattenLoopBody((CommonTree) chunk);
 				var stepList = new ArrayList<>(body.steps());
 				stepList.addAll(condition.block());
-				stepList.add(StepFactory.breakIf(firstOnly(condition.value()), true));
+				stepList.add(VoidNode.breakIf(firstOnly(condition.value()), true));
 				var processedBody = new AsmBlock(stepList, body.locals());
-				steps.add(StepFactory.loop(processedBody));
+				steps.add(VoidNode.loop(processedBody));
 				return;
 			}
 			case Do: {
 				CommonTree block = (CommonTree) t;
-				steps.add(StepFactory.doBlock(flattenDoBlock(block)));
+				steps.add(VoidNode.doBlock(flattenDoBlock(block)));
 				return;
 			}
 			case CHUNK: {
@@ -257,7 +257,7 @@ public final class MutableFlattener implements VariableResolver {
 					ListNode value = flattenExpression(tree);
 					values.add(value);
 				}
-				steps.add(StepFactory.returnFromFunction(ListNode.exprList(values)));
+				steps.add(VoidNode.returnFromFunction(ListNode.exprList(values)));
 				return;
 			}
 			case If: {
@@ -265,7 +265,7 @@ public final class MutableFlattener implements VariableResolver {
 				for (var x : Trees.childrenOf(t)) {
 					builder.add((Tree) x);
 				}
-				steps.add(StepFactory.ifThenChain(builder.build()));
+				steps.add(VoidNode.ifThenChain(builder.build()));
 				return;
 			}
 			default: {
@@ -375,7 +375,7 @@ public final class MutableFlattener implements VariableResolver {
 			return value;
 		}
 		var register = Register.ofType(value::typeInfo);
-		steps.add(StepFactory.assign(register, value));
+		steps.add(VoidNode.assign(register, value));
 		return register;
 	}
 
@@ -447,7 +447,7 @@ public final class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private void declare(VariableInfo variable) {
-		VoidNode step = StepFactory.declareLocal(variable);
+		VoidNode step = VoidNode.declareLocal(variable);
 		steps.add(step);
 	}
 

@@ -3,8 +3,6 @@ package optic.lua.asm;
 import java.util.*;
 
 public interface StatementVisitor<T, X extends Throwable> {
-	T visitComment(String comment) throws X;
-
 	T visitAssignment(Register register, ExprNode value) throws X;
 
 	T visitArrayAssignment(ArrayRegister register, ListNode value) throws X;
@@ -13,6 +11,8 @@ public interface StatementVisitor<T, X extends Throwable> {
 
 	T visitBreakIf(ExprNode condition, boolean isTrue) throws X;
 
+	T visitComment(String comment) throws X;
+
 	T visitDeclaration(VariableInfo variable) throws X;
 
 	T visitForEachLoop(List<VariableInfo> variables, ExprNode iterator, AsmBlock body) throws X;
@@ -20,6 +20,8 @@ public interface StatementVisitor<T, X extends Throwable> {
 	T visitForRangeLoop(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock body) throws X;
 
 	T visitIfElseChain(LinkedHashMap<FlatExpr, AsmBlock> clauses) throws X;
+
+	T visitLineNumber(int number) throws X;
 
 	T visitLoop(AsmBlock body) throws X;
 
@@ -36,6 +38,4 @@ public interface StatementVisitor<T, X extends Throwable> {
 		}
 		return result;
 	}
-
-	T visitLineNumber(int number);
 }

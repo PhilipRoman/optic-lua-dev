@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-import static optic.lua.asm.StepFactory.assignArray;
+import static optic.lua.asm.VoidNode.assignArray;
 
 /**
  * Helper class to compile variable assignments. Create a new builder using {@link #AssignmentBuilder(VariableResolver)},
@@ -73,16 +73,16 @@ final class AssignmentBuilder {
 
 	private VoidNode createWriteStep(LValue left, ExprNode right) {
 		if (left instanceof LValue.TableField) {
-			return StepFactory.tableWrite((LValue.TableField) left, right);
+			return VoidNode.tableWrite((LValue.TableField) left, right);
 		} else if (left instanceof LValue.Name) {
 			var name = ((LValue.Name) left);
 			VariableInfo info = resolver.resolve(name.name());
 			if (info == null) {
-				return StepFactory.write(VariableInfo.global(name.name()), right);
+				return VoidNode.write(VariableInfo.global(name.name()), right);
 			}
 			info.addTypeDependency(right::typeInfo);
 			info.markAsWritten();
-			return StepFactory.write(info, right);
+			return VoidNode.write(info, right);
 		}
 		throw new AssertionError();
 	}
