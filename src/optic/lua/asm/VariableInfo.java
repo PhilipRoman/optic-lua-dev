@@ -17,7 +17,7 @@ public class VariableInfo {
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
 	private boolean isEnv = false;
-	private CombinedCommonType type = new CombinedCommonType();
+	private CombinedType combinedType = new CombinedType();
 	private ExprNode lastAssignedExpression = ExprNode.nil();
 
 	VariableInfo(String name) {
@@ -30,6 +30,7 @@ public class VariableInfo {
 	static VariableInfo createEnv() {
 		var v = new VariableInfo("_ENV");
 		v.markAsUpvalue();
+		v.markAsInitialized();
 		v.isEnv = true;
 		return v;
 	}
@@ -62,6 +63,10 @@ public class VariableInfo {
 		}
 	}
 
+	void markAsInitialized() {
+		initialized = true;
+	}
+
 	public boolean isFinal() {
 		return isFinal;
 	}
@@ -70,7 +75,7 @@ public class VariableInfo {
 		return String.format("%s%s %s %s (%s)",
 				isFinal() ? "final " : "",
 				getMode().name().toLowerCase(),
-				type.get(),
+				typeInfo(),
 				name,
 				Integer.toHexString(hashCode()));
 	}
@@ -85,7 +90,9 @@ public class VariableInfo {
 	}
 
 	public StaticType typeInfo() {
-		var t = type.get();
+		if (!initialized)
+			throw new IllegalStateException(this + " not initialized");
+		var t = combinedType.get();
 		if (!isUpvalue)
 			return t;
 		if (t == FUNCTION || t == INTEGER || t == NUMBER || t == OBJECT || t == TABLE)
@@ -93,20 +100,12 @@ public class VariableInfo {
 		return OBJECT; // not all types have respective up-value specializations
 	}
 
-	void enableObjects() {
-		update(OBJECT);
-	}
-
-	void enableNumbers() {
-		update(NUMBER);
-	}
-
 	void update(StaticType other) {
-		type.add(other);
+		combinedType.add(other);
 	}
 
 	void addTypeDependency(Supplier<StaticType> source) {
-		type.add(source);
+		combinedType.add(source);
 	}
 
 	ExprNode getLastAssignedExpression() {

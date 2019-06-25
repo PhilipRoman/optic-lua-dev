@@ -58,6 +58,7 @@ public final class MutableFlattener implements VariableResolver {
 		int expectedSize = statements.size() * 4 + 10;
 		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, kind.hasLexicalBoundary(), context, kind);
 		for (var local : locals) {
+			local.markAsInitialized();
 			f.locals.put(local.getName(), local);
 		}
 		for (var stat : statements) {
@@ -113,10 +114,7 @@ public final class MutableFlattener implements VariableResolver {
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
 		var infos = new ArrayList<VariableInfo>(params.list().size());
 		for (var param : params.list()) {
-			var info = new VariableInfo(param);
-			info.enableObjects();
-			info.enableNumbers();
-			infos.add(info);
+			infos.add(new VariableInfo(param));
 		}
 		return flatten(tree, options, this, infos, BlockMeaning.FUNCTION_BODY);
 	}

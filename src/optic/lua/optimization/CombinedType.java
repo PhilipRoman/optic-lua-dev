@@ -2,8 +2,8 @@ package optic.lua.optimization;
 
 import optic.lua.util.Combined;
 
-public final class CombinedCommonType extends Combined<StaticType> {
-	public CombinedCommonType() {
+public final class CombinedType extends Combined<StaticType> {
+	public CombinedType() {
 	}
 
 	@Override

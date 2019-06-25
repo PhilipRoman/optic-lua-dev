@@ -4,6 +4,8 @@ import optic.lua.GlobalStats;
 import optic.lua.optimization.StaticType;
 import optic.lua.util.*;
 import org.codehaus.janino.InternalCompilerException;
+import org.jetbrains.annotations.Contract;
+import org.slf4j.*;
 
 import java.util.*;
 
@@ -15,6 +17,7 @@ import java.util.*;
  * Use static factory methods to create instances of this interface.
  */
 public interface ExprNode extends ListNode {
+	Logger log = LoggerFactory.getLogger(ExprNode.class);
 
 	/**
 	 * Returns a node which has the value of the given number constant.
@@ -109,15 +112,31 @@ public interface ExprNode extends ListNode {
 	/**
 	 * Returns a node which describes the result of logical "or" of two expressions.
 	 */
-	static ExprNode logicalOr(ExprNode a, ExprNode b) {
-		return new Logical(false, a, b);
+	static ExprNode logicalOr(ExprNode first, ExprNode second) {
+		if (alwaysTrue(first)) {
+			log.warn("\"{} or {}\" can be simplified to \"{}\"", first, second, first);
+			return first;
+		}
+		if (alwaysFalse(first)) {
+			log.warn("\"{} or {}\" can be simplified to \"{}\"", first, second, second);
+			return second;
+		}
+		return new Logical(false, first, second);
 	}
 
 	/**
 	 * Returns a node which describes the result of logical "and" of two expressions.
 	 */
-	static ExprNode logicalAnd(ExprNode a, ExprNode b) {
-		return new Logical(true, a, b);
+	static ExprNode logicalAnd(ExprNode first, ExprNode second) {
+		if (alwaysTrue(first)) {
+			log.warn("\"{} and {}\" can be simplified to \"{}\"", first, second, second);
+			return second;
+		}
+		if (alwaysFalse(first)) {
+			log.warn("\"{} and {}\" can be simplified to \"{}\"", first, second, first);
+			return first;
+		}
+		return new Logical(true, first, second);
 	}
 
 	/**
@@ -126,6 +145,14 @@ public interface ExprNode extends ListNode {
 	static ExprNode logicalNot(ExprNode x) {
 		if (x.typeInfo() != StaticType.BOOLEAN)
 			throw new IllegalArgumentException("expected boolean, got " + x.typeInfo().toString());
+		if (alwaysTrue(x)) {
+			log.warn("Expression is always false: \"not {}\"", x);
+			return ExprNode.bool(false);
+		}
+		if (alwaysFalse(x)) {
+			log.warn("Expression is always true: \"not {}\"", x);
+			return ExprNode.bool(true);
+		}
 		return new Not(x);
 	}
 
@@ -164,8 +191,25 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which describes the original value, coerced to boolean
 	 */
 	static ExprNode toBoolean(ExprNode a) {
+		if (a.typeInfo() == StaticType.BOOLEAN) {
+			return a;
+		}
 		return monoInvocation(a, InvocationMethod.TO_BOOLEAN, ListNode.exprList());
 	}
+
+	@Contract(pure = true)
+	static boolean alwaysTrue(ExprNode node) {
+		if (node == ExprNode.bool(true))
+			return true;
+		StaticType type = node.typeInfo();
+		return type != StaticType.OBJECT && type != StaticType.BOOLEAN;
+	}
+
+	@Contract(pure = true)
+	static boolean alwaysFalse(ExprNode node) {
+		return node == ExprNode.bool(false) || node == ExprNode.nil();
+	}
+
 
 	@Override
 	default StaticType childTypeInfo(int i) {

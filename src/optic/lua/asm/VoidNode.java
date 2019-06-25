@@ -1,5 +1,7 @@
 package optic.lua.asm;
 
+import org.slf4j.*;
+
 import java.util.*;
 
 /**
@@ -7,6 +9,8 @@ import java.util.*;
  * Obtain instances of this interface using factory methods.
  */
 public interface VoidNode extends Node {
+	Logger log = LoggerFactory.getLogger(VoidNode.class);
+
 	static VoidNode tableWrite(LValue.TableField target, ExprNode value) {
 		return discard(ListNode.invocation(target.table(), InvocationMethod.SET_INDEX, ListNode.exprList(target.key(), value)));
 	}
