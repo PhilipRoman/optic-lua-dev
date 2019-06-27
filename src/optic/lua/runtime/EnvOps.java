@@ -50,7 +50,7 @@ public final class EnvOps {
 				return ListOps.list((Object) array);
 			}
 		});
-		optic.put"intarray", new LuaFunction("optic.intarray") {
+		optic.put("intarray", new LuaFunction("optic.intarray") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
 				long[] array = new long[args.length];
