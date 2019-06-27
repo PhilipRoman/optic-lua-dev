@@ -15,6 +15,12 @@ sourceSets {
             srcDir 'src'
         }
     }
+    runtime {
+        java {
+            srcDir 'src'
+            include 'optic/lua/runtime/**'
+        }
+    }
     test {
         groovy {
             srcDir 'test'
@@ -42,8 +48,23 @@ shadowJar {
     }
 }
 
-run {
-    standardInput = System.in
+run.enabled = false
+
+compileRuntimeJava {
+    dependsOn compileJava
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+task runtimeJar(type: Jar) {
+    dependsOn compileRuntimeJava
+    from sourceSets.runtime.output
+    archiveBaseName = 'optic-lua-rt'
+    archiveClassifier = null
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-Xlint:deprecation'
 }
 
 dependencies {

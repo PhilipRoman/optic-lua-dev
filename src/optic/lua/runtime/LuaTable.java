@@ -1,13 +1,10 @@
 package optic.lua.runtime;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.*;
 import java.util.Map.Entry;
 
 public class LuaTable {
 	private static final Object[] EMPTY_ARRAY = {};
-	@NotNull
 	private final HashMap<Object, Object> hash;
 	// entries with keys of [1 .. length] are stored in array part
 	// remember that array part is zero-indexed
@@ -156,8 +153,7 @@ public class LuaTable {
 	}
 
 	Iterator<Object[]> pairsIterator() {
-		var hashIterator = hash.entrySet().iterator();
-		return new PairsIterator(hashIterator, array, length);
+		return new PairsIterator(hash.entrySet().iterator(), array, length);
 	}
 
 	Iterator<Object[]> ipairsIterator() {
@@ -188,7 +184,7 @@ public class LuaTable {
 				wrapper[1] = array[arrayIndex];
 				wrapper[0] = ++arrayIndex;
 			} else if (hashIterator.hasNext()) {
-				var next = hashIterator.next();
+				Entry<Object, Object> next = hashIterator.next();
 				wrapper[0] = next.getKey();
 				wrapper[1] = next.getValue();
 			} else {

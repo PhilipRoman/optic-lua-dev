@@ -9,9 +9,11 @@ Generally you shouldn't worry about style or formatting. Since I often develop i
 Some useful guidelines are listed below:
 *   Use tabs.
 *   Every variable/field/parameter is considered non-null by default (don't do null checks). All nullable values should be documented and/or marked using @Nullable.
+*   All collection parameters are assumed immutable by default.
 *   Every class should be final by default. If a class is non-final, it's assumed to be designed for inheritance.
 *   Don't write documentation without a reason.
-*   Feel free to use any language features from Java 11
+*   Feel free to use any language features from Java 11 (except in `optic.lua.runtime` package - see below)
+*   Don't mention GitHub issues in commit messages or code - the source control system used is subject to change
 
 ## Build process
 
@@ -32,7 +34,7 @@ Sources should be placed in `/src`. The code is currently split up in the follow
 *   `optic.lua.messages` - compiler configuration
 *   `optic.lua.io` - the API that is exposed to the users through command line
 *   `optic.lua.util` - admit it, every project needs one of these!
-*   `optic.lua.runtime` - classes that compiled code depends on at runtime. **Avoid external dependencies in this package**
+*   `optic.lua.runtime` - classes that compiled code depends on at runtime. **Don't depend on any classes outside this package and do not use language or library features above Java 8**
 
 ### Tests
 Currently, tests are written in Groovy language (if you're not familiar, it's mostly a superset of Java). This is because Groovy provides an excellent feature called "power assert". Instead of using convoluted matchers, just write your tests using the good old `assert` keyword. When an assertion fails, you'll get an awesome detailed error, which shows the values of all sub-expressions in that statement.

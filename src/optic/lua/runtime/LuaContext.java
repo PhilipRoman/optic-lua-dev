@@ -1,6 +1,5 @@
 package optic.lua.runtime;
 
-import optic.lua.io.Bundle;
 import optic.lua.runtime.invoke.*;
 
 import java.io.*;
@@ -10,7 +9,6 @@ public final class LuaContext {
 	public Reader in = new InputStreamReader(System.in);
 	public PrintWriter out = new PrintWriter(System.out);
 	public PrintWriter err = new PrintWriter(System.err);
-	public Bundle bundle = null;
 	@RuntimeApi
 	public Object _ENV;
 	public CallSiteFactory callSiteFactory = new SimpleCallSiteFactory();
@@ -20,16 +18,13 @@ public final class LuaContext {
 	private LuaContext() {
 	}
 
-	@RuntimeApi
-	public static LuaContext create() {
-		return create(Bundle.emptyBundle());
-	}
+	@Deprecated
+	public static LuaContext create(Object bundle) {return create();}
 
 	@RuntimeApi
-	public static LuaContext create(Bundle bundle) {
-		var ctx = new LuaContext();
+	public static LuaContext create() {
+		LuaContext ctx = new LuaContext();
 		ctx._ENV = EnvOps.createEnv();
-		ctx.bundle = bundle;
 		return ctx;
 	}
 

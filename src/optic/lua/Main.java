@@ -72,7 +72,7 @@ public final class Main {
 
 		if (opticLua.interactiveShell) {
 			// enter interactive session after compiling the files
-			var shell = new InteractiveShell(System.in, System.out, System.err, bundle, options);
+			var shell = new InteractiveShell(System.in, System.out, System.err, options);
 			shell.run();
 			return;
 		}
@@ -92,7 +92,7 @@ public final class Main {
 		var method = bundle.findCompiled(fileName).orElseThrow(() -> new NoSuchElementException(fileName));
 		for (int i = 0; i < nTimes; i++) {
 			long start = System.nanoTime();
-			var luaContext = LuaContext.create(bundle);
+			var luaContext = LuaContext.create();
 			// runtime stats can only be shown if the Lua context uses a special call site factory
 			if (options.get(StandardFlags.SHOW_RT_STATS)) {
 				luaContext.callSiteFactory = new InstrumentedCallSiteFactory();
