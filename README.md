@@ -9,17 +9,21 @@ Clone or download the files from this repository, then build a standalone jar:
 ```bash
 ./gradlew shadowJar
 ```
+You can also build a much smaller jar which only contains classes for running compiled Lua code:
+```bash
+./gradlew runtimeJar
+```
 
 Launch the compiler to see available options:
 ```bash
 java -jar build/libs/optic-lua.jar --help
 ```
-If you've compiled some Lua code to a .class file, you can run it by adding the compiler jar to the classpath:
+If you've compiled some Lua code to a .class file, you can run it by adding `optic-lua-rt.jar` to the classpath:
 ```bash
-java -cp .:build/libs/optic-lua.jar my_compiled_class
+java -cp .:build/libs/optic-lua-rt.jar my_compiled_class
 ```
 
-The project is developed using OpenJDK 11.
+The project is developed using OpenJDK 11, however the generated code and runtime classes are compatible with Java 8.
 
 ## Features
 *   Lua 5.3 support
