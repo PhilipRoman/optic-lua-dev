@@ -2,7 +2,8 @@ package optic.lua.asm;
 
 import optic.lua.GlobalStats;
 import optic.lua.asm.InvocationMethod.ReturnCount;
-import optic.lua.optimization.StaticType;
+import optic.lua.optimization.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A read-only expression. May return more than one value (see {@link #isVararg()}). Care must be taken not to
@@ -24,7 +25,11 @@ public interface ListNode extends Node {
 	/**
 	 * Returns a node which references the result of applying an {@link InvocationMethod} with arguments to a value.
 	 */
-	static Invocation invocation(ExprNode obj, InvocationMethod method, ExprList arguments) {
+	static ListNode invocation(ExprNode obj, InvocationMethod method, ExprList arguments) {
+		@Nullable
+		ExprNode.IntrinsicCall intrinsicCall = Intrinsics.getDefault().lookup(obj, method, arguments);
+		if (intrinsicCall != null)
+			return intrinsicCall;
 		return new Invocation(obj, method, arguments);
 	}
 

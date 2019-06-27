@@ -110,6 +110,11 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 	}
 
 	@Override
+	public ResultBuffer acceptIntrinsic(String methodName, ExprList args) throws CompilationFailure {
+		return Line.join(methodName, "(", commaList(args.getLeading()), ")");
+	}
+
+	@Override
 	public ResultBuffer visitTableConstructor(TableLiteral t) throws CompilationFailure {
 		var copy = new LinkedHashMap<>(t.entries());
 		Entry<ExprNode, ListNode> vararg = copy.entrySet().stream()

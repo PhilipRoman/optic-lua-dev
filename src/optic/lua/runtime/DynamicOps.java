@@ -1,5 +1,6 @@
 package optic.lua.runtime;
 
+import java.lang.reflect.Array;
 import java.util.Objects;
 
 @RuntimeApi
@@ -22,7 +23,8 @@ public final class DynamicOps {
 		throw Errors.cannotConvert(o, "number");
 	}
 
-	static long toInt(Object a) {
+	@RuntimeApi
+	public static long toInt(Object a) {
 		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
 			return ((Number) a).longValue();
 		}
@@ -32,6 +34,33 @@ public final class DynamicOps {
 			return i;
 		}
 		throw Errors.cannotConvert(a, "integer");
+	}
+
+	private static int toInt32(Object a) {
+		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
+			return ((Number) a).intValue();
+		}
+		double d = toNum(a);
+		int i = (int) d;
+		if (i == d) {
+			return i;
+		}
+		throw Errors.cannotConvert(a, "integer (32 bit)");
+	}
+
+	@RuntimeApi
+	public static long toInt(long n) {
+		return n;
+	}
+
+	@RuntimeApi
+	public static double toNum(double n) {
+		return n;
+	}
+
+	@RuntimeApi
+	public static Object getObjArray(Object array, long len) {
+		return ((Object[]) array)[(int) len];
 	}
 
 	@RuntimeApi
@@ -368,6 +397,9 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);
 		}
+		if (obj != null && obj.getClass().isArray()) {
+			return Array.get(obj, toInt32(key) - 1);
+		}
 		throw Errors.attemptTo("index", obj);
 	}
 
@@ -384,6 +416,9 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);
 		}
+		if (obj != null && obj.getClass().isArray()) {
+			return Array.get(obj, Math.toIntExact(key - 1));
+		}
 		throw Errors.attemptTo("index", obj);
 	}
 
@@ -391,6 +426,8 @@ public final class DynamicOps {
 	public static void setIndex(Object obj, Object key, Object value) {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
+		} else if (obj != null && obj.getClass().isArray()) {
+			Array.set(obj, toInt32(key) - 1, value);
 		} else {
 			throw Errors.attemptTo("index", obj);
 		}
@@ -409,6 +446,8 @@ public final class DynamicOps {
 	public static void setIndex(Object obj, long key, Object value) {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
+		} else if (obj != null && obj.getClass().isArray()) {
+			Array.set(obj, Math.toIntExact(key - 1), value);
 		} else {
 			throw Errors.attemptTo("index", obj);
 		}

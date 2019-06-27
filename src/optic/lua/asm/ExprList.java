@@ -114,4 +114,8 @@ public final class ExprList implements ListNode {
 		trailing.ifPresent(node -> joiner.add(node.toString()));
 		return joiner.toString();
 	}
+
+	public List<ExprNode> getLeading() {
+		return nodes;
+	}
 }

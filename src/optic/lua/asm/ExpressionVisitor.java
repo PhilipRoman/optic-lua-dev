@@ -46,4 +46,6 @@ public interface ExpressionVisitor<T, X extends Throwable> {
 	T visitSelectNth(ListNode source, int n) throws X;
 
 	T visitExprList(List<ExprNode> nodes, Optional<ListNode> trailing) throws X;
+
+	T acceptIntrinsic(String methodName, ExprList args) throws X;
 }

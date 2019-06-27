@@ -1,7 +1,7 @@
 package optic.lua.asm;
 
 import optic.lua.GlobalStats;
-import optic.lua.optimization.StaticType;
+import optic.lua.optimization.*;
 import optic.lua.util.*;
 import org.codehaus.janino.InternalCompilerException;
 import org.jetbrains.annotations.Contract;
@@ -570,7 +570,42 @@ public interface ExprNode extends ListNode {
 			}
 			return StaticType.OBJECT;
 		}
+	}
 
+	final class IntrinsicCall implements ExprNode {
+		private final FunctionSignature signature;
+		private final String methodName;
+		private final ExprList args;
+
+		public IntrinsicCall(FunctionSignature signature, String methodName, ExprList args) {
+			this.args = args;
+			if (signature.resultTypes().size() != 1) {
+				throw new UnsupportedOperationException("Intrinsics with return count other than 1 are not supported yet");
+			}
+			int i = 0;
+			for (StaticType param : signature.parameterTypes()) {
+				if (!args.getLeading(i++).typeInfo().subtypeOf(param)) {
+					throw new IllegalArgumentException("Wrong parameter type #" + i + ", expected " + signature.parameterTypes() + " got " + args);
+				}
+			}
+			this.signature = signature;
+			this.methodName = methodName;
+		}
+
+		@Override
+		public <T, X extends Throwable> T accept(ExpressionVisitor<T, X> visitor) throws X {
+			return visitor.acceptIntrinsic(methodName, args);
+		}
+
+		@Override
+		public StaticType typeInfo() {
+			return signature.resultTypes().get(0);
+		}
+
+		@Override
+		public String toString() {
+			return methodName + "(" + args + ")";
+		}
 	}
 }
 

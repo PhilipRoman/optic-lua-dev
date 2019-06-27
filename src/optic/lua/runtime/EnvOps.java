@@ -25,7 +25,7 @@ public final class EnvOps {
 		return (to <= length) ? to : length;
 	}
 
-	public static LuaTable createEnv() {
+	static LuaTable createEnv() {
 		LuaTable env = new LuaTable();
 		env.set("print", new LuaFunction("print") {
 			public Object[] call(LuaContext context1, Object... args) {
@@ -38,20 +38,58 @@ public final class EnvOps {
 					public Object[] call(LuaContext context, Object... args) {
 						return ListOps.list(LuaTable.ofArray(context.bundle.listFiles()));
 					}
+				},
+				"array", new LuaFunction("optic.array") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						return ListOps.list((Object) args);
+					}
+				},
+				"numarray", new LuaFunction("optic.numarray") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						double[] array = new double[args.length];
+						for (int i = 0; i < args.length; i++) {
+							array[i] = DynamicOps.toNum(args[i]);
+						}
+						return ListOps.list((Object) array);
+					}
+				},
+				"intarray", new LuaFunction("optic.intarray") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						long[] array = new long[args.length];
+						for (int i = 0; i < args.length; i++) {
+							array[i] = DynamicOps.toInt(args[i]);
+						}
+						return ListOps.list((Object) array);
+					}
+				},
+				"newarray", new LuaFunction("optic.newarray") {
+					@Override
+					public Object[] call(LuaContext context, Object... args) {
+						return ListOps.list((Object) new Object[(int) DynamicOps.toInt(args[0])]);
+					}
 				}
 		)));
 		env.set("pairs", new LuaFunction("pairs") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
+				if (args[0].getClass().isArray()) {
+					return ListOps.list(new ArrayPairsIterator(args[0]));
+				}
 				var table = (LuaTable) args[0];
-				return new Object[]{table.pairsIterator()};
+				return ListOps.list(table.ipairsIterator());
 			}
 		});
 		env.set("ipairs", new LuaFunction("pairs") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
+				if (args[0].getClass().isArray()) {
+					return ListOps.list(new ArrayPairsIterator(args[0]));
+				}
 				var table = (LuaTable) args[0];
-				return new Object[]{table.ipairsIterator()};
+				return ListOps.list(table.ipairsIterator());
 			}
 		});
 		env.set("type", new LuaFunction("type") {
