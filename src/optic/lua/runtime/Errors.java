@@ -1,7 +1,5 @@
 package optic.lua.runtime;
 
-import org.jetbrains.annotations.Contract;
-
 final class Errors {
 	public static RuntimeException argument(int n, String expected) {
 		return new IllegalArgumentException("Bad parameter #" + n + " (" + expected + " expected)");

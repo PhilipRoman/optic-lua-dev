@@ -14,7 +14,6 @@ public final class InstrumentedCallSite implements CallSite {
 	private static final boolean[] EMPTY_BOOL_ARRAY = {};
 	private static final boolean[] TRUE_BOOL_ARRAY = {true};
 	private static final boolean[] FALSE_BOOL_ARRAY = {false};
-	private static final BiFunction<? super Integer, ? super Integer, ? extends Integer> SUM = Integer::sum;
 	private final Map<HistoryEntry, Integer> history = new HashMap<>(8);
 	private final int id;
 
@@ -25,7 +24,7 @@ public final class InstrumentedCallSite implements CallSite {
 	@Override
 	public Object[] invoke(LuaContext context, Object function, Object[] args) {
 		Object[] results = DynamicOps.call(context, function, args);
-		var entry = new HistoryEntry(
+		HistoryEntry entry = new HistoryEntry(
 				((LuaFunction) function).constructionSite(),
 				HistoryEntry.encode(args),
 				HistoryEntry.encode(results)
@@ -106,7 +105,7 @@ public final class InstrumentedCallSite implements CallSite {
 			if (o.getClass() != HistoryEntry.class) {
 				return false;
 			}
-			var entry = (HistoryEntry) o;
+			HistoryEntry entry = (HistoryEntry) o;
 			return entry.hash == hash
 					&& Arrays.equals(args, entry.args)
 					&& Arrays.equals(results, entry.results)

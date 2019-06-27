@@ -20,21 +20,18 @@ public final class InteractiveShell {
 	private final Reader in;
 	private final Options options;
 	// other compiled Lua files
-	private final Bundle bundle;
 	private int index = 1;
 
 	/**
 	 * @param in      standard input
 	 * @param out     standard output
 	 * @param err     standard error
-	 * @param bundle  other available compiled files
 	 * @param options options to use
 	 */
-	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Bundle bundle, Options options) {
+	public InteractiveShell(InputStream in, OutputStream out, OutputStream err, Options options) {
 		this.in = new InputStreamReader(in);
 		this.out = new PrintWriter(new OutputStreamWriter(out));
 		this.err = new PrintWriter(new OutputStreamWriter(err));
-		this.bundle = bundle;
 		this.options = options;
 	}
 
@@ -48,7 +45,7 @@ public final class InteractiveShell {
 	 * results to standard output. Similarly to standard Lua <= 5.2, expressions should be prefixed by "=".
 	 */
 	public void run() {
-		LuaContext context = LuaContext.create(bundle);
+		LuaContext context = LuaContext.create();
 		context.in = in;
 		context.out = out;
 		context.err = err;

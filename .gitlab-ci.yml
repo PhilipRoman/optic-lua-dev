@@ -6,7 +6,7 @@ build:
   image: gradle:5.4.0-jre11-slim
   script:
     - java -version
-    - gradle --console=plain test jacocoTestReport jar shadowJar
+    - gradle --console=plain test jacocoTestReport jar shadowJar runtimeJar
     # show jar size in log
     - du -sbh build/libs/*.jar
     # verify that launch script and fat jar is working
@@ -19,4 +19,4 @@ build:
       # tests, coverage, benchmarks, etc.
       - build/reports/
       # jars
-      - build/libs/
+      # - build/libs/
