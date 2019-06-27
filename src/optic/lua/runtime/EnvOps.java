@@ -73,7 +73,7 @@ public final class EnvOps {
 				if (args[0].getClass().isArray()) {
 					return ListOps.list(new ArrayPairsIterator(args[0]));
 				}
-				var table = (LuaTable) args[0];
+				LuaTable table = (LuaTable) args[0];
 				return ListOps.list(table.pairsIterator());
 			}
 		});
