@@ -74,7 +74,7 @@ local keys = {}
 for k, v in pairs {a = 1, b = 2, c = 3} do
     keys[#keys + 1] = k
 end
-assert(#keys == 3)
+assert(#keys == 3, #keys)
 
 sum = 0
 for k, v in pairs { 1, 2, 3, 4, 5 } do

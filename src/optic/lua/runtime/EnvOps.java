@@ -79,7 +79,7 @@ public final class EnvOps {
 					return ListOps.list(new ArrayPairsIterator(args[0]));
 				}
 				var table = (LuaTable) args[0];
-				return ListOps.list(table.ipairsIterator());
+				return ListOps.list(table.pairsIterator());
 			}
 		});
 		env.set("ipairs", new LuaFunction("pairs") {

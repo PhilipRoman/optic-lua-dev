@@ -336,6 +336,8 @@ public final class DynamicOps {
 			return ((CharSequence) value).length();
 		else if (value instanceof LuaTable)
 			return ((LuaTable) value).length();
+		else if (value != null && value.getClass().isArray())
+			return Array.getLength(value);
 		else
 			throw Errors.attemptTo("get length of", value);
 	}

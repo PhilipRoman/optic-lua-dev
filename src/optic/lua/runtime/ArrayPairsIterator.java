@@ -22,8 +22,8 @@ class ArrayPairsIterator implements Iterator<Object[]> {
 	@Override
 	public Object[] next() {
 		if (pos < len) {
-			container[0] = pos;
-			container[1] = Array.get(array, pos++);
+			container[0] = ++pos;
+			container[1] = Array.get(array, pos);
 		}
 		return container;
 	}
