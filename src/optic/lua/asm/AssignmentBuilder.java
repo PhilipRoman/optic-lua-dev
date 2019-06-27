@@ -1,6 +1,5 @@
 package optic.lua.asm;
 
-import optic.lua.asm.ListNode.ExprList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;

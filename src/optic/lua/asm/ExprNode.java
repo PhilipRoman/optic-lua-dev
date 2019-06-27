@@ -105,7 +105,7 @@ public interface ExprNode extends ListNode {
 	 * The invocation must only yield a single value. Using this function to create multi-valued
 	 * invocations is undefined behaviour.
 	 */
-	static MonoInvocation monoInvocation(ExprNode obj, InvocationMethod method, ListNode arguments) {
+	static MonoInvocation monoInvocation(ExprNode obj, InvocationMethod method, ExprList arguments) {
 		return new MonoInvocation(obj, method, arguments);
 	}
 
@@ -174,7 +174,7 @@ public interface ExprNode extends ListNode {
 	 * Returns a node which references only the value in given table that was associated with the given key
 	 */
 	static ExprNode tableIndex(ExprNode table, ExprNode key) {
-		return monoInvocation(table, InvocationMethod.INDEX, ListNode.exprList(key));
+		return monoInvocation(table, InvocationMethod.INDEX, ExprList.exprList(key));
 	}
 
 	/**
@@ -184,7 +184,7 @@ public interface ExprNode extends ListNode {
 		if (a.typeInfo().isNumeric()) {
 			return a;
 		}
-		return monoInvocation(a, InvocationMethod.TO_NUMBER, ListNode.exprList());
+		return monoInvocation(a, InvocationMethod.TO_NUMBER, ExprList.exprList());
 	}
 
 	/**
@@ -194,7 +194,7 @@ public interface ExprNode extends ListNode {
 		if (a.typeInfo() == StaticType.BOOLEAN) {
 			return a;
 		}
-		return monoInvocation(a, InvocationMethod.TO_BOOLEAN, ListNode.exprList());
+		return monoInvocation(a, InvocationMethod.TO_BOOLEAN, ExprList.exprList());
 	}
 
 	@Contract(pure = true)
@@ -481,7 +481,7 @@ public interface ExprNode extends ListNode {
 	}
 
 	final class MonoInvocation extends Invocation implements ExprNode {
-		MonoInvocation(ExprNode object, InvocationMethod method, ListNode arguments) {
+		MonoInvocation(ExprNode object, InvocationMethod method, ExprList arguments) {
 			super(object, method, arguments);
 		}
 

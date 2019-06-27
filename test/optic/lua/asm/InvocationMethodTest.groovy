@@ -3,7 +3,7 @@ package optic.lua.asm
 import groovy.transform.CompileStatic
 
 import static ExprNode.number
-import static ListNode.exprList
+import static optic.lua.asm.ExprList.exprList
 import static optic.lua.asm.InvocationMethod.*
 import static optic.lua.optimization.StaticType.NUMBER
 

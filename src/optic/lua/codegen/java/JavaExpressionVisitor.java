@@ -2,7 +2,6 @@ package optic.lua.codegen.java;
 
 import optic.lua.asm.*;
 import optic.lua.asm.ExprNode.*;
-import optic.lua.asm.ListNode.ExprList;
 import optic.lua.codegen.*;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
@@ -214,9 +213,9 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 			case CALL:
 				return compileFunctionCall(x.getObject(), args);
 			case INDEX:
-				return compileTableRead(x.getObject(), ((ExprList) args).getLeading(0));
+				return compileTableRead(x.getObject(), args.getLeading(0));
 			case SET_INDEX:
-				return compileTableWrite(x.getObject(), ((ExprList) args).getLeading(0), ((ExprList) args).getLeading(1));
+				return compileTableWrite(x.getObject(), args.getLeading(0), args.getLeading(1));
 			case TO_NUMBER:
 				return compileToNumber(x.getObject());
 			case TO_BOOLEAN:
@@ -225,7 +224,7 @@ final class JavaExpressionVisitor implements ExpressionVisitor<ResultBuffer, Com
 				var operator = LuaOperator.valueOf(x.getMethod().name());
 				var first = x.getObject();
 				if (operator.arity() == 2) {
-					var second = ((ExprList) args).getLeading(0);
+					var second = args.getLeading(0);
 					return compileBinaryOperatorInvocation(operator, first, second);
 				} else {
 					return compileUnaryOperatorInvocation(operator, first);

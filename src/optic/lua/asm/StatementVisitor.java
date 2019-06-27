@@ -25,7 +25,7 @@ public interface StatementVisitor<T, X extends Throwable> {
 
 	T visitLoop(AsmBlock body) throws X;
 
-	T visitReturn(ListNode values) throws X;
+	T visitReturn(ExprList values) throws X;
 
 	T visitVoid(ListNode invocation) throws X;
 

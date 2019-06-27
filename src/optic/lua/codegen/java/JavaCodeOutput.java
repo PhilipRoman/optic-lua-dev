@@ -48,7 +48,7 @@ public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, Comp
 	}
 
 	@Override
-	public ResultBuffer visitReturn(ListNode values) throws CompilationFailure {
+	public ResultBuffer visitReturn(ExprList values) throws CompilationFailure {
 		var buffer = new LineList();
 		buffer.addLine("return ", expression(values), ";");
 		return buffer;

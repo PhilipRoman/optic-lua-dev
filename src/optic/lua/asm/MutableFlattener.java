@@ -1,6 +1,5 @@
 package optic.lua.asm;
 
-import optic.lua.asm.ListNode.ExprList;
 import optic.lua.messages.*;
 import optic.lua.optimization.*;
 import optic.lua.util.*;
@@ -255,7 +254,7 @@ public final class MutableFlattener implements VariableResolver {
 					ListNode value = flattenExpression(tree);
 					values.add(value);
 				}
-				steps.add(VoidNode.returnFromFunction(ListNode.exprList(values)));
+				steps.add(VoidNode.returnFromFunction(ExprList.exprList(values)));
 				return;
 			}
 			case If: {
@@ -280,12 +279,12 @@ public final class MutableFlattener implements VariableResolver {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			var a = firstOnly(flattenExpression(t.getChild(0)));
 			var b = firstOnly(flattenExpression(t.getChild(1)));
-			return ExprNode.monoInvocation(a, op.invocationMethod(), ListNode.exprList(b));
+			return ExprNode.monoInvocation(a, op.invocationMethod(), ExprList.exprList(b));
 		}
 		if (Operators.isUnary(t)) {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			ExprNode param = firstOnly(flattenExpression(t.getChild(0)));
-			return ExprNode.monoInvocation(param, op.invocationMethod(), ListNode.exprList());
+			return ExprNode.monoInvocation(param, op.invocationMethod(), ExprList.exprList());
 		}
 		switch (t.getType()) {
 			case Number: {
@@ -378,13 +377,13 @@ public final class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private ListNode.ExprList flattenAll(List<?> trees) throws CompilationFailure {
+	private ExprList flattenAll(List<?> trees) throws CompilationFailure {
 		int size = trees.size();
 		var list = new ArrayList<ListNode>(size);
 		for (Object tree : trees) {
 			list.add(flattenExpression((Tree) tree));
 		}
-		return ListNode.exprList(list);
+		return ExprList.exprList(list);
 	}
 
 	@Contract(mutates = "this")

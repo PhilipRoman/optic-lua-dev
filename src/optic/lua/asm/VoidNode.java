@@ -12,7 +12,7 @@ public interface VoidNode extends Node {
 	Logger log = LoggerFactory.getLogger(VoidNode.class);
 
 	static VoidNode tableWrite(LValue.TableField target, ExprNode value) {
-		return discard(ListNode.invocation(target.table(), InvocationMethod.SET_INDEX, ListNode.exprList(target.key(), value)));
+		return discard(ListNode.invocation(target.table(), InvocationMethod.SET_INDEX, ExprList.exprList(target.key(), value)));
 	}
 
 	static VoidNode declareLocal(VariableInfo info) {
@@ -31,7 +31,7 @@ public interface VoidNode extends Node {
 		return new Block(block);
 	}
 
-	static VoidNode returnFromFunction(ListNode values) {
+	static VoidNode returnFromFunction(ExprList values) {
 		return new Return(values);
 	}
 
@@ -210,9 +210,9 @@ public interface VoidNode extends Node {
 	}
 
 	final class Return implements VoidNode {
-		private final ListNode values;
+		private final ExprList values;
 
-		private Return(ListNode values) {
+		private Return(ExprList values) {
 			this.values = values;
 		}
 
