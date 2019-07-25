@@ -1,9 +1,10 @@
 package optic.lua.codegen.java;
 
 import optic.lua.asm.*;
+import optic.lua.asm.ListNode.Invocation;
 import optic.lua.codegen.*;
 import optic.lua.messages.*;
-import optic.lua.optimization.ProvenType;
+import optic.lua.optimization.StaticType;
 import optic.lua.util.UniqueNames;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.*;
@@ -11,6 +12,7 @@ import org.slf4j.*;
 import java.io.*;
 import java.util.*;
 
+import static optic.lua.asm.InvocationMethod.*;
 import static optic.lua.codegen.java.JavaExpressionVisitor.LOCAL_VARIABLE_PREFIX;
 
 /**
@@ -31,7 +33,7 @@ import static optic.lua.codegen.java.JavaExpressionVisitor.LOCAL_VARIABLE_PREFIX
  * return EMPTY_ARRAY;
  *
  * */
-public final class JavaCodeOutput implements StepVisitor<ResultBuffer, CompilationFailure> {
+public final class JavaCodeOutput implements StatementVisitor<ResultBuffer, CompilationFailure> {
 	private static final Logger log = LoggerFactory.getLogger(JavaCodeOutput.class);
 	final Options options;
 	private final List<String> constants = new ArrayList<>();
@@ -46,21 +48,14 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
-	public ResultBuffer visitReturn(List<RValue> values) throws CompilationFailure {
+	public ResultBuffer visitReturn(ExprList values) throws CompilationFailure {
 		var buffer = new LineList();
-		if (!values.isEmpty() && values.get(values.size() - 1).isVararg()) {
-			var varargs = values.get(values.size() - 1);
-			var valuesCopy = new ArrayList<>(values);
-			valuesCopy.remove(valuesCopy.size() - 1);
-			buffer.addLine("return append(", expression(varargs), valuesCopy.isEmpty() ? "" : ", ", commaList(valuesCopy), ");");
-		} else {
-			buffer.addLine("return list(", commaList(values), ");");
-		}
+		buffer.addLine("return ", expression(values), ";");
 		return buffer;
 	}
 
 	@Override
-	public ResultBuffer visitWrite(VariableInfo variable, RValue value) throws CompilationFailure {
+	public ResultBuffer visitWrite(VariableInfo variable, ExprNode value) throws CompilationFailure {
 		var buffer = new LineList();
 		switch (variable.getMode()) {
 			case UPVALUE: {
@@ -100,11 +95,11 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
-	public ResultBuffer visitForRangeLoop(VariableInfo counter, RValue from, RValue to, RValue step, AsmBlock block) throws CompilationFailure {
+	public ResultBuffer visitForRangeLoop(VariableInfo counter, ExprNode from, ExprNode to, ExprNode step, AsmBlock block) throws CompilationFailure {
 		var buffer = new LineList();
 		var realCounterName = "i_" + counter.getName();
-		ProvenType realCounterType = from.typeInfo().and(step.typeInfo());
-		if (realCounterType == ProvenType.INTEGER
+		StaticType realCounterType = from.typeInfo().and(step.typeInfo());
+		if (realCounterType == StaticType.INTEGER
 				&& options.get(StandardFlags.LOOP_SPLIT)) {
 			// we optimize integer loops at runtime by checking if the range is within int bounds
 			// that way the majority of loops can run with int as counter and the long loop is just a safety measure
@@ -139,13 +134,14 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			buffer.addLine("final ", JavaUtils.typeName(variable), " ", LOCAL_VARIABLE_PREFIX, name, ";");
 		} else {
 			// upvalue
-			buffer.addLine("final UpValue ", LOCAL_VARIABLE_PREFIX, name, " = new UpValue();");
+			var upvalueClass = JavaUtils.typeName(variable);
+			buffer.addLine("final ", upvalueClass, " ", LOCAL_VARIABLE_PREFIX, name, " = new ", upvalueClass, "();");
 		}
 		return buffer;
 	}
 
 	@Override
-	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, RValue iterator, AsmBlock body) throws CompilationFailure {
+	public ResultBuffer visitForEachLoop(List<VariableInfo> variables, ExprNode iterator, AsmBlock body) throws CompilationFailure {
 		var buffer = new LineList();
 		var iteratorName = "iterator_" + UniqueNames.next();
 		var eachName = "each_" + UniqueNames.next();
@@ -161,12 +157,8 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 		return buffer;
 	}
 
-	private ResultBuffer commaList(List<RValue> args) throws CompilationFailure {
-		return expressionVisitor.commaList(args);
-	}
-
 	@NotNull
-	private ResultBuffer expression(RValue expression) throws CompilationFailure {
+	private ResultBuffer expression(ListNode expression) throws CompilationFailure {
 		return Objects.requireNonNull(expression.accept(expressionVisitor));
 	}
 
@@ -180,7 +172,7 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 			FlatExpr condition = entry.getKey();
 			AsmBlock value = entry.getValue();
 			buffer.addAllChildren(visitAll(condition.block()));
-			buffer.addLine("if(isTrue(", expression(condition.value()), ")) {");
+			buffer.addLine("if(", expression(condition.value()), ") {");
 			buffer.addAllChildren(visitAll(value.steps()));
 			buffer.addLine("}", isLast ? "" : " else {");
 		}
@@ -210,16 +202,21 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
-	public ResultBuffer visitBreakIf(RValue condition, boolean isTrue) throws CompilationFailure {
+	public ResultBuffer visitBreakIf(ExprNode condition, boolean isTrue) throws CompilationFailure {
 		var buffer = new LineList();
-		buffer.addLine("if(", (isTrue ? "" : "!"), "isTrue(", expression(condition), ")) break;");
+		buffer.addLine("if(", (isTrue ? "" : "!"), "(", expression(condition), ")) break;");
 		return buffer;
 	}
 
 	@Override
-	public ResultBuffer visitVoid(RValue.Invocation invocation) throws CompilationFailure {
+	public ResultBuffer visitVoid(ListNode value) throws CompilationFailure {
 		var buffer = new LineList();
-		buffer.addLine(expression(invocation), ";");
+		var voidMethods = List.of(CALL, SET_INDEX);
+		if (value instanceof Invocation && voidMethods.contains(((Invocation) value).getMethod())) {
+			buffer.addLine(expression(value), ";");
+		} else {
+			buffer.addLine("use(", expression(value), ");");
+		}
 		return buffer;
 	}
 
@@ -233,9 +230,16 @@ public final class JavaCodeOutput implements StepVisitor<ResultBuffer, Compilati
 	}
 
 	@Override
-	public ResultBuffer visitAssignment(Register register, RValue value) throws CompilationFailure {
+	public ResultBuffer visitAssignment(Register register, ExprNode value) throws CompilationFailure {
 		var buffer = new LineList();
 		buffer.addLine(JavaUtils.typeName(register), " ", register.name(), " = ", expression(value), ";");
+		return buffer;
+	}
+
+	@Override
+	public ResultBuffer visitArrayAssignment(ArrayRegister register, ListNode value) throws CompilationFailure {
+		var buffer = new LineList();
+		buffer.addLine("Object[] ", register.name(), " = ", expression(value), ";");
 		return buffer;
 	}
 

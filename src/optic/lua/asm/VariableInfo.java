@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Supplier;
 
 import static optic.lua.asm.VariableMode.*;
+import static optic.lua.optimization.StaticType.*;
 
 /**
  * A mutable container of information associated with a single variable.
@@ -16,7 +17,8 @@ public class VariableInfo {
 	private boolean isUpvalue = false;
 	private boolean initialized = false;
 	private boolean isEnv = false;
-	private CombinedCommonType type = new CombinedCommonType();
+	private CombinedType combinedType = new CombinedType();
+	private ExprNode lastAssignedExpression = ExprNode.nil();
 
 	VariableInfo(String name) {
 		this.name = name;
@@ -28,6 +30,7 @@ public class VariableInfo {
 	static VariableInfo createEnv() {
 		var v = new VariableInfo("_ENV");
 		v.markAsUpvalue();
+		v.markAsInitialized();
 		v.isEnv = true;
 		return v;
 	}
@@ -60,6 +63,10 @@ public class VariableInfo {
 		}
 	}
 
+	void markAsInitialized() {
+		initialized = true;
+	}
+
 	public boolean isFinal() {
 		return isFinal;
 	}
@@ -68,7 +75,7 @@ public class VariableInfo {
 		return String.format("%s%s %s %s (%s)",
 				isFinal() ? "final " : "",
 				getMode().name().toLowerCase(),
-				type.get(),
+				typeInfo(),
 				name,
 				Integer.toHexString(hashCode()));
 	}
@@ -82,24 +89,31 @@ public class VariableInfo {
 		return name;
 	}
 
-	public ProvenType typeInfo() {
-		return isUpvalue ? ProvenType.OBJECT : type.get();
+	public StaticType typeInfo() {
+		if (!initialized)
+			throw new IllegalStateException(this + " not initialized");
+		var t = combinedType.get();
+		if (!isUpvalue)
+			return t;
+		if (t == FUNCTION || t == INTEGER || t == NUMBER || t == OBJECT || t == TABLE)
+			return t;
+		return OBJECT; // not all types have respective up-value specializations
 	}
 
-	void enableObjects() {
-		update(ProvenType.OBJECT);
+	void update(StaticType other) {
+		combinedType.add(other);
 	}
 
-	void enableNumbers() {
-		update(ProvenType.NUMBER);
+	void addTypeDependency(Supplier<StaticType> source) {
+		combinedType.add(source);
 	}
 
-	void update(ProvenType other) {
-		type.add(other);
+	ExprNode getLastAssignedExpression() {
+		return lastAssignedExpression;
 	}
 
-	void addTypeDependency(Supplier<ProvenType> source) {
-		type.add(source);
+	void setLastAssignedExpression(ExprNode expr) {
+		this.lastAssignedExpression = expr;
 	}
 
 	public boolean isEnv() {
@@ -137,8 +151,8 @@ public class VariableInfo {
 		}
 
 		@Override
-		public ProvenType typeInfo() {
-			return ProvenType.OBJECT;
+		public StaticType typeInfo() {
+			return OBJECT;
 		}
 
 		@Override

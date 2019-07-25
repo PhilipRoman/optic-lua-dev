@@ -10,10 +10,12 @@ import org.slf4j.*;
 import java.lang.String;
 import java.util.*;
 
+import static nl.bigo.luaparser.Lua53Walker.Name;
+import static nl.bigo.luaparser.Lua53Walker.Not;
 import static nl.bigo.luaparser.Lua53Walker.Number;
 import static nl.bigo.luaparser.Lua53Walker.String;
 import static nl.bigo.luaparser.Lua53Walker.*;
-import static optic.lua.asm.RValue.firstOnly;
+import static optic.lua.asm.ExprNode.*;
 
 /**
  * Mutable implementation of a tree flattener. To flatten a given AST tree, use {@link #flatten(CommonTree, Options)}.
@@ -22,7 +24,7 @@ import static optic.lua.asm.RValue.firstOnly;
 public final class MutableFlattener implements VariableResolver {
 	private static final Logger log = LoggerFactory.getLogger(MutableFlattener.class);
 	// mutable list of current steps
-	private final List<Step> steps;
+	private final List<VoidNode> steps;
 	// mutable container of current local variable
 	private final Map<String, VariableInfo> locals = new HashMap<>(8);
 	// parent scope
@@ -35,7 +37,7 @@ public final class MutableFlattener implements VariableResolver {
 	// what kind of code block does
 	private final BlockMeaning meaning;
 
-	private MutableFlattener(List<Step> steps, MutableFlattener parent, boolean boundary, Options options, BlockMeaning meaning) {
+	private MutableFlattener(List<VoidNode> steps, MutableFlattener parent, boolean boundary, Options options, BlockMeaning meaning) {
 		this.parent = parent;
 		lexicalBoundary = boundary;
 		this.meaning = meaning;
@@ -55,12 +57,13 @@ public final class MutableFlattener implements VariableResolver {
 		int expectedSize = statements.size() * 4 + 10;
 		var f = new MutableFlattener(new ArrayList<>(expectedSize), parent, kind.hasLexicalBoundary(), context, kind);
 		for (var local : locals) {
+			local.markAsInitialized();
 			f.locals.put(local.getName(), local);
 		}
 		for (var stat : statements) {
 			int lineNumber = ((Tree) stat).getLine();
 			if (lineNumber > 0) {
-				f.steps.add(StepFactory.lineNumber(lineNumber));
+				f.steps.add(VoidNode.lineNumber(lineNumber));
 			}
 			try {
 				f.flattenStatement((Tree) stat);
@@ -81,9 +84,9 @@ public final class MutableFlattener implements VariableResolver {
 
 			@Override
 			public FlatExpr flattenExpression(CommonTree tree) throws CompilationFailure {
-				List<Step> steps = new ArrayList<>();
+				List<VoidNode> steps = new ArrayList<>();
 				var flattener = new MutableFlattener(steps, MutableFlattener.this, false, options, meaning);
-				RValue result = flattener.flattenExpression(tree);
+				ListNode result = flattener.flattenExpression(tree);
 				return new FlatExpr(flattener.steps, result);
 			}
 		};
@@ -101,7 +104,7 @@ public final class MutableFlattener implements VariableResolver {
 		return flatten(tree, options, this, variables, BlockMeaning.LOOP_BODY);
 	}
 
-	private AsmBlock flattenForRangeBody(CommonTree tree, ProvenType counterType, String name) throws CompilationFailure {
+	private AsmBlock flattenForRangeBody(CommonTree tree, StaticType counterType, String name) throws CompilationFailure {
 		var info = new VariableInfo(name);
 		info.update(counterType);
 		return flatten(tree, options, this, List.of(info), BlockMeaning.LOOP_BODY);
@@ -110,10 +113,7 @@ public final class MutableFlattener implements VariableResolver {
 	private AsmBlock flattenFunctionBody(CommonTree tree, ParameterList params) throws CompilationFailure {
 		var infos = new ArrayList<VariableInfo>(params.list().size());
 		for (var param : params.list()) {
-			var info = new VariableInfo(param);
-			info.enableObjects();
-			info.enableNumbers();
-			infos.add(info);
+			infos.add(new VariableInfo(param));
 		}
 		return flatten(tree, options, this, infos, BlockMeaning.FUNCTION_BODY);
 	}
@@ -160,7 +160,7 @@ public final class MutableFlattener implements VariableResolver {
 				return;
 			}
 			case VAR: {
-				var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
+				var builder = new ChainedAccessBuilder(getInterface(), firstOnly(flattenExpression(t.getChild(0))));
 				int i = 1;
 				while (i < t.getChildCount()) {
 					builder.add(t.getChild(i++));
@@ -172,8 +172,8 @@ public final class MutableFlattener implements VariableResolver {
 			}
 			case For: {
 				String varName = t.getChild(0).toString();
-				RValue from = evaluateOnce(toNumber(flattenExpression(t.getChild(1))));
-				RValue to = evaluateOnce(toNumber(flattenExpression(t.getChild(2))));
+				ExprNode from = evaluateOnce(ExprNode.toNumber(firstOnly(flattenExpression(t.getChild(1)))));
+				ExprNode to = evaluateOnce(ExprNode.toNumber(firstOnly(flattenExpression(t.getChild(2)))));
 				Tree stepOrBody = t.getChild(3);
 				if (stepOrBody.getType() == Do) {
 					// for loop without step:
@@ -181,15 +181,15 @@ public final class MutableFlattener implements VariableResolver {
 					CommonTree block = (CommonTree) stepOrBody.getChild(0);
 					AsmBlock body = flattenForRangeBody(block, from.typeInfo(), varName);
 					VariableInfo counter = body.locals().get(varName);
-					steps.add(StepFactory.forRange(counter, from, to, body));
+					steps.add(VoidNode.forRange(counter, from, to, body));
 				} else {
 					// for loop with step "C":
 					// for i = A, B, C do ... end
-					RValue step = evaluateOnce(toNumber(flattenExpression(stepOrBody)));
+					ExprNode step = evaluateOnce(ExprNode.toNumber(firstOnly(flattenExpression(stepOrBody))));
 					CommonTree block = (CommonTree) t.getChild(4).getChild(0);
 					AsmBlock body = flattenForRangeBody(block, from.typeInfo().and(step.typeInfo()), varName);
 					VariableInfo counter = body.locals().get(varName);
-					steps.add(StepFactory.forRange(counter, from, to, step, body));
+					steps.add(VoidNode.forRange(counter, from, to, step, body));
 				}
 				return;
 			}
@@ -205,37 +205,41 @@ public final class MutableFlattener implements VariableResolver {
 				}
 				var iterator = evaluateOnce(firstOnly(flattenExpression(Trees.expectChild(EXPR_LIST, t, 1).getChild(0))));
 				var body = flattenForInLoopBody((CommonTree) Trees.expectChild(Do, t, 2), variables);
-				steps.add(StepFactory.forInLoop(variables, iterator, body));
+				steps.add(VoidNode.forInLoop(variables, iterator, body));
 				return;
 			}
 			case While: {
 				// while (<condition>) (do (chunk (<body>)))
-				var condition = getInterface().flattenExpression(t.getChild(0));
+				var condition = getInterface().flattenExpression(t.getChild(0))
+						.firstOnly()
+						.mapValue(v -> ExprNode.toBoolean((ExprNode) v));
 				var chunk = Trees.expect(CHUNK, t.getChild(1).getChild(0));
 				var body = flattenLoopBody((CommonTree) chunk);
-				var stepList = new ArrayList<Step>(body.steps().size() + 8);
+				var stepList = new ArrayList<VoidNode>(body.steps().size() + 8);
 				stepList.addAll(condition.block());
-				stepList.add(StepFactory.breakIf(condition.value(), false));
+				stepList.add(VoidNode.breakIf(firstOnly(condition.value()), false));
 				stepList.addAll(body.steps());
 				var processedBody = new AsmBlock(stepList, body.locals());
-				steps.add(StepFactory.loop(processedBody));
+				steps.add(VoidNode.loop(processedBody));
 				return;
 			}
 			case Repeat: {
 				// repeat (chunk (<body>)) (<condition>)
-				var condition = getInterface().flattenExpression(t.getChild(1));
+				var condition = getInterface().flattenExpression(t.getChild(1))
+						.firstOnly()
+						.mapValue(v -> ExprNode.toBoolean((ExprNode) v));
 				var chunk = Trees.expect(CHUNK, t.getChild(0));
 				var body = flattenLoopBody((CommonTree) chunk);
 				var stepList = new ArrayList<>(body.steps());
 				stepList.addAll(condition.block());
-				stepList.add(StepFactory.breakIf(condition.value(), true));
+				stepList.add(VoidNode.breakIf(firstOnly(condition.value()), true));
 				var processedBody = new AsmBlock(stepList, body.locals());
-				steps.add(StepFactory.loop(processedBody));
+				steps.add(VoidNode.loop(processedBody));
 				return;
 			}
 			case Do: {
 				CommonTree block = (CommonTree) t;
-				steps.add(StepFactory.doBlock(flattenDoBlock(block)));
+				steps.add(VoidNode.doBlock(flattenDoBlock(block)));
 				return;
 			}
 			case CHUNK: {
@@ -244,13 +248,13 @@ public final class MutableFlattener implements VariableResolver {
 				return;
 			}
 			case Return: {
-				List<RValue> values = new ArrayList<>(t.getChildCount());
+				List<ListNode> values = new ArrayList<>(t.getChildCount());
 				for (Object o : Trees.childrenOf(t)) {
 					Tree tree = (Tree) o;
-					RValue value = flattenExpression(tree);
+					ListNode value = flattenExpression(tree);
 					values.add(value);
 				}
-				steps.add(StepFactory.returnFromFunction(normalizeValueList(values)));
+				steps.add(VoidNode.returnFromFunction(ExprList.exprList(values)));
 				return;
 			}
 			case If: {
@@ -258,7 +262,7 @@ public final class MutableFlattener implements VariableResolver {
 				for (var x : Trees.childrenOf(t)) {
 					builder.add((Tree) x);
 				}
-				steps.add(StepFactory.ifThenChain(builder.build()));
+				steps.add(VoidNode.ifThenChain(builder.build()));
 				return;
 			}
 			default: {
@@ -269,41 +273,37 @@ public final class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private RValue flattenExpression(Tree t) throws CompilationFailure {
+	private ListNode flattenExpression(Tree t) throws CompilationFailure {
 		Objects.requireNonNull(t);
 		if (Operators.isBinary(t)) {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
 			var a = firstOnly(flattenExpression(t.getChild(0)));
 			var b = firstOnly(flattenExpression(t.getChild(1)));
-			var register = RegisterFactory.create(() -> op.resultType(a.typeInfo(), b.typeInfo()));
-			steps.add(StepFactory.assign(register, RValue.invocation(a, op.invocationMethod(), List.of(b))));
-			return register;
+			return ExprNode.monoInvocation(a, op.invocationMethod(), ExprList.exprList(b));
 		}
 		if (Operators.isUnary(t)) {
 			LuaOperator op = LuaOperator.forTokenType(t.getType());
-			RValue param = firstOnly(flattenExpression(t.getChild(0)));
-			var register = RegisterFactory.create(() -> op.resultType(null, param.typeInfo()));
-			steps.add(StepFactory.assign(register, RValue.invocation(param, op.invocationMethod(), List.of())));
-			return register;
+			ExprNode param = firstOnly(flattenExpression(t.getChild(0)));
+			return ExprNode.monoInvocation(param, op.invocationMethod(), ExprList.exprList());
 		}
 		switch (t.getType()) {
 			case Number: {
-				return RValue.number(Double.parseDouble(t.getText()));
+				return ExprNode.number(Double.parseDouble(t.getText()));
 			}
 			case String: {
-				return RValue.string(t.getText());
+				return ExprNode.string(t.getText());
 			}
 			case Name: {
 				String name = t.getText();
 				VariableInfo info = resolve(name);
 				if (info == null) {
 					var global = VariableInfo.global(name);
-					return RValue.variableName(global);
+					return ExprNode.variableName(global);
 				}
-				return RValue.variableName(info);
+				return ExprNode.variableName(info);
 			}
 			case VAR: {
-				var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
+				var builder = new ChainedAccessBuilder(getInterface(), firstOnly(flattenExpression(t.getChild(0))));
 				int i = 1;
 				while (i < t.getChildCount()) {
 					builder.add(t.getChild(i++));
@@ -319,33 +319,33 @@ public final class MutableFlattener implements VariableResolver {
 				return createTableLiteral(t);
 			}
 			case DotDotDot: {
-				return RValue.varargs();
+				return ListNode.varargs();
 			}
 			case CONDITION: {
 				return flattenExpression(t.getChild(0));
 			}
 			case Nil: {
-				return RValue.nil();
+				return ExprNode.nil();
 			}
 			case True: {
-				return RValue.bool(true);
+				return ExprNode.bool(true);
 			}
 			case False: {
-				return RValue.bool(false);
+				return ExprNode.bool(false);
 			}
 			case Or: {
-				RValue a = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
-				RValue b = firstOnly(flattenExpression(t.getChild(1)));
-				return RValue.logicalOr(a, b);
+				ExprNode a = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
+				ExprNode b = firstOnly(flattenExpression(t.getChild(1)));
+				return ExprNode.logicalOr(a, b);
 			}
 			case And: {
-				RValue a = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
-				RValue b = firstOnly(flattenExpression(t.getChild(1)));
-				return RValue.logicalAnd(a, b);
+				ExprNode a = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
+				ExprNode b = firstOnly(flattenExpression(t.getChild(1)));
+				return ExprNode.logicalAnd(a, b);
 			}
 			case Not: {
-				RValue x = evaluateOnce(firstOnly(flattenExpression(t.getChild(0))));
-				return RValue.logicalNot(x);
+				ExprNode x = evaluateOnce(toBoolean(firstOnly(flattenExpression(t.getChild(0)))));
+				return ExprNode.logicalNot(x);
 			}
 			default: {
 				log.error("Unknown expression: (type: {}) at line {}: {}", Trees.reverseLookupName(t.getType()), t.getLine(), t.toStringTree());
@@ -355,7 +355,7 @@ public final class MutableFlattener implements VariableResolver {
 	}
 
 	@Contract(mutates = "this")
-	private RValue createTableLiteral(Tree tree) throws CompilationFailure {
+	private ExprNode createTableLiteral(Tree tree) throws CompilationFailure {
 		Trees.expect(TABLE, tree);
 		List<?> fields = Trees.childrenOf(tree);
 		var builder = new TableLiteralBuilder(this.getInterface(), fields.size());
@@ -363,53 +363,27 @@ public final class MutableFlattener implements VariableResolver {
 			builder.addEntry((Tree) obj);
 		}
 		steps.addAll(builder.getSteps());
-		return RValue.table(builder.getTable());
+		return ExprNode.table(builder.getTable());
 	}
 
 	@Contract(mutates = "this")
-	private RValue toNumber(RValue a) {
-		a = firstOnly(a);
-		if (a.typeInfo().isNumeric()) {
-			return a;
-		}
-		return RValue.invocation(a, InvocationMethod.TO_NUMBER, List.of());
-	}
-
-	@Contract(mutates = "this")
-	private RValue evaluateOnce(RValue value) {
+	private ExprNode evaluateOnce(ExprNode value) {
 		if (value.isPure()) {
 			return value;
 		}
-		var register = RegisterFactory.create(value::typeInfo);
-		steps.add(StepFactory.assign(register, value));
+		var register = Register.ofType(value::typeInfo);
+		steps.add(VoidNode.assign(register, value));
 		return register;
 	}
 
 	@Contract(mutates = "this")
-	private List<RValue> normalizeValueList(List<RValue> registers) {
-		var values = new ArrayList<RValue>(registers.size());
-		int valueIndex = 0;
-		int valueCount = registers.size();
-		for (var register : registers) {
-			boolean isLastValue = valueIndex == valueCount - 1;
-			if (isLastValue) {
-				values.add(register);
-			} else {
-				values.add(firstOnly(register));
-			}
-			valueIndex++;
-		}
-		return values;
-	}
-
-	@Contract(mutates = "this")
-	private List<RValue> flattenAll(List<?> trees) throws CompilationFailure {
+	private ExprList flattenAll(List<?> trees) throws CompilationFailure {
 		int size = trees.size();
-		var registers = new ArrayList<RValue>(size);
+		var list = new ArrayList<ListNode>(size);
 		for (Object tree : trees) {
-			registers.add(flattenExpression((Tree) tree));
+			list.add(flattenExpression((Tree) tree));
 		}
-		return registers;
+		return ExprList.exprList(list);
 	}
 
 	@Contract(mutates = "this")
@@ -418,7 +392,7 @@ public final class MutableFlattener implements VariableResolver {
 			// table assignment
 			var t = (CommonTree) name;
 
-			var builder = new ChainedAccessBuilder(getInterface(), flattenExpression(t.getChild(0)));
+			var builder = new ChainedAccessBuilder(getInterface(), firstOnly(flattenExpression(t.getChild(0))));
 			for (int i = 1, size = t.getChildCount(); i < size; i++) {
 				builder.add(t.getChild(i));
 			}
@@ -437,8 +411,8 @@ public final class MutableFlattener implements VariableResolver {
 
 		var builder = new AssignmentBuilder(this);
 		var valueList = Trees.expect(EXPR_LIST, t.getChild(1));
-		List<RValue> values = normalizeValueList(flattenAll(Trees.childrenOf(valueList)));
-		builder.addValues(values);
+		ExprList values = flattenAll(Trees.childrenOf(valueList));
+		builder.setValues(values);
 		List<?> names = Trees.childrenOf(nameList);
 
 		// if the assignment starts with local, no need to worry about table assignments
@@ -470,17 +444,17 @@ public final class MutableFlattener implements VariableResolver {
 
 	@Contract(mutates = "this")
 	private void declare(VariableInfo variable) {
-		Step step = StepFactory.declareLocal(variable);
+		VoidNode step = VoidNode.declareLocal(variable);
 		steps.add(step);
 	}
 
 	@Contract(pure = true)
-	private RValue createFunctionLiteral(Tree t) throws CompilationFailure {
+	private ExprNode createFunctionLiteral(Tree t) throws CompilationFailure {
 		Trees.expect(FUNCTION, t);
 		Tree paramList = Trees.expectChild(PARAM_LIST, t, 0);
 		var params = ParameterList.parse(((CommonTree) paramList));
 		Tree chunk = Trees.expectChild(CHUNK, t, 1);
 		AsmBlock body = flattenFunctionBody((CommonTree) chunk, params);
-		return RValue.function(params, body);
+		return ExprNode.function(params, body);
 	}
 }

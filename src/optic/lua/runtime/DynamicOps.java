@@ -1,5 +1,6 @@
 package optic.lua.runtime;
 
+import java.lang.reflect.Array;
 import java.util.Objects;
 
 @RuntimeApi
@@ -22,7 +23,8 @@ public final class DynamicOps {
 		throw Errors.cannotConvert(o, "number");
 	}
 
-	static long toInt(Object a) {
+	@RuntimeApi
+	public static long toInt(Object a) {
 		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
 			return ((Number) a).longValue();
 		}
@@ -32,6 +34,33 @@ public final class DynamicOps {
 			return i;
 		}
 		throw Errors.cannotConvert(a, "integer");
+	}
+
+	private static int toInt32(Object a) {
+		if (a.getClass() == Long.class || a.getClass() == Integer.class) {
+			return ((Number) a).intValue();
+		}
+		double d = toNum(a);
+		int i = (int) d;
+		if (i == d) {
+			return i;
+		}
+		throw Errors.cannotConvert(a, "integer (32 bit)");
+	}
+
+	@RuntimeApi
+	public static long toInt(long n) {
+		return n;
+	}
+
+	@RuntimeApi
+	public static double toNum(double n) {
+		return n;
+	}
+
+	@RuntimeApi
+	public static Object getObjArray(Object array, long len) {
+		return ((Object[]) array)[(int) len];
 	}
 
 	@RuntimeApi
@@ -303,10 +332,12 @@ public final class DynamicOps {
 
 	@RuntimeApi
 	public static int len(LuaContext ctx, Object value) {
-		if(value instanceof CharSequence)
+		if (value instanceof CharSequence)
 			return ((CharSequence) value).length();
-		else if(value instanceof LuaTable)
+		else if (value instanceof LuaTable)
 			return ((LuaTable) value).length();
+		else if (value != null && value.getClass().isArray())
+			return Array.getLength(value);
 		else
 			throw Errors.attemptTo("get length of", value);
 	}
@@ -317,13 +348,8 @@ public final class DynamicOps {
 	}
 
 	@RuntimeApi
-	public static boolean isTrue(Object obj) {
+	public static boolean toBool(Object obj) {
 		return !(obj == null) && !(obj == Boolean.FALSE);
-	}
-
-	@RuntimeApi
-	public static boolean isTrue(boolean b) {
-		return b;
 	}
 
 	@RuntimeApi
@@ -336,7 +362,27 @@ public final class DynamicOps {
 	}
 
 	@RuntimeApi
-	public static LuaTable varargTable(Object key, Object[] trailing, Object... entries) {
+	public static LuaTable table() {
+		return new LuaTable();
+	}
+
+	@RuntimeApi
+	public static LuaTable table(Object k1, Object v1) {
+		LuaTable table = new LuaTable();
+		table.set(k1, v1);
+		return table;
+	}
+
+	@RuntimeApi
+	public static LuaTable table(Object k1, Object v1, Object k2, Object v2) {
+		LuaTable table = new LuaTable();
+		table.set(k1, v1);
+		table.set(k2, v2);
+		return table;
+	}
+
+	@RuntimeApi
+	public static LuaTable varargTable(long key, Object[] trailing, Object... entries) {
 		LuaTable table = new LuaTable();
 		for (int i = 0; i < entries.length; i += 2) {
 			table.set(entries[i], entries[i + 1]);
@@ -353,6 +399,28 @@ public final class DynamicOps {
 		if (obj instanceof LuaTable) {
 			return ((LuaTable) obj).get(key);
 		}
+		if (obj != null && obj.getClass().isArray()) {
+			return Array.get(obj, toInt32(key) - 1);
+		}
+		throw Errors.attemptTo("index", obj);
+	}
+
+	@RuntimeApi
+	public static Object index(Object obj, String key) {
+		if (obj instanceof LuaTable) {
+			return ((LuaTable) obj).get(key);
+		}
+		throw Errors.attemptTo("index", obj);
+	}
+
+	@RuntimeApi
+	public static Object index(Object obj, long key) {
+		if (obj instanceof LuaTable) {
+			return ((LuaTable) obj).get(key);
+		}
+		if (obj != null && obj.getClass().isArray()) {
+			return Array.get(obj, Math.toIntExact(key - 1));
+		}
 		throw Errors.attemptTo("index", obj);
 	}
 
@@ -360,6 +428,28 @@ public final class DynamicOps {
 	public static void setIndex(Object obj, Object key, Object value) {
 		if (obj instanceof LuaTable) {
 			((LuaTable) obj).set(key, value);
+		} else if (obj != null && obj.getClass().isArray()) {
+			Array.set(obj, toInt32(key) - 1, value);
+		} else {
+			throw Errors.attemptTo("index", obj);
+		}
+	}
+
+	@RuntimeApi
+	public static void setIndex(Object obj, String key, Object value) {
+		if (obj instanceof LuaTable) {
+			((LuaTable) obj).set(key, value);
+		} else {
+			throw Errors.attemptTo("index", obj);
+		}
+	}
+
+	@RuntimeApi
+	public static void setIndex(Object obj, long key, Object value) {
+		if (obj instanceof LuaTable) {
+			((LuaTable) obj).set(key, value);
+		} else if (obj != null && obj.getClass().isArray()) {
+			Array.set(obj, Math.toIntExact(key - 1), value);
 		} else {
 			throw Errors.attemptTo("index", obj);
 		}

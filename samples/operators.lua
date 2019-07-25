@@ -115,3 +115,17 @@ local function f()
     return false
 end
 assert((f() and g()) == false)
+
+-- regression test: "Function r-values must only be evaluated once in multi-variable assignment"
+local hits = 0
+local function f()
+    hits = hits + 1
+    return 1, 2, 3
+end
+local a, b, c, d, e = 0, f()
+assert(a == 0)
+assert(b == 1)
+assert(c == 2)
+assert(d == 3)
+assert(e == nil)
+assert(hits == 1)

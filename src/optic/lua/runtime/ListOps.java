@@ -21,6 +21,11 @@ public final class ListOps {
 	}
 
 	@RuntimeApi
+	public static void use(Object x) {
+		// ignore argument
+	}
+
+	@RuntimeApi
 	public static Object[] list() {
 		return EMPTY;
 	}

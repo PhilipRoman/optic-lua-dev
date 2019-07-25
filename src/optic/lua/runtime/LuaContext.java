@@ -13,7 +13,6 @@ public final class LuaContext {
 	public Object _ENV;
 	public CallSiteFactory callSiteFactory = new SimpleCallSiteFactory();
 	public FunctionMetafactory functionMetafactory = new SimpleFunctionMetafactory();
-	public TableMetafactory tableCreationFactory = new SimpleTableMetafactory();
 	private List<CallSite> callSites = new ArrayList<>(32);
 
 	private LuaContext() {
@@ -49,11 +48,6 @@ public final class LuaContext {
 	@RuntimeApi
 	public FunctionFactory functionFactory(int id) {
 		return functionMetafactory.create(id);
-	}
-
-	@RuntimeApi
-	public TableFactory tableFactory(int id) {
-		return tableCreationFactory.create(id);
 	}
 
 	public Collection<CallSite> getCallSites() {

@@ -1,7 +1,7 @@
 package optic.lua.optimization
 
 
-import static optic.lua.optimization.ProvenType.*
+import static optic.lua.optimization.StaticType.*
 
 class LuaOperatorTest extends GroovyTestCase {
     void testArity() {

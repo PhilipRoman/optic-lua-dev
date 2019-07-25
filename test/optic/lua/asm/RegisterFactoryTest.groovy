@@ -1,27 +1,13 @@
 package optic.lua.asm
 
 import groovy.transform.CompileStatic
-import optic.lua.optimization.ProvenType
+import optic.lua.optimization.StaticType
 
 @CompileStatic
 class RegisterFactoryTest extends GroovyTestCase {
-    void testCreateVararg() {
-        def r = RegisterFactory.createVararg()
-        assert r.isVararg()
-        assert !r.isUnused()
-        assert r != RegisterFactory.createVararg()
-    }
-
     void testCreate() {
-        def r = RegisterFactory.create(ProvenType.INTEGER)
+        def r = Register.ofType(StaticType.INTEGER)
         assert !r.isVararg()
-        assert !r.isUnused()
-        assert r != RegisterFactory.create(ProvenType.INTEGER)
-    }
-
-    void testUnused() {
-        def r = RegisterFactory.unused()
-        assert r.isVararg()
-        assert r.isUnused()
+        assert r != Register.ofType(StaticType.INTEGER)
     }
 }

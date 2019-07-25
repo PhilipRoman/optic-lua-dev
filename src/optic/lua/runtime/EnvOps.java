@@ -25,7 +25,7 @@ public final class EnvOps {
 		return (to <= length) ? to : length;
 	}
 
-	public static LuaTable createEnv() {
+	static LuaTable createEnv() {
 		LuaTable env = new LuaTable();
 		env.set("print", new LuaFunction("print") {
 			public Object[] call(LuaContext context1, Object... args) {
@@ -34,19 +34,57 @@ public final class EnvOps {
 			}
 		});
 		HashMap<Object, Object> optic = new HashMap<>(5);
+		optic.put("array", new LuaFunction("optic.array") {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				return ListOps.list((Object) args);
+			}
+		});
+		optic.put("numarray", new LuaFunction("optic.numarray") {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				double[] array = new double[args.length];
+				for (int i = 0; i < args.length; i++) {
+					array[i] = DynamicOps.toNum(args[i]);
+				}
+				return ListOps.list((Object) array);
+			}
+		});
+		optic.put("intarray", new LuaFunction("optic.intarray") {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				long[] array = new long[args.length];
+				for (int i = 0; i < args.length; i++) {
+					array[i] = DynamicOps.toInt(args[i]);
+				}
+				return ListOps.list((Object) array);
+			}
+		});
+		optic.put("newarray", new LuaFunction("optic.newarray") {
+			@Override
+			public Object[] call(LuaContext context, Object... args) {
+				return ListOps.list((Object) new Object[(int) DynamicOps.toInt(args[0])]);
+			}
+		});
 		env.set("optic", LuaTable.ofMap(optic));
 		env.set("pairs", new LuaFunction("pairs") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
+				if (args[0].getClass().isArray()) {
+					return ListOps.list(new ArrayPairsIterator(args[0]));
+				}
 				LuaTable table = (LuaTable) args[0];
-				return new Object[]{table.pairsIterator()};
+				return ListOps.list(table.pairsIterator());
 			}
 		});
-		env.set("ipairs", new LuaFunction("pairs") {
+		env.set("ipairs", new LuaFunction("ipairs") {
 			@Override
 			public Object[] call(LuaContext context, Object... args) {
+				if (args[0].getClass().isArray()) {
+					return ListOps.list(new ArrayPairsIterator(args[0]));
+				}
 				LuaTable table = (LuaTable) args[0];
-				return new Object[]{table.ipairsIterator()};
+				return ListOps.list(table.ipairsIterator());
 			}
 		});
 		env.set("type", new LuaFunction("type") {
@@ -89,7 +127,7 @@ public final class EnvOps {
 				if (args.length == 0) {
 					throw Errors.argument(1, "value");
 				}
-				if (DynamicOps.isTrue(args[0])) {
+				if (DynamicOps.toBool(args[0])) {
 					return args;
 				} else {
 					String msg = args.length >= 2 ? StandardLibrary.toString(args[1]) : "Assertion failed!";

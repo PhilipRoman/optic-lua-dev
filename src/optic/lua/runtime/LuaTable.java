@@ -50,9 +50,9 @@ public class LuaTable {
 		return hash.get(key);
 	}
 
-	public Object get(int key) {
+	public Object get(long key) {
 		if (key <= length && key >= 1)
-			return array[key - 1];
+			return array[(int) (key) - 1];
 		return hash.get((double) key);
 	}
 
@@ -82,6 +82,18 @@ public class LuaTable {
 		} else {
 			hash.put(key, value);
 		}
+	}
+
+	public void set(long key, Object value) {
+		if (key <= length + 1 && key >= 1) {
+			setArray((int) key, value);
+			return;
+		}
+		Double boxed = (double) key;
+		if (value == null)
+			hash.remove(boxed);
+		else
+			hash.put(boxed, value);
 	}
 
 	private void setArray(int key, Object value) {
